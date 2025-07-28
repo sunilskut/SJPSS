@@ -181,30 +181,35 @@
             margin: 0 auto;
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 10px;
+	    flex-wrap: wrap;
         }
 
         .nav-item {
             color: white;
             text-decoration: none;
-            font-size: 0.9rem;
-            padding: 8px 12px;
+            font-size: 0.75rem;
+            padding: 6px 10px;
             border-radius: 4px;
+	    white-space: nowrap; 
             transition: background-color 0.2s;
-            white-space: nowrap;
+           
+
+
         }
 
         .nav-item:hover {
             background-color: rgba(255,255,255,0.1);
+	    transform: scale(1.1);
         }
 
-        .hamburger {
+     /*   .hamburger {
             display: flex;
             align-items: center;
             gap: 5px;
             font-weight: bold;
         }
-
+*/
         /* Main Content */
         .main-container {
             max-width: 1500px;
@@ -1880,7 +1885,7 @@
                     <div class="product-info">
                         <div class="product-brand">${product.brand || 'Generic'}</div>
                         <h3 class="product-name">${product.name}</h3>
-                        <p class="product-description mobile-hide">${product.description || 'No description available'}</p>
+                   <!--     <p class="product-description mobile-hide">${product.description || 'No description available'}</p>  -->
                         <div class="product-price">
                             <span class="current-price">₹ ${product.price.toFixed(2)}</span>
                             ${product.originalPrice ? `<span class="original-price">₹${product.originalPrice.toFixed(2)}</span>` : ''}
@@ -3669,7 +3674,114 @@ async function loadShopName() {
 }
 
 
+
+
+
+async function loadNavCategories() {
+       const navContainer = document.getElementById('navCategories');
+       navContainer.innerHTML = ''; // Clear existing
+      const link1 = document.createElement('a');
+      link1.href = "#"; // You can modify to actual category URL
+      link1.onclick = toggleSidebar;
+      link1.className = "nav-item dynamic-item";
+      link1.textContent = '☰';
+      navContainer.appendChild(link1);
+
+     const link2 = document.createElement('a');
+      link2.href = "#"; // You can modify to actual category URL
+      link2.className = "nav-item dynamic-item";
+      link2.textContent = 'All';
+      navContainer.appendChild(link2);
+
+
+
+  try {
+    const querySnapshot = await getDocs(collection(db, 'categories'));
+
+    querySnapshot.forEach(doc => {
+      const data = doc.data();
+
+      const link = document.createElement('a');
+      link.href = "#"; // You can modify to actual category URL
+      link.className = "nav-item dynamic-item";
+      link.textContent = data.name;
+
+      navContainer.appendChild(link);
+    });
+  } catch (error) {
+    console.error('Error loading nav categories:', error);
+  }
+}
+
+if (typeof db !== 'undefined') {
+  loadNavCategories();
+}
+
+
+
+function toggleSidebar(e) {
+  e.preventDefault(); // Prevent default anchor behavior
+  const sidebar = document.getElementById('sideBar');
+  if (sidebar.style.display === 'none' || sidebar.style.display === '') {
+    sidebar.style.display = 'block';
+  } else {
+    sidebar.style.display = 'none';
+  }
+}
   
+
+
+
+  async function loadCategoriesAndSubcategories() {
+    const container = document.getElementById('categories-section');
+    container.innerHTML = ''; // Clear any old content
+
+    try {
+      const querySnapshot = await getDocs(collection(db, 'categories'));
+
+      querySnapshot.forEach(doc => {
+        const data = doc.data();
+
+        // Create <details> element for each category
+        const details = document.createElement('details');
+
+        // Add category name as summary
+        const summary = document.createElement('summary');
+        summary.textContent = data.name;
+        details.appendChild(summary);
+
+        // Add each subcategory as checkbox
+        if (Array.isArray(data.subcategories)) {
+          data.subcategories.forEach(sub => {
+            const div = document.createElement('div');
+            div.className = 'filter-item';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = sub.name.toLowerCase().replace(/\s+/g, '');
+            checkbox.setAttribute('data-category', data.name);
+            checkbox.setAttribute('data-subcategory', sub.name);
+            checkbox.onchange = filterProducts;
+
+            const label = document.createElement('label');
+            label.setAttribute('for', checkbox.id);
+            label.textContent = sub.name;
+
+            div.appendChild(checkbox);
+            div.appendChild(label);
+            details.appendChild(div);
+          });
+        }
+
+        container.appendChild(details);
+      });
+    } catch (error) {
+      console.error("Error loading categories:", error);
+    }
+  }
+
+  // Call this on page load
+  document.addEventListener('DOMContentLoaded', loadCategoriesAndSubcategories);
 </script>
 
 
@@ -3692,8 +3804,9 @@ async function loadShopName() {
 
 
 
+
 </head>
-<body>
+<body oncontextmenu="return false;" onkeydown="if(event.keyCode==123) return false;">
     <!-- Header -->
     <div class="header">
         <div class="header-main">
@@ -3758,24 +3871,10 @@ async function loadShopName() {
             </div>
         </div>
 
-        <div class="nav-bar">
-            <div class="nav-container">
-                <a href="#" class="nav-item hamburger">
-                    <span>☰</span>
-                    <span>All</span>
-                </a>
-                <a href="#" class="nav-item">Today's Deals</a>
-                <a href="#" class="nav-item">Customer Service</a>
-                <a href="#" class="nav-item">Registry</a>
-                <a href="#" class="nav-item">Gift Cards</a>
-                <a href="#" class="nav-item">Sell</a>
-                <a href="#" class="nav-item">Prime</a>
-                <a href="#" class="nav-item">Electronics</a>
-                <a href="#" class="nav-item">Fashion</a>
-                <a href="#" class="nav-item">Home & Garden</a>
-                <a href="#" class="nav-item">Sports</a>
-            </div>
-        </div>
+<div class="nav-bar">
+  <div class="nav-container" id="navCategories"></div>
+</div>
+
     </div>
 
 
@@ -3800,11 +3899,11 @@ async function loadShopName() {
     <!-- Main Content -->
     <div class="main-container">
      <!-- Sidebar -->
-        <div class="sidebar">   
+        <div class="sidebar" style="display: none;" id="sideBar">   
 
 
 
-<div style="display: flex; justify-content: center; gap: 6px;">
+<div style="display: flex; justify-content: center; gap: 6px;"  id="sortButtonContainer">
   <button id="filterBtn" class="toggle-btn" onclick="toggleButton('filterBtn')">Show Filter</button>
   <button id="sortBtn" class="toggle-btn" onclick="toggleButton('sortBtn')">Show Sort</button>
 </div>
@@ -3814,129 +3913,11 @@ async function loadShopName() {
 <div id="filterArea" style="display: none;"> 
 
 
-           <div class="filter-section" >
-    <h3 onclick="toggleCategoriesSection()" style="cursor: pointer;">Categories ▼</h3>
-<div id="categories-section" style="display: none;">
-    <!-- Tops -->
-    <details>
-        <summary>Tops</summary>
-        <div class="filter-item">
-            <input type="checkbox" id="shirts" onchange="filterProducts()">
-            <label for="shirts">Shirts</label>
-        </div>
-        <div class="filter-item">
-            <input type="checkbox" id="tshirts" onchange="filterProducts()">
-            <label for="tshirts">T-Shirts</label>
-        </div>
-        <div class="filter-item">
-            <input type="checkbox" id="kurtas" onchange="filterProducts()">
-            <label for="kurtas">Kurtas</label>
-        </div>
-        <div class="filter-item">
-            <input type="checkbox" id="jackets" onchange="filterProducts()">
-            <label for="jackets">Jackets</label>
-        </div>
-    </details>
-
-    <!-- Bottoms -->
-    <details>
-        <summary>Bottoms</summary>
-        <div class="filter-item">
-            <input type="checkbox" id="trousers" onchange="filterProducts()">
-            <label for="trousers">Trousers</label>
-        </div>
-        <div class="filter-item">
-            <input type="checkbox" id="jeans" onchange="filterProducts()">
-            <label for="jeans">Jeans</label>
-        </div>
-        <div class="filter-item">
-            <input type="checkbox" id="shorts" onchange="filterProducts()">
-            <label for="shorts">Shorts</label>
-        </div>
-        <div class="filter-item">
-            <input type="checkbox" id="joggers" onchange="filterProducts()">
-            <label for="joggers">Joggers</label>
-        </div>
-    </details>
-
-    <!-- Ethnic Wear -->
-    <details>
-        <summary>Ethnic Wear</summary>
-        <div class="filter-item">
-            <input type="checkbox" id="sherwani" onchange="filterProducts()">
-            <label for="sherwani">Sherwani</label>
-        </div>
-        <div class="filter-item">
-            <input type="checkbox" id="nehrujackets" onchange="filterProducts()">
-            <label for="nehrujackets">Nehru Jackets</label>
-        </div>
-    </details>
-
-    <!-- Innerwear & Loungewear -->
-    <details>
-        <summary>Innerwear & Loungewear</summary>
-        <div class="filter-item">
-            <input type="checkbox" id="innerwear" onchange="filterProducts()">
-            <label for="innerwear">Innerwear</label>
-        </div>
-        <div class="filter-item">
-            <input type="checkbox" id="loungewear" onchange="filterProducts()">
-            <label for="loungewear">Loungewear</label>
-        </div>
-    </details>
-
-    <!-- Footwear -->
-    <details>
-        <summary>Footwear</summary>
-        <div class="filter-item">
-            <input type="checkbox" id="formalshoes" onchange="filterProducts()">
-            <label for="formalshoes">Formal Shoes</label>
-        </div>
-        <div class="filter-item">
-            <input type="checkbox" id="casualshoes" onchange="filterProducts()">
-            <label for="casualshoes">Casual Shoes</label>
-        </div>
-    </details>
-
-    <!-- Accessories -->
-    <details>
-        <summary>Accessories</summary>
-        <div class="filter-item">
-            <input type="checkbox" id="belts" onchange="filterProducts()">
-            <label for="belts">Belts</label>
-        </div>
-        <div class="filter-item">
-            <input type="checkbox" id="ties" onchange="filterProducts()">
-            <label for="ties">Ties & Bowties</label>
-        </div>
-        <div class="filter-item">
-            <input type="checkbox" id="wallets" onchange="filterProducts()">
-            <label for="wallets">Wallets</label>
-        </div>
-    </details>
-
-    <!-- Seasonal -->
-    <details>
-        <summary>Seasonal Wear</summary>
-        <div class="filter-item">
-            <input type="checkbox" id="winterwear" onchange="filterProducts()">
-            <label for="winterwear">Winterwear</label>
-        </div>
-        <div class="filter-item">
-            <input type="checkbox" id="rainwear" onchange="filterProducts()">
-            <label for="rainwear">Rainwear</label>
-        </div>
-    </details>
-
-    <!-- Activewear -->
-    <details>
-        <summary>Activewear</summary>
-        <div class="filter-item">
-            <input type="checkbox" id="activewear" onchange="filterProducts()">
-            <label for="activewear">Activewear</label>
-        </div>
-    </details>
-</div>
+<div class="filter-section">
+  <h3 onclick="toggleCategoriesSection()" style="cursor: pointer;">Categories ▼</h3>
+  <div id="categories-section" style="display: none;">
+    <!-- Dynamic content will be inserted here -->
+  </div>
 </div>
 
 
