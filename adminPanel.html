@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OSIS Admin Panel</title>
+  <title>Admin Panel</title>
   <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet">
 
@@ -45,6 +45,27 @@
     return `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth()+1).padStart(2, '0')}-${date.getFullYear()}`;
   }
 
+
+
+
+
+
+
+ window.showSection = function showSection(el) {
+    const targetId = el.getAttribute("href").replace("#", "");
+    const sections = document.querySelectorAll("section");
+
+    sections.forEach(section => section.classList.add("hidden")); // Hide all
+    document.getElementById(targetId)?.classList.remove("hidden"); // Show selected
+  }
+ // Show Dashboard on load
+  document.addEventListener("DOMContentLoaded", () => {
+    const defaultLink = document.getElementById("defaultSection");
+    if (defaultLink) {
+      showSection(defaultLink);
+    }
+  });
+/*
 document.addEventListener('DOMContentLoaded', function () {
 
     // Get role from URL parameters
@@ -63,7 +84,8 @@ document.addEventListener('DOMContentLoaded', function () {
 		document.getElementById('customers').style.display = 'block';
 		document.getElementById('staffs').style.display = 'block';
 		document.getElementById('reports').style.display = 'block';
-		document.getElementById('settings').style.display = 'block';
+		document.getElementById('settings').style.display = 'block'; 
+		document.getElementById('payments').style.display = 'block';
                 break;
             case 'packingStaff':
   		document.getElementById('orderDashboard').style.display = 'block';
@@ -89,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function () {
         window.location.href = 'login.html'; // Or any fallback page
     }
 });
-
+*/
 
 async function fetchOrders() {
   const ordersSnapshot = await getDocs(collection(db, 'orders'));
@@ -102,6 +124,7 @@ async function fetchOrders() {
     const createdAt = order.createdAt;
     const dateFormatted = formatDate(createdAt);
     const status = order.status?.toLowerCase();
+    const paymentMethod = order.paymentMethod?.toLowerCase();
 
     // Items array
     const items = order.items || [];
@@ -184,16 +207,26 @@ async function fetchOrders() {
       </td>
     `;
 
-    // Append to appropriate table
-    if (status === 'pending') {
+ if (status === 'pending'&& paymentMethod === 'cod') {
       pendingBody.appendChild(row);
     } else if (status === 'packed') {
       packedBody.appendChild(row);
     }
+
+
   }
 }
 
-document.addEventListener('DOMContentLoaded', fetchOrders);
+document.addEventListener('DOMContentLoaded', () => {
+    const togglePacking = document.getElementById('togglePacking');
+
+    // Call fetchOrders only when toggle is turned on
+    togglePacking.addEventListener('change', () => {
+        if (togglePacking.checked) {
+            fetchOrders();
+        }
+    });
+});
 
 
 
@@ -208,37 +241,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
 
-/*
 
-async function loadShopName() {
-        try {
-            const metaDoc = doc(db, 'meta', 'metadata'); // Assuming document ID is 'shopInfo'
-            const docSnap = await getDoc(metaDoc);
-            
-            const shopHeading = document.getElementById('shopHeading');
-            
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                if (data.shopName) {
-                    shopHeading.textContent = `${data.shopName} - ${data.place}`;
-                    shopHeading.classList.remove('loading');
-                } else {
-                    shopHeading.textContent = '🌿';
-                    shopHeading.classList.remove('loading');
-                }
-            } else {
-                shopHeading.textContent = '🌿';
-                shopHeading.classList.remove('loading');
-            }
-        } catch (error) {
-            console.error('Error fetching shop name:', error);
-            const shopHeading = document.getElementById('shopHeading');
-            shopHeading.textContent = '🌿 Add a Product';
-            shopHeading.classList.remove('loading');
-        }
-    }
-
-*/
 
 async function loadShopName() {
     try {
@@ -287,9 +290,326 @@ async function loadShopName() {
 
     // Load shop name on page load
     loadShopName();
+
+
+
+async function fetchPayments() {
+  const upiPendingBody = document.getElementById('upiVerificationPendingTableBody');
+  const codPendingBody = document.getElementById('codPendingTableBody');
+  const remittedBody = document.getElementById('remittedPaymentsTableBody');
+
+  // Clear previous content
+  upiPendingBody.innerHTML = '';
+  codPendingBody.innerHTML = '';
+  remittedBody.innerHTML = '';
+
+  const ordersSnapshot = await getDocs(collection(db, 'orders'));
+
+  for (const docSnap of ordersSnapshot.docs) {
+    const order = docSnap.data();
+    const orderId = docSnap.id;
+    const createdAt = order.createdAt;
+    const dateFormatted = formatDate(createdAt);
+    const status = order.status?.toLowerCase();
+    const paymentStatus = order.paymentStatus?.toLowerCase();
+    const paymentMethod = order.paymentMethod || 'N/A';
+    const amount = order.totalAmount || '0';
+    const shippingAddress = order.shippingDetails?.address || 'N/A';
+
+    // Tooltip for Order ID
+    const orderIdTooltipId = `tooltip-addr-${orderId}`;
+    const orderIdHTML = `
+      <div class="relative inline-block">
+        <span 
+          class="underline text-blue-600 cursor-pointer" 
+          onmouseover="document.getElementById('${orderIdTooltipId}').classList.remove('hidden')" 
+          onmouseout="document.getElementById('${orderIdTooltipId}').classList.add('hidden')"
+        >
+          ${orderId}
+        </span>
+        <div 
+          id="${orderIdTooltipId}" 
+          class="absolute z-50 hidden bg-white border border-gray-300 p-2 rounded shadow-lg w-60 top-full left-full mt-1 ml-2"
+        >
+          <div class="text-sm text-gray-700 whitespace-pre-wrap">${shippingAddress}</div>
+        </div>
+      </div>
+    `;
+
+    // Items
+    const items = order.items || [];
+    const itemHtmlArray = [];
+
+    for (let index = 0; index < items.length; index++) {
+      const item = items[index];
+      const productId = item.productId;
+      const tooltipId = `tooltip-payment-${orderId}-${productId}-${index}`;
+
+      let tooltipHTML = `
+        <div class="relative inline-block">
+          <span 
+            class="underline text-blue-600 cursor-pointer" 
+            onmouseover="document.getElementById('${tooltipId}').classList.remove('hidden')" 
+            onmouseout="document.getElementById('${tooltipId}').classList.add('hidden')"
+          >
+            ${productId}
+          </span>
+          <div 
+            id="${tooltipId}" 
+            class="absolute z-50 hidden bg-white border border-gray-300 p-2 rounded shadow-lg w-48 top-full mt-1 left-1/2 -translate-x-1/2"
+          >
+            <div class="text-sm text-gray-500">Product not found</div>
+          </div>
+        </div>
+      `;
+
+      try {
+        const productRef = doc(db, 'products', productId);
+        const productSnap = await getDoc(productRef);
+
+        if (productSnap.exists()) {
+          const product = productSnap.data();
+          const productName = product.name || '';
+          const imageUrl = product.imageUrl || '';
+
+          tooltipHTML = `
+            <div class="relative inline-block">
+              <span 
+                class="underline text-blue-600 cursor-pointer" 
+                onmouseover="document.getElementById('${tooltipId}').classList.remove('hidden')" 
+                onmouseout="document.getElementById('${tooltipId}').classList.add('hidden')"
+              >
+                ${productId}
+              </span>
+              <div 
+                id="${tooltipId}" 
+                class="absolute z-50 hidden bg-white border border-gray-300 p-2 rounded shadow-lg w-60 top-full mt-1 left-1/2 -translate-x-1/2"
+              >
+                <div class="flex items-center gap-2">
+                  <img src="${imageUrl}" alt="${productName}" class="w-12 h-12 object-cover rounded" />
+                  <div class="text-sm text-gray-800">${productName}</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.error(`Error fetching product ${productId}:`, error);
+      }
+
+      itemHtmlArray.push(tooltipHTML);
+    }
+
+    // UPI Verification Pending Payments
+    if (paymentMethod == 'UPI' && paymentStatus === 'paid') {
+      const row = document.createElement('tr');
+      row.className = 'border-t';
+      row.innerHTML = `
+        <td class="p-2">${orderIdHTML}</td>
+        <td class="p-2">${dateFormatted}</td>
+        <td class="p-2 overflow-visible relative space-x-1">${itemHtmlArray.join(', ')}</td>
+        <td class="p-2">${paymentMethod}</td>
+        <td class="p-2">₹${amount}</td>
+        <td class="p-2">
+          <button class="text-blue-600" onclick="window.location.href='paymentVerification.html?orderId=${orderId}'">Verify</button>
+        </td>
+      `;
+      upiPendingBody.appendChild(row);
+    }
+
+  // COD  Pending Payments
+    if (paymentMethod == 'COD' && paymentStatus === 'pending') {
+      const row = document.createElement('tr');
+      row.className = 'border-t';
+      row.innerHTML = `
+        <td class="p-2">${orderIdHTML}</td>
+        <td class="p-2">${dateFormatted}</td>
+        <td class="p-2 overflow-visible relative space-x-1">${itemHtmlArray.join(', ')}</td>
+        <td class="p-2">${paymentMethod}</td>
+        <td class="p-2">₹${amount}</td>
+        <td class="p-2">
+	 <button class="text-blue-600" onclick="window.location.href='viewHistory.html?customerId=${order.customerId}'">See History</button>
+
+        </td>
+      `;
+      codPendingBody.appendChild(row);
+    }
+
+    // Remitted Payments
+    else if (paymentStatus === 'paid') {
+      const row = document.createElement('tr');
+      row.className = 'border-t';
+      row.innerHTML = `
+        <td class="p-2">${orderIdHTML}</td>
+        <td class="p-2">${dateFormatted}</td>
+        <td class="p-2 overflow-visible relative space-x-1">${itemHtmlArray.join(', ')}</td>
+        <td class="p-2">${shippingAddress}</td>
+        <td class="p-2 text-gray-500">Remitted</td>
+      `;
+      remittedBody.appendChild(row);
+    }
+  }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  fetchPayments();
+});
+
+
+
+
+
+async function loadStaffs() {
+  const staffTableBody = document.getElementById('staffTableBody');
+  staffTableBody.innerHTML = ''; // Clear any previous rows
+
+  const staffSnapshot = await getDocs(collection(db, 'users'));
+
+  for (const docSnap of staffSnapshot.docs) {
+    const staff = docSnap.data();
+
+    const staffId = staff.id || '—';
+    const name = staff.name || '—';
+    const role = staff.role || '—';
+
+    const tooltipId = `tooltip-staff-${staffId}`;
+    const nameHTML = `
+      <div class="relative inline-block">
+        <span 
+          class="underline text-blue-600 cursor-pointer" 
+          onmouseover="document.getElementById('${tooltipId}').classList.remove('hidden')" 
+          onmouseout="document.getElementById('${tooltipId}').classList.add('hidden')"
+        >
+          ${name}
+        </span>
+        <div 
+          id="${tooltipId}" 
+          class="absolute z-50 hidden bg-white border border-gray-300 p-2 rounded shadow-lg w-48 top-full mt-1 left-1/2 -translate-x-1/2"
+        >
+          <div class="text-sm text-gray-700">
+            Email: ${staff.email || 'N/A'}<br/>
+            Phone: ${staff.phone || 'N/A'}
+          </div>
+        </div>
+      </div>
+    `;
+
+    const row = document.createElement('tr');
+    row.className = 'border-t';
+
+    row.innerHTML = `
+      <td class="p-2">${staffId}</td>
+      <td class="p-2">${nameHTML}</td>
+      <td class="p-2">${role}</td>
+      <td class="p-2">
+        <button class="text-blue-600 hover:underline text-sm" onclick="editStaff('${staffId}')">Edit</button>
+      </td>
+    `;
+
+    staffTableBody.appendChild(row);
+  }
+}
+
+// Function to navigate to edit page
+window.editStaff = function (id) {
+  location.href = `staffAddOrEdit.html?id=${id}`;
+};
+
+// Automatically load when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  loadStaffs();
+});
+
+
+async function loadCustomers() {
+  const customersTableBody = document.getElementById('customersTableBody');
+  customersTableBody.innerHTML = ''; // Clear previous rows
+
+  const customersSnapshot = await getDocs(collection(db, 'customers'));
+
+  for (const docSnap of customersSnapshot.docs) {
+    const customer = docSnap.data();
+
+    const customerId = customer.id || '—';
+    const fullName = customer.fullName || '—';
+    const phone = customer.phone || '—';
+    const altPhone = customer.alternatePhone || '';
+    const accountStatus = customer.accountStatus || 'unknown';
+
+    const shipping = customer.shippingAddress || {};
+    const tooltipId = `tooltip-customer-${customerId}`;
+
+    // Tooltip for full address
+    const nameHTML = `
+      <div class="relative inline-block">
+        <span 
+          class="underline text-blue-600 cursor-pointer"
+          onmouseover="document.getElementById('${tooltipId}').classList.remove('hidden')"
+          onmouseout="document.getElementById('${tooltipId}').classList.add('hidden')"
+        >
+          ${fullName}
+        </span>
+        <div 
+          id="${tooltipId}" 
+          class="absolute z-50 hidden bg-white border border-gray-300 p-2 rounded shadow-lg w-64 top-full left-1/2 -translate-x-1/2 mt-1"
+        >
+          <div class="text-sm text-gray-700 whitespace-pre-wrap">
+            ${shipping.address || ''}, ${shipping.city || ''}, ${shipping.state || ''} - ${shipping.pinCode || ''}<br/>
+            ${shipping.landmark || ''}
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Account status badge (optional styling)
+    const statusColor = accountStatus === 'active' ? 'text-green-600' : 'text-red-600';
+    const statusHTML = `<span class="${statusColor} text-xs font-medium">${accountStatus}</span>`;
+
+    const row = document.createElement('tr');
+    row.className = 'border-t';
+
+    row.innerHTML = `
+      <td class="p-2">${customerId}</td>
+      <td class="p-2 space-y-1">
+        ${nameHTML}<br/>
+        ${statusHTML}
+      </td>
+      <td class="p-2">
+        ${phone}
+        ${altPhone ? `<br/><span class="text-xs text-gray-500">${altPhone}</span>` : ''}
+      </td>
+      <td class="p-2">
+        <button 
+          class="text-blue-600 hover:underline text-sm" 
+          onclick="editCustomer('${customerId}')"
+        >
+          Edit
+        </button>
+      </td>
+    `;
+
+    customersTableBody.appendChild(row);
+  }
+}
+
+// Redirect to edit form
+window.editCustomer = function(id) {
+  location.href = `customerAddOrEdit.html?id=${id}`;
+};
+
+// Load on DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+  loadCustomers();
+});
+
+
 </script>
 
-<body class="bg-gray-100 font-sans h-screen overflow-y-auto">
+
+
+
+<body class="bg-gray-100 font-sans h-screen overflow-y-auto" oncontextmenu="return false;" onkeydown="if(event.keyCode==123) return false;" >
   <div class="flex flex-col md:flex-row h-full">
     <!-- Sidebar -->
     <aside id="sidebar" class="w-64 bg-white shadow-md md:block hidden fixed md:relative z-30 h-full">
@@ -297,17 +617,22 @@ async function loadShopName() {
        <span id='shopHeading'></span>
         <button class="md:hidden text-gray-600" onclick="toggleSidebar()">✖</button>
       </div>
-      <nav class="mt-6 space-y-2" style="display:none;">
-        <a href="#Dashboard" class="block px-4 py-2 hover:bg-blue-100" >Dashboard</a>
-        <a href="#products" class="block px-4 py-2 hover:bg-blue-100" style="display:none;">Product Management</a>
-        <a href="#orders" class="block px-4 py-2 hover:bg-blue-100">Order Management</a>
-        <a href="#customers" class="block px-4 py-2 hover:bg-blue-100" style="display:none;">Customer Management</a>
-        <a href="#reports" class="block px-4 py-2 hover:bg-blue-100" style="display:none;">Reports</a>
-        <a href="#settings" class="block px-4 py-2 hover:bg-blue-100" style="display:none;">Settings</a>
+      <nav class="mt-6 space-y-2" >
+        <a href="#Dashboard" id="defaultSection" class="block px-4 py-2 hover:bg-blue-100" onclick="showSection(this)" >Dashboard</a>
+        <a href="#products" class="block px-4 py-2 hover:bg-blue-100" onclick="showSection(this)">Products Management</a>
+        <a href="#orders" class="block px-4 py-2 hover:bg-blue-100" onclick="showSection(this)">Order Management</a>
+        <a href="#payments" class="block px-4 py-2 hover:bg-blue-100" onclick="showSection(this)">Payment Management</a>
+        <a href="#deliveries" class="block px-4 py-2 hover:bg-blue-100" onclick="showSection(this)">Delivery Management</a>
+        <a href="#customers" class="block px-4 py-2 hover:bg-blue-100"  onclick="showSection(this)">Customer Management</a>
+        <a href="#staffs" class="block px-4 py-2 hover:bg-blue-100"  onclick="showSection(this)">Staff Management</a>
+        <a href="#reports" class="block px-4 py-2 hover:bg-blue-100" onclick="showSection(this)" >Reports</a>
+        <a href="#settings" class="block px-4 py-2 hover:bg-blue-100" onclick="showSection(this)" >Settings</a>
 	<a href="loginPage.html" class="block px-4 py-2 hover:bg-blue-100">Logout</a>
       </nav>
 
-<nav class="mt-6 space-y-2" ">
+
+
+<nav class="mt-6 space-y-2" style="display:none;">
         <a href="#orderDashboard" class="block px-4 py-2 hover:bg-blue-100" >Order Dashboard</a>
         <a href="#orders" class="block px-4 py-2 hover:bg-blue-100">Order Management</a>
 	<a href="loginPage.html" class="block px-4 py-2 hover:bg-blue-100">Logout</a>
@@ -325,7 +650,7 @@ async function loadShopName() {
       <main class="flex-1 overflow-y-auto p-4 space-y-10">
        
 	<!-- Admin Dashboard -->
-        <section id="adminDashboard" style="display:none;">
+        <section id="Dashboard" class="hidden">
           <h2 class="text-2xl font-semibold mb-4">Admin Dashboard</h2>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div class="p-4 bg-white rounded shadow">Orders: <strong>120</strong></div>
@@ -335,47 +660,40 @@ async function loadShopName() {
           </div>
         </section>
 
+
         <!-- Product Management -->
-        <section id="products" style="display:none;">
+        <section id="products" class="hidden">
           <h2 class="text-2xl font-semibold mb-4">Product Management</h2>
           <div class="bg-white p-4 rounded shadow">
-    <h2 class="text-xl font-semibold mb-4 text-center">Products in Active Todays Deals</h2>
+    	<h2 class="text-xl font-semibold mb-4 text-center">Products in Active Todays Deals</h2>
             <table class="w-full text-sm">
               <thead>
                 <tr class="bg-gray-200 text-left">
-                  <th class="p-2">Name</th>
+                  <th class="p-2">Product Id</th>
                   <th class="p-2">Category</th>
-                  <th class="p-2">Price</th>
+                  <th class="p-2">SubCategory</th>
+                  <th class="p-2">Name</th>
                   <th class="p-2">Stock</th>
                   <th class="p-2">Actions</th>		
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="todaysDealsProductsTableBody">
                 <tr class="border-t">
-                  <td class="p-2">Product A</td>
-                  <td class="p-2">Category 1</td>
-                  <td class="p-2">$100</td>
-                  <td class="p-2">50</td>
-                  <td class="p-2 space-x-2">
-                    <button class="text-blue-500">Edit</button>
-                    <button class="text-red-500">Delete</button>
-                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
  <!-- Product Management Buttons -->
   <div class="text-center">
-    <button class="my-4 bg-blue-700 text-white px-4 py-2 rounded" onclick="location.href='view_products.html'">Products List</button>
-    <button class="my-4 bg-blue-600 text-white px-4 py-2 rounded" onclick="location.href='addProduct.html'">Add Product</button>
-    <button class="my-4 bg-blue-500 text-white px-4 py-2 rounded" onclick="location.href='edit_item.html'">Edit Product</button>
-    <button class="my-4 bg-blue-400 text-white px-4 py-2 rounded" onclick="location.href='edit_item.html'">Set Todays Deals</button>
+    <button class="my-4 bg-blue-700 text-white px-4 py-2 rounded" onclick="location.href='viewProductsTable.html'">Products List</button>
+    <button class="my-4 bg-blue-600 text-white px-4 py-2 rounded" onclick="location.href='addOrEditProducts.html'">Add/Edit Product</button>
+    <button class="my-4 bg-blue-500 text-white px-4 py-2 rounded" onclick="location.href='edit_item.html'">Set Todays Deals</button>
 
 
 
 <div class="relative inline-block group">
   <!-- Trigger Button -->
-  <button class="my-4 bg-blue-300 text-white px-4 py-2 rounded">
+  <button class="my-4 bg-blue-400 text-white px-4 py-2 rounded">
     Misc Actions
   </button>
 
@@ -387,6 +705,7 @@ async function loadShopName() {
       <li><button onclick="handleYouMayAlsoLike()" class="w-full text-left px-4 py-2 hover:bg-gray-100">You May Also Like</button></li>
       <li><button onclick="handleBulkPriceEdit()" class="w-full text-left px-4 py-2 hover:bg-gray-100">Bulk Edit Prices</button></li>
       <li><button onclick="handleBulkStockEdit()" class="w-full text-left px-4 py-2 hover:bg-gray-100">Bulk Edit Stock</button></li>
+      <li><button onclick="location.href='ProductCategoryEntry.html'" class="w-full text-left bg-blue-100 px-4 py-2 hover:bg-blue-200">Add Categories</button></li>
     </ul>
   </div>
 </div>
@@ -397,7 +716,7 @@ async function loadShopName() {
 
 <!-- Order Management -->
 <!-- Odrer Dashboard -->
-        <section id="orderDashboard" style="display:none;">
+        <section id="orderDashboard" class="hidden">
           <h2 class="text-2xl font-semibold mb-4">Order Dashboard</h2>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
   <div class="flex items-center justify-between p-3 bg-white rounded shadow h-16">
@@ -427,12 +746,27 @@ async function loadShopName() {
 
         </section>
 
-<section id="orders" style="display:none;">
+<section id="orders" class="hidden">
   <h2 class="text-2xl font-semibold mb-4">Order Management</h2>
 
   <!-- Packing Pending Orders -->
   <div class="bg-white p-4 rounded shadow mb-6">
-    <h2 class="text-xl font-semibold mb-4 text-center">Packing Pending Orders</h2>
+   <div class="flex items-center justify-between mb-4">
+  <h2 class="text-xl font-semibold text-center flex-1" title="Acivate Slide Switch to view">Packing Pending Orders</h2>
+
+  <!-- Blue Slide Switch -->
+  <label class="inline-flex items-center cursor-pointer ml-4">
+    <input type="checkbox" class="sr-only peer" id="togglePacking" />
+    <div class="w-11 h-6 bg-gray-300 rounded-full relative transition-colors duration-300 peer-checked:bg-blue-600">
+      <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-300 peer-checked:translate-x-5"></div>
+    </div>
+  </label>
+</div>
+
+
+
+
+
     <table class="w-full text-sm" id="ordersTable">
       <thead>
         <tr class="bg-gray-200 text-left">
@@ -477,23 +811,210 @@ async function loadShopName() {
 
 
 
+<!-- Payment Management -->
+<!-- Payment Dashboard -->
+        <section id="paymentDashboard" class="hidden">
+          <h2 class="text-2xl font-semibold mb-4">Payment Dashboard</h2>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
+  <div class="flex items-center justify-between p-3 bg-white rounded shadow h-16">
+    <span class="text-sm text-gray-700">Pending Payments:</span>
+    <strong class="text-base text-gray-900">120</strong>
+  </div>
+
+  <div class="flex items-center justify-between p-3 bg-white rounded shadow h-16">
+    <span class="text-sm text-gray-700">Remiited Payments:</span>
+    <strong class="text-base text-gray-900">300</strong>
+  </div>
+
+  <div class="flex items-center justify-between p-3 bg-white rounded shadow h-16">
+    <span class="text-sm text-gray-700">
+      COD <span id="Month" class="text-green-600 font-semibold"></span>:
+    </span>
+    <strong class="text-base text-gray-900">5,000</strong>
+  </div>
+
+  <div class="flex items-center justify-between p-3 bg-white rounded shadow h-16">
+    <span class="text-sm text-gray-700">
+      Packed in <span id="Year" class="text-blue-600 font-semibold"></span>:
+    </span>
+    <strong class="text-base text-gray-900">12,200</strong>
+  </div>
+</div>
+
+        </section>
+
+<section id="payments" class="hidden">
+  <h2 class="text-2xl font-semibold mb-4">Payment Management</h2>
+
+  <!--  UPI Verification Pending Payment -->
+  <div class="bg-white p-4 rounded shadow mb-6">
+    <h2 class="text-xl font-semibold mb-4 text-center">UPI Verification Pending Payments</h2>
+    <table class="w-full text-sm" id="upiVerificationPendingTable">
+      <thead>
+        <tr class="bg-gray-200 text-left">
+          <th class="p-2">Order ID</th>
+          <th class="p-2">Date</th>
+          <th class="p-2">Items</th>
+          <th class="p-2">Mode</th>
+          <th class="p-2">Amount</th>
+          <th class="p-2">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="upiVerificationPendingTableBody">
+        <tr class="border-t"></tr>
+      </tbody>
+    </table>
+  </div>
+
+<!--  COD Pending Payment -->
+  <div class="bg-white p-4 rounded shadow mb-6">
+    <h2 class="text-xl font-semibold mb-4 text-center">COD Pending Payments</h2>
+    <table class="w-full text-sm" id="codPendingTable">
+      <thead>
+        <tr class="bg-gray-200 text-left">
+          <th class="p-2">Order ID</th>
+          <th class="p-2">Date</th>
+          <th class="p-2">Items</th>
+          <th class="p-2">Mode</th>
+          <th class="p-2">Amount</th>
+          <th class="p-2">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="codPendingTableBody">
+        <tr class="border-t"></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Remitted Payments -->
+  <div class="bg-white p-4 rounded shadow mb-6">
+    <h2 class="text-xl font-semibold mb-4 text-center">Remitted Payments</h2>
+    <table class="w-full text-sm" id="remittedPaymentTableBody">
+      <thead>
+        <tr class="bg-gray-200 text-left">
+          <th class="p-2">Order ID</th>
+          <th class="p-2">Date</th>
+          <th class="p-2">Items</th>
+          <th class="p-2">Shipping</th>
+          <th class="p-2">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="remittedPaymentsTableBody">
+        <tr class="border-t"></tr>
+      </tbody>
+    </table>
+  </div>
+<!--Verify Button -->
+  	<div class="text-center">
+    <button class="my-4 bg-blue-500 text-white px-4 py-2 rounded" onclick="location.href='paymentVerification.html'">Verify Payments</button>
+  </div>
+</section>
+
+
+
+
+
+<!-- Delivery Management -->
+<!-- Delivery Dashboard -->
+        <section id="deliveryDashboard" class="hidden">
+          <h2 class="text-2xl font-semibold mb-4">Delivery Dashboard</h2>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
+  <div class="flex items-center justify-between p-3 bg-white rounded shadow h-16">
+    <span class="text-sm text-gray-700">Orders to Deliver:</span>
+    <strong class="text-base text-gray-900">120</strong>
+  </div>
+
+  <div class="flex items-center justify-between p-3 bg-white rounded shadow h-16">
+    <span class="text-sm text-gray-700">Delivered Orders:</span>
+    <strong class="text-base text-gray-900">300</strong>
+  </div>
+
+  <div class="flex items-center justify-between p-3 bg-white rounded shadow h-16">
+    <span class="text-sm text-gray-700">
+      Delivery Staffs <span id="Month" class="text-green-600 font-semibold"></span>:
+    </span>
+    <strong class="text-base text-gray-900">5,000</strong>
+  </div>
+
+  <div class="flex items-center justify-between p-3 bg-white rounded shadow h-16">
+    <span class="text-sm text-gray-700">
+      Returned <span id="Year" class="text-blue-600 font-semibold"></span>:
+    </span>
+    <strong class="text-base text-gray-900">12,200</strong>
+  </div>
+</div>
+
+        </section>
+
+<section id="deliveries" class="hidden">
+<div class="flex items-center justify-between mb-4">
+  <h2 class="text-2xl font-semibold">Delivery Management</h2>
+  <a href="deliveryHome.html" class="text-blue-600 hover:underline text-sm font-medium">
+    Go To Delivery App
+  </a>
+</div>
+
+  <!--   Pending Delivery -->
+  <div class="bg-white p-4 rounded shadow mb-6">
+    <h2 class="text-xl font-semibold mb-4 text-center">Delivery Pending Orders</h2>
+    <table class="w-full text-sm" id="deliveryPendingTable">
+      <thead>
+        <tr class="bg-gray-200 text-left">
+          <th class="p-2">Order ID</th>
+          <th class="p-2">Date</th>
+          <th class="p-2">Items</th>
+          <th class="p-2">Mode</th>
+          <th class="p-2">Amount</th>
+          <th class="p-2">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="deliveryPendingTableBody">
+        <tr class="border-t"></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Delivered Orders -->
+  <div class="bg-white p-4 rounded shadow mb-6">
+    <h2 class="text-xl font-semibold mb-4 text-center">Delivered Orders</h2>
+    <table class="w-full text-sm" id="deliveredOrdersTable">
+      <thead>
+        <tr class="bg-gray-200 text-left">
+          <th class="p-2">Order ID</th>
+          <th class="p-2">Date</th>
+          <th class="p-2">Items</th>
+          <th class="p-2">Shipping</th>
+          <th class="p-2">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="deliveredOrdersTableBody">
+        <tr class="border-t"></tr>
+      </tbody>
+    </table>
+  </div>
+
+</section>
+
+
+
+
+
+
+
         <!-- Customer Management -->
-        <section id="customers" style="display:none;">
+        <section id="customers" class="hidden">
           <h2 class="text-2xl font-semibold mb-4">Customer Management</h2>
           <div class="bg-white p-4 rounded shadow">
             <table class="w-full text-sm">
               <thead>
                 <tr class="bg-gray-200 text-left">
+                  <th class="p-2">Customr Id</th>
                   <th class="p-2">Name</th>
-                  <th class="p-2">Email</th>
                   <th class="p-2">Phone</th>
+                  <th class="p-2">Actions</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr class="border-t">
-                  <td class="p-2">Jane Smith</td>
-                  <td class="p-2">jane@example.com</td>
-                  <td class="p-2">+91-9876543210</td>
+              <tbody id="customersTableBody">
                 </tr>
               </tbody>
             </table>
@@ -505,22 +1026,20 @@ async function loadShopName() {
         </section>
 
  <!-- Staff Management -->
-        <section id="staffs" style="display:none;">
+        <section id="staffs" class="hidden">
           <h2 class="text-2xl font-semibold mb-4">Staff Management</h2>
           <div class="bg-white p-4 rounded shadow">
-            <table class="w-full text-sm">
+            <table class="w-full text-sm" id="staffTable">
               <thead>
                 <tr class="bg-gray-200 text-left">
+                  <th class="p-2">Staff Id</th>
                   <th class="p-2">Name</th>
-                  <th class="p-2">Email</th>
-                  <th class="p-2">Phone</th>
+                  <th class="p-2">Role</th>
+                  <th class="p-2">Actions</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr class="border-t">
-                  <td class="p-2">Jane Smith</td>
-                  <td class="p-2">jane@example.com</td>
-                  <td class="p-2">+91-9876543210</td>
+              <tbody id="staffTableBody">
+                <tr class="border-t" id="staffTableBody">
                 </tr>
               </tbody>
             </table>
@@ -532,8 +1051,9 @@ async function loadShopName() {
   </div>
         </section>
 
+
         <!-- Reports -->
-        <section id="reports" style="display:none;">
+        <section id="reports" class="hidden">
           <h2 class="text-2xl font-semibold mb-4">Reports</h2>
           <div class="bg-white p-4 rounded shadow space-y-4">
             <p>Sales Report: <strong>View sales data for past months</strong></p>
@@ -543,7 +1063,7 @@ async function loadShopName() {
         </section>
 
         <!-- Settings -->
-        <section id="settings" style="display:none;">
+        <section id="settings" class="hidden">
           <h2 class="text-2xl font-semibold mb-4">Settings</h2>
           <div class="bg-white p-4 rounded shadow space-y-4">
            <p>
