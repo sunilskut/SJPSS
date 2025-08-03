@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Delivery Home</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .glass-card {
+      backdrop-filter: blur(16px);
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .floating {
+      animation: float 6s ease-in-out infinite;
+    }
+    
+    .floating:nth-child(2) { animation-delay: -2s; }
+    .floating:nth-child(3) { animation-delay: -4s; }
+    .floating:nth-child(4) { animation-delay: -1s; }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-10px) rotate(1deg); }
+    }
+    
+    .gradient-bg {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .card-shadow {
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1), 0 15px 12px rgba(0, 0, 0, 0.08);
+    }
+    
+    .hover-lift {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .hover-lift:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15), 0 20px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .glow {
+      box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+    }
+    
+    .pulse-ring {
+      animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+    }
+    
+    @keyframes pulse-ring {
+      0% { transform: scale(0.8); opacity: 1; }
+      80%, 100% { transform: scale(1.2); opacity: 0; }
+    }
+  </style>
+</head>
+<body class="min-h-screen gradient-bg overflow-hidden relative">
+  <!-- Animated background elements -->
+  <div class="absolute inset-0 overflow-hidden">
+    <div class="absolute -top-40 -right-40 w-80 h-80 bg-white opacity-10 rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-40 -left-40 w-96 h-96 bg-white opacity-5 rounded-full blur-3xl"></div>
+    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-purple-300 opacity-20 rounded-full blur-3xl animate-pulse"></div>
+  </div>
+  
+  <!-- Main content -->
+  <div class="relative z-10 min-h-screen flex flex-col items-center justify-center p-8">
+    <!-- Header section -->
+    <div class="text-center mb-16">
+      <div class="relative inline-block">
+        <div class="absolute inset-0 bg-white opacity-20 rounded-full blur-xl pulse-ring"></div>
+        <h1 class="relative text-6xl font-bold text-white mb-4 tracking-tight">
+          SJPSS
+          <span class="bg-gradient-to-r from-yellow-400 to-pink-500 bg-clip-text text-transparent">
+            Delivery
+          </span>
+        </h1>
+      </div>
+      <p class="text-xl text-white opacity-90 font-light max-w-2xl mx-auto leading-relaxed">
+        Quick Delivery of Ordred Goods
+      </p>
+    </div>
+    
+    <!-- 2x2 Grid -->
+    <div class="grid grid-cols-2 gap-8 max-w-md mx-auto">
+      <!-- Card 1 -->
+      <div class="action-card group floating hover-lift glass-card rounded-3xl p-6 cursor-pointer card-shadow relative overflow-hidden"
+           onclick="window.location='deliveryAssign.html'">
+        <div class="absolute inset-0 bg-gradient-to-br from-green-400 to-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+        <div class="relative z-10 flex flex-col items-center text-center">
+          <div class="w-16 h-16 rounded-2xl bg-green-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+            <img src="https://cdn-icons-png.flaticon.com/512/3351/3351471.png" 
+                 alt="Store" class="w-12 h-12 object-cover rounded-xl">
+          </div>
+          <h3 class="text-white font-semibold text-lg mb-2">Orders</h3>
+          <p class="text-white opacity-80 text-sm">Ready To Assign</p>
+        </div>
+        <div class="absolute top-2 right-2 w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
+      </div>
+      
+      <!-- Card 2 -->
+      <div class="action-card group floating hover-lift glass-card rounded-3xl p-6 cursor-pointer card-shadow relative overflow-hidden"
+           onclick="handleAction('Creative Studio')">
+        <div class="absolute inset-0 bg-gradient-to-br from-purple-400 to-pink-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+        <div class="relative z-10 flex flex-col items-center text-center">
+          <div class="w-16 h-16 rounded-2xl bg-purple-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+            <svg class="w-8 h-8 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.379-8.379-2.828-2.828z"/>
+            </svg>
+          </div>
+          <h3 class="text-white font-semibold text-lg mb-2">Re Assign</h3>
+          <p class="text-white opacity-80 text-sm">Change Delivery Staff</p>
+        </div>
+        <div class="absolute top-2 right-2 w-2 h-2 bg-purple-400 rounded-full animate-ping"></div>
+      </div>
+      
+      <!-- Card 3 -->
+      <div class="action-card group floating hover-lift glass-card rounded-3xl p-6 cursor-pointer card-shadow relative overflow-hidden"
+           onclick="handleAction('Delivery Personnel')">
+        <div class="absolute inset-0 bg-gradient-to-br from-blue-400 to-cyan-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+        <div class="relative z-10 flex flex-col items-center text-center">
+          <div class="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+            <svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
+            </svg>
+          </div>
+          <h3 class="text-white font-semibold text-lg mb-2">Staffs</h3>
+          <p class="text-white opacity-80 text-sm">Delivery Boys</p>
+        </div>
+        <div class="absolute top-2 right-2 w-2 h-2 bg-blue-400 rounded-full animate-ping"></div>
+      </div>
+      
+      <!-- Card 4 -->
+      <div class="action-card group floating hover-lift glass-card rounded-3xl p-6 cursor-pointer card-shadow relative overflow-hidden"
+           onclick="handleAction('Social Connect')">
+        <div class="absolute inset-0 bg-gradient-to-br from-orange-400 to-red-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+        <div class="relative z-10 flex flex-col items-center text-center">
+          <div class="w-16 h-16 rounded-2xl bg-orange-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+            <svg class="w-8 h-8 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
+            </svg>
+          </div>
+          <h3 class="text-white font-semibold text-lg mb-2">Returns</h3>
+          <p class="text-white opacity-80 text-sm">Returns & Rejections</p>
+        </div>
+        <div class="absolute top-2 right-2 w-2 h-2 bg-orange-400 rounded-full animate-ping"></div>
+      </div>
+    </div>
+    
+    <!-- Footer message -->
+    <div class="mt-16 text-center">
+      <p class="text-white opacity-70 text-sm">Click any card to explore amazing features</p>
+    </div>
+  </div>
+  
+  <!-- Toast notification area -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+  <script>
+    function handleAction(name) {
+      showToast(`✨ Exploring ${name}...`);
+      console.log("Action:", name);
+      
+      // Add a subtle click effect
+      event.currentTarget.classList.add('glow');
+      setTimeout(() => {
+        event.currentTarget.classList.remove('glow');
+      }, 500);
+    }
+    
+    function showToast(message) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      toast.className = 'bg-white bg-opacity-90 backdrop-blur-md text-gray-800 px-6 py-3 rounded-2xl shadow-lg transform translate-x-full transition-all duration-300 ease-out border border-white border-opacity-20';
+      toast.textContent = message;
+      
+      container.appendChild(toast);
+      
+      // Trigger animation
+      setTimeout(() => {
+        toast.classList.remove('translate-x-full');
+      }, 100);
+      
+      // Remove toast after 3 seconds
+      setTimeout(() => {
+        toast.classList.add('translate-x-full', 'opacity-0');
+        setTimeout(() => {
+          container.removeChild(toast);
+        }, 300);
+      }, 3000);
+    }
+    
+    // Add some interactive sparkle effects on mouse move
+    document.addEventListener('mousemove', (e) => {
+      if (Math.random() > 0.98) {
+        createSparkle(e.clientX, e.clientY);
+      }
+    });
+    
+    function createSparkle(x, y) {
+      const sparkle = document.createElement('div');
+      sparkle.className = 'fixed w-1 h-1 bg-white rounded-full pointer-events-none z-50';
+      sparkle.style.left = x + 'px';
+      sparkle.style.top = y + 'px';
+      sparkle.style.animation = 'sparkle 1s ease-out forwards';
+      
+      document.body.appendChild(sparkle);
+      
+      setTimeout(() => {
+        document.body.removeChild(sparkle);
+      }, 1000);
+    }
+    
+    // Add sparkle animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes sparkle {
+        0% { transform: scale(0) rotate(0deg); opacity: 1; }
+        50% { transform: scale(1) rotate(180deg); opacity: 1; }
+        100% { transform: scale(0) rotate(360deg); opacity: 0; }
+      }
+    `;
+    document.head.appendChild(style);
+  </script>
+</body>
+</html>

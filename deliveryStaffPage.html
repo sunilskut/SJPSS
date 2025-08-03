@@ -1,0 +1,1983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Staff Dashboard</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.min.js"></script>
+    
+    <!-- QR Code -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"></script>
+    
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'bounce-in': 'bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)'
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' }
+                        },
+                        bounceIn: {
+                            '0%': { transform: 'scale(0.3)', opacity: '0' },
+                            '50%': { transform: 'scale(1.05)' },
+                            '70%': { transform: 'scale(0.9)' },
+                            '100%': { transform: 'scale(1)', opacity: '1' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 min-h-screen">
+    <!-- Fixed Header -->
+    <div class="fixed top-0 left-0 right-0 z-50 bg-white shadow-lg">
+        <div class="bg-gradient-to-r from-blue-600 to-blue-500 text-white">
+            <div class="max-w-7xl mx-auto px-4 py-3">
+                <div class="flex items-center justify-between">
+                    <!-- Staff Info -->
+                    <div class="flex-1">
+                        <h1 class="text-lg font-medium" id="staffName">Loading...</h1>
+                        <div class="flex items-center space-x-4">
+                            <p class="text-blue-200 text-sm" id="staffId">Staff ID: -</p>
+                            <div class="text-blue-200 text-sm" id="currentDate"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Notification Bell -->
+                    <div class="flex items-center space-x-2">
+                        <button id="notificationBtn" class="relative p-2 hover:bg-blue-500/30 rounded-lg transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5-5-5 5h5zm0 0v7"></path>
+                            </svg>
+                            <span id="notificationBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center ">3</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 px-4 py-2">
+        <div class="flex justify-around items-center">
+            <button onclick="showSection('home')" class="nav-btn flex flex-col items-center p-2 rounded-lg transition-colors active-nav">
+                <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                </svg>
+                <span class="text-xs">Home</span>
+            </button>
+            
+            <button onclick="showSection('orders')" class="nav-btn flex flex-col items-center p-2 rounded-lg transition-colors">
+                <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+                <span class="text-xs">Orders</span>
+            </button>
+            
+            <button onclick="showSection('map')" class="nav-btn flex flex-col items-center p-2 rounded-lg transition-colors">
+                <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                </svg>
+                <span class="text-xs">Map</span>
+            </button>
+            
+            <button onclick="showSection('earnings')" class="nav-btn flex flex-col items-center p-2 rounded-lg transition-colors">
+                <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                </svg>
+                <span class="text-xs">Earnings</span>
+            </button>
+            
+            <button onclick="showSection('profile')" class="nav-btn flex flex-col items-center p-2 rounded-lg transition-colors">
+                <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                </svg>
+                <span class="text-xs">Profile</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Container -->
+    <div class="pt-20 pb-20 min-h-screen">
+        <!-- 1. HOME / DASHBOARD -->
+        <section id="home" class="section active animate-fade-in">
+            <div class="max-w-7xl mx-auto p-4 lg:p-6">
+                <!-- Dashboard Stats Cards -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <!-- Pending Orders -->
+                    <div class="bg-white rounded-xl shadow-lg p-4 hover:shadow-xl transition-shadow duration-300">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-medium text-slate-600">Pending</p>
+                                <p class="text-2xl font-bold text-yellow-600" id="pendingCount">0</p>
+                            </div>
+                            <div class="bg-yellow-100 p-2 rounded-lg">
+                                <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Delivered Today -->
+                    <div class="bg-white rounded-xl shadow-lg p-4 hover:shadow-xl transition-shadow duration-300">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-medium text-slate-600">Delivered</p>
+                                <p class="text-2xl font-bold text-green-600" id="deliveredCount">0</p>
+                            </div>
+                            <div class="bg-green-100 p-2 rounded-lg">
+                                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Earnings -->
+                    <div class="bg-white rounded-xl shadow-lg p-4 hover:shadow-xl transition-shadow duration-300">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-medium text-slate-600">Earnings</p>
+                                <p class="text-2xl font-bold text-blue-600" id="earningsCount">₹0</p>
+                            </div>
+                            <div class="bg-blue-100 p-2 rounded-lg">
+                                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Performance -->
+                    <div class="bg-white rounded-xl shadow-lg p-4 hover:shadow-xl transition-shadow duration-300">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-medium text-slate-600">Rating</p>
+                                <p class="text-2xl font-bold text-purple-600">4.8</p>
+                            </div>
+                            <div class="bg-purple-100 p-2 rounded-lg">
+                                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4">Quick Actions</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button onclick="showSection('orders')" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 flex items-center space-x-3">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                            <span class="font-medium">View Orders</span>
+                        </button>
+                        
+                        <button onclick="showSection('map')" class="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 flex items-center space-x-3">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                            </svg>
+                            <span class="font-medium">Start Route</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Today's Summary -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4">Today's Summary</h3>
+                    <div class="space-y-3" id="todaySummary">
+                        <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                                <span class="font-medium">Orders Delivered</span>
+                            </div>
+                            <span class="font-bold text-green-600" id="ordersDelivered">1</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                                <span class="font-medium">Pending Deliveries</span>
+                            </div>
+                            <span class="font-bold text-yellow-600" id="pendingDeliveries">3</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                                <span class="font-medium">Returned/Cancelled</span>
+                            </div>
+                            <span class="font-bold text-red-600" id="returnedCancelled">1</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. MY ORDERS -->
+        <section id="orders" class="section">
+            <div class="max-w-7xl mx-auto p-4 lg:p-6">
+                <!-- Tab Navigation -->
+                <div class="bg-white rounded-xl shadow-lg mb-6">
+                    <div class="flex">
+                        <button class="order-tab flex-1 px-4 py-3 text-center font-semibold rounded-tl-xl transition-all duration-200 bg-blue-500 text-white" onclick="switchOrderTab('active')">
+                            Active Orders
+                        </button>
+                        <button class="order-tab flex-1 px-4 py-3 text-center font-semibold transition-all duration-200 text-slate-600 bg-slate-100" onclick="switchOrderTab('delivered')">
+                            Delivered
+                        </button>
+                        <button class="order-tab flex-1 px-4 py-3 text-center font-semibold rounded-tr-xl transition-all duration-200 text-slate-600 bg-slate-100" onclick="switchOrderTab('failed')">
+                            Failed/Returned
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Active Orders -->
+                <div id="activeOrders" class="order-content">
+                    <div id="activeOrdersList" class="space-y-4">
+                        <!-- Orders will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Delivered Orders -->
+                <div id="deliveredOrders" class="order-content hidden">
+                    <div id="deliveredOrdersList" class="space-y-4">
+                        <!-- Delivered orders will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Failed/Canceled Orders -->
+                <div id="failedOrders" class="order-content hidden">
+                    <div id="failedOrdersList" class="space-y-4">
+                        <!-- Failed orders will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. MAP / ROUTE NAVIGATION -->
+        <section id="map" class="section">
+            <div class="max-w-7xl mx-auto p-4 lg:p-6">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4">Route Navigation</h2>
+                    
+                    <!-- Map Placeholder -->
+                    <div class="bg-gradient-to-br from-blue-100 to-green-100 rounded-lg h-64 flex items-center justify-center mb-6">
+                        <div class="text-center">
+                            <svg class="w-16 h-16 text-blue-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 4m0 13V4m0 0L9 7"></path>
+                            </svg>
+                            <p class="text-lg font-semibold text-slate-700">Map Integration</p>
+                            <p class="text-sm text-slate-500">Route optimization coming soon</p>
+                        </div>
+                    </div>
+
+                    <!-- Route Actions -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <button class="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg transition-colors flex items-center justify-center space-x-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                            </svg>
+                            <span>Open in Maps</span>
+                        </button>
+                        <button class="bg-green-500 hover:bg-green-600 text-white p-3 rounded-lg transition-colors flex items-center justify-center space-x-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                            <span>Optimize Route</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. EARNINGS / HISTORY -->
+        <section id="earnings" class="section">
+            <div class="max-w-7xl mx-auto p-4 lg:p-6">
+                <!-- Earnings Summary -->
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4">Earnings Summary</h2>
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-lg">
+                            <p class="text-sm opacity-90">Today's Earnings</p>
+                            <p class="text-2xl font-bold">₹850</p>
+                        </div>
+                        <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-lg">
+                            <p class="text-sm opacity-90">This Week</p>
+                            <p class="text-2xl font-bold">₹4,250</p>
+                        </div>
+                    </div>
+
+                    <!-- Delivery Stats -->
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                            <span class="font-medium">Total Deliveries</span>
+                            <span class="font-bold text-blue-600">127</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                            <span class="font-medium">COD Collected</span>
+                            <span class="font-bold text-green-600">₹12,450</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                            <span class="font-medium">Bonus Earned</span>
+                            <span class="font-bold text-purple-600">₹340</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Transactions -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4">Recent Transactions</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center p-3 border-b border-slate-100">
+                            <div>
+                                <p class="font-medium">Order #12345</p>
+                                <p class="text-sm text-slate-500">Today, 2:30 PM</p>
+                            </div>
+                            <span class="font-bold text-green-600">+₹45</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 border-b border-slate-100">
+                            <div>
+                                <p class="font-medium">Order #12344</p>
+                                <p class="text-sm text-slate-500">Today, 1:15 PM</p>
+                            </div>
+                            <span class="font-bold text-green-600">+₹32</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3">
+                            <div>
+                                <p class="font-medium">Bonus Payment</p>
+                                <p class="text-sm text-slate-500">Today, 12:00 PM</p>
+                            </div>
+                            <span class="font-bold text-purple-600">+₹100</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. PROFILE -->
+        <section id="profile" class="section">
+            <div class="max-w-7xl mx-auto p-4 lg:p-6">
+                <!-- Profile Header -->
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                    <div class="flex items-center space-x-4 mb-6">
+                        <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                            <span class="text-white text-xl font-bold" id="profileInitials">DS</span>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-800" id="profileName">Delivery Staff</h2>
+                            <p class="text-slate-600" id="profileId">Staff ID: 3</p>
+                            <div class="flex items-center space-x-2 mt-1">
+                                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                                <span class="text-sm text-green-600 font-medium">Active</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Availability Toggle -->
+                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                        <span class="font-medium">Available for Deliveries</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Menu Options -->
+                <div class="space-y-4">
+                    <div class="bg-white rounded-xl shadow-lg">
+                        <button onclick="showSection('notifications')" class="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors rounded-xl">
+                            <div class="flex items-center space-x-3">
+                                <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5-5-5 5h5zm0 0v7"></path>
+                                </svg>
+                                <span class="font-medium">Notifications</span>
+                            </div>
+                            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </button>
+                        
+                        <button onclick="showSection('support')" class="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors border-t border-slate-100">
+                            <div class="flex items-center space-x-3">
+                                <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                                </svg>
+                                <span class="font-medium">Support & Help</span>
+                            </div>
+                            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </button>
+
+                        <button onclick="showSection('settings')" class="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors border-t border-slate-100">
+                            <div class="flex items-center space-x-3">
+                                <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                <span class="font-medium">Settings</span>
+                            </div>
+                            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </button>
+
+                        <button onclick="logout()" class="w-full flex items-center justify-between p-4 hover:bg-red-50 transition-colors border-t border-slate-100 rounded-b-xl">
+                            <div class="flex items-center space-x-3">
+                                <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                                </svg>
+                                <span class="font-medium text-red-600">Logout</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. NOTIFICATIONS -->
+        <section id="notifications" class="section">
+            <div class="max-w-7xl mx-auto p-4 lg:p-6">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4">Notifications</h2>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                            <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div class="flex-1">
+                                <p class="font-medium text-blue-800">New Order Assigned</p>
+                                <p class="text-sm text-blue-700">Order #12346 has been assigned to you</p>
+                                <p class="text-xs text-blue-600 mt-1">2 minutes ago</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start space-x-3 p-4 bg-green-50 rounded-lg border-l-4 border-green-400">
+                            <svg class="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div class="flex-1">
+                                <p class="font-medium text-green-800">Delivery Completed</p>
+                                <p class="text-sm text-green-700">Great job! Order #12345 delivered successfully</p>
+                                <p class="text-xs text-green-600 mt-1">1 hour ago</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start space-x-3 p-4 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
+                            <svg class="w-5 h-5 text-yellow-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
+                            <div class="flex-1">
+                                <p class="font-medium text-yellow-800">Delivery Reminder</p>
+                                <p class="text-sm text-yellow-700">Order #12343 is scheduled for delivery in 30 minutes</p>
+                                <p class="text-xs text-yellow-600 mt-1">3 hours ago</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. SUPPORT & HELP -->
+        <section id="support" class="section">
+            <div class="max-w-7xl mx-auto p-4 lg:p-6">
+                <div class="space-y-6">
+                    <!-- Contact Support -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h2 class="text-lg font-bold text-slate-800 mb-4">Contact Support</h2>
+                        <div class="space-y-4">
+                            <button class="w-full flex items-center space-x-3 p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                                </svg>
+                                <div class="text-left">
+                                    <p class="font-medium">Call Helpdesk</p>
+                                    <p class="text-sm text-slate-600">+91 98765 43210</p>
+                                </div>
+                            </button>
+
+                            <button class="w-full flex items-center space-x-3 p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                </svg>
+                                <div class="text-left">
+                                    <p class="font-medium">Chat Support</p>
+                                    <p class="text-sm text-slate-600">Get instant help</p>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- FAQ -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-bold text-slate-800 mb-4">Frequently Asked Questions</h3>
+                        <div class="space-y-3">
+                            <details class="group">
+                                <summary class="flex justify-between items-center font-medium cursor-pointer">
+                                    <span>How do I mark an order as delivered?</span>
+                                    <svg class="w-5 h-5 text-slate-500 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </summary>
+                                <p class="mt-2 text-sm text-slate-600">Go to the order details and click on "Mark as Delivered" button. You may need to verify with OTP or QR code.</p>
+                            </details>
+
+                            <details class="group">
+                                <summary class="flex justify-between items-center font-medium cursor-pointer">
+                                    <span>What should I do if customer is not available?</span>
+                                    <svg class="w-5 h-5 text-slate-500 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </summary>
+                                <p class="mt-2 text-sm text-slate-600">Try calling the customer first. If unavailable, wait for 10 minutes and call again. If still no response, contact support.</p>
+                            </details>
+
+                            <details class="group">
+                                <summary class="flex justify-between items-center font-medium cursor-pointer">
+                                    <span>How do I handle COD payments?</span>
+                                    <svg class="w-5 h-5 text-slate-500 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </summary>
+                                <p class="mt-2 text-sm text-slate-600">Collect the exact amount from customer. Use the QR code for digital payments when possible. Update payment status in the app.</p>
+                            </details>
+                        </div>
+                    </div>
+
+                    <!-- Report Issue -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-bold text-slate-800 mb-4">Report an Issue</h3>
+                        <div class="space-y-4">
+                            <textarea class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="4" placeholder="Describe your issue or problem..."></textarea>
+                            <button class="w-full bg-red-500 hover:bg-red-600 text-white font-medium py-3 rounded-lg transition-colors">
+                                Submit Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 8. SETTINGS -->
+        <section id="settings" class="section">
+            <div class="max-w-7xl mx-auto p-4 lg:p-6">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-lg font-bold text-slate-800 mb-6">Settings</h2>
+                    
+                    <div class="space-y-6">
+                        <!-- Notification Settings -->
+                        <div>
+                            <h3 class="font-semibold text-slate-800 mb-3">Notification Preferences</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-600">New Order Alerts</span>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" checked class="sr-only peer">
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </label>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-600">Delivery Reminders</span>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" checked class="sr-only peer">
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </label>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-600">System Messages</span>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" class="sr-only peer">
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Language Settings -->
+                        <div>
+                            <h3 class="font-semibold text-slate-800 mb-3">Language</h3>
+                            <select class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="en">English</option>
+                                <option value="ml">മലയാളം (Malayalam)</option>
+                                <option value="hi">हिंदी (Hindi)</option>
+                                <option value="ta">தமிழ் (Tamil)</option>
+                                <option value="te">తెలుగు (Telugu)</option>
+                            </select>
+                        </div>
+
+                        <!-- Theme Settings -->
+                        <div>
+                            <h3 class="font-semibold text-slate-800 mb-3">Theme</h3>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button class="p-3 border-2 border-blue-500 bg-blue-50 rounded-lg text-blue-700 font-medium">
+                                    Light Theme
+                                </button>
+                                <button class="p-3 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50">
+                                    Dark Theme
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- App Info -->
+                        <div>
+                            <h3 class="font-semibold text-slate-800 mb-3">App Information</h3>
+                            <div class="space-y-2 text-sm text-slate-600">
+                                <p>Version: 1.0.1</p>
+                                <p>Last Updated: Aug 04, 2025</p>
+                                <p>Build: 1001</p>
+                            </div>
+                        </div>
+
+                        <!-- Account Actions -->
+                        <div class="border-t border-slate-200 pt-6">
+                            <h3 class="font-semibold text-slate-800 mb-3">Account</h3>
+                            <div class="space-y-3">
+                                <button class="w-full p-3 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors" id="changePassword">
+                                    Change Password
+                                </button>
+                                <button class="w-full p-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors">
+                                    Delete Account
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Order Detail Modal -->
+    <div id="orderModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-screen overflow-y-auto">
+            <div id="orderModalContent">
+                <!-- Order details will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+            authDomain: "sjpss-f504b.firebaseapp.com",
+            projectId: "sjpss-f504b",
+            storageBucket: "sjpss-f504b.firebasestorage.app",
+            messagingSenderId: "227402980311",
+            appId: "1:227402980311:web:56b580456ab6b9c6758992",
+            measurementId: "G-LZ4YP9YPN6"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Get staff ID from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const staffId = urlParams.get('staffId') || '3';
+        
+        let staffData = {};
+        let allOrders = [];
+        let activeOrders = [];
+        let deliveredOrders = [];
+        let failedOrders = [];
+
+        // Set current date
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-IN', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric'
+        });
+
+        // Initialize app
+        async function init() {
+            console.log('Initializing app with staff ID:', staffId);
+            document.getElementById('staffId').textContent = `Staff ID: ${staffId}`;
+            document.getElementById('profileId').textContent = `Staff ID: ${staffId}`;
+            
+            try {
+                await loadStaffInfo();
+                await loadOrders();
+                updateDashboardStats();
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                showToast('Failed to load data. Please check your connection.', 'error');
+            }
+        }
+
+        // Load staff information
+        async function loadStaffInfo() {
+            try {
+                const staffDoc = await db.collection('users').doc(staffId).get();
+                
+                if (staffDoc.exists) {
+                    staffData = staffDoc.data();
+                    const name = staffData.name || 'Unknown Staff';
+                    document.getElementById('staffName').textContent = name;
+                    document.getElementById('profileName').textContent = name;
+                    
+                    // Set profile initials
+                    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
+                    document.getElementById('profileInitials').textContent = initials;
+                } else {
+                    document.getElementById('staffName').textContent = 'Staff Not Found';
+                    document.getElementById('profileName').textContent = 'Staff Not Found';
+                }
+            } catch (error) {
+                console.error('Error loading staff info:', error);
+            }
+        }
+
+        // Load orders
+        async function loadOrders() {
+            try {
+                const ordersSnapshot = await db.collection('orders')
+                    .where('deliveryStaff', '==', staffId)
+                    .get();
+
+                allOrders = [];
+                const today = new Date().toDateString();
+
+                ordersSnapshot.forEach(doc => {
+                    const orderData = doc.data();
+                    const order = { id: doc.id, ...orderData };
+                    allOrders.push(order);
+                });
+
+                // Categorize orders
+                activeOrders = allOrders.filter(order => 
+                    order.status === 'packed' || order.status === 'out_for_delivery'
+                );
+
+                deliveredOrders = allOrders.filter(order => {
+                    if (order.status !== 'delivered') return false;
+                    
+                    let deliveredDate;
+                    if (order.deliveredAt) {
+                        deliveredDate = order.deliveredAt.toDate ? 
+                            new Date(order.deliveredAt.toDate()).toDateString() :
+                            new Date(order.deliveredAt).toDateString();
+                    } else {
+                        deliveredDate = new Date().toDateString();
+                    }
+                    
+                    return deliveredDate === today;
+                });
+
+                failedOrders = allOrders.filter(order => 
+                    order.status === 'returned' || order.status === 'cancelled'
+                );
+
+                renderOrders();
+            } catch (error) {
+                console.error('Error loading orders:', error);
+            }
+        }
+
+        // Update dashboard statistics
+        function updateDashboardStats() {
+            document.getElementById('pendingCount').textContent = activeOrders.length;
+            document.getElementById('deliveredCount').textContent = deliveredOrders.length;
+            
+            // Calculate earnings from delivered orders
+            const todayEarnings = deliveredOrders.reduce((total, order) => {
+                return total + (order.deliveryFee || 25); // Default delivery fee of ₹25
+            }, 0);
+            document.getElementById('earningsCount').textContent = `₹${todayEarnings}`;
+        }
+
+        // Render orders based on current tab
+        function renderOrders() {
+            renderActiveOrders();
+            renderDeliveredOrders();
+            renderFailedOrders();
+        }
+/*
+        function renderActiveOrders() {
+            const container = document.getElementById('activeOrdersList');
+            
+            if (activeOrders.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-xl shadow-lg p-8 text-center">
+                        <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-slate-800 mb-2">No Failed Orders</h3>
+                        <p class="text-slate-600">Great job! No failed or canceled deliveries.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = failedOrders.map(order => createOrderCard(order, 'failed')).join('');
+        }
+*/
+function renderActiveOrders() {
+    const container = document.getElementById('activeOrdersList');
+    
+    if (activeOrders.length === 0) {
+        container.innerHTML = `
+            <div class="bg-white rounded-xl shadow-lg p-8 text-center">
+                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-800 mb-2">No Active Orders</h3>
+                <p class="text-slate-600">All caught up! New orders will appear here.</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = activeOrders.map(order => createOrderCard(order, 'active')).join('');
+}
+
+function renderDeliveredOrders() {
+            const container = document.getElementById('deliveredOrdersList');
+            
+            if (deliveredOrders.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-xl shadow-lg p-8 text-center">
+                        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-slate-800 mb-2">No Deliveries Today</h3>
+                        <p class="text-slate-600">Start delivering to see completed orders here.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = deliveredOrders.map(order => createOrderCard(order, 'delivered')).join('');
+        }
+
+
+function renderFailedOrders() {
+    const container = document.getElementById('failedOrdersList');
+    
+    if (failedOrders.length === 0) {
+        container.innerHTML = `
+            <div class="bg-white rounded-xl shadow-lg p-8 text-center">
+                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-800 mb-2">No Failed Deliveries</h3>
+                <p class="text-slate-600">All deliveries completed successfully today.</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = failedOrders.map(order => createOrderCard(order, 'failed')).join('');
+}
+
+
+
+
+
+
+
+        function createOrderCard(order, type) {
+            const statusConfig = {
+                active: {
+                    bgColor: 'bg-yellow-50 border-yellow-200',
+                    textColor: 'text-yellow-800',
+                    badgeColor: 'bg-yellow-100 text-yellow-800',
+                    statusText: order.status === 'packed' ? 'Ready to Pick' : 'Out for Delivery'
+                },
+                delivered: {
+                    bgColor: 'bg-green-50 border-green-200',
+                    textColor: 'text-green-800',
+                    badgeColor: 'bg-green-100 text-green-800',
+                    statusText: 'Delivered'
+                },
+                failed: {
+                    bgColor: 'bg-red-50 border-red-200',
+                    textColor: 'text-red-800',
+                    badgeColor: 'bg-red-100 text-red-800',
+                    statusText: order.status === 'returned' ? 'Returned' : 'Cancelled'
+                }
+            };
+
+            const config = statusConfig[type];
+            const createdTime = order.createdAt ? 
+                (order.createdAt.toDate ? order.createdAt.toDate() : new Date(order.createdAt)) : 
+                new Date();
+
+            return `
+                <div class="bg-white rounded-xl shadow-lg border-l-4 ${config.bgColor} border-l-blue-400 p-6 hover:shadow-xl transition-shadow">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h3 class="font-bold text-lg text-slate-800">Order #${order.id}</h3>
+                            <p class="text-sm text-slate-600">Customer: ${order.customerId}</p>
+                            <p class="text-xs text-slate-500">${createdTime.toLocaleString()}</p>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-medium ${config.badgeColor}">
+                            ${config.statusText}
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="bg-slate-50 rounded-lg p-3">
+                            <p class="text-xs text-slate-500 mb-1">Order Value</p>
+                            <p class="font-bold text-lg text-slate-800">₹${order.totalAmount || 0}</p>
+                        </div>
+                        <div class="bg-slate-50 rounded-lg p-3">
+                            <p class="text-xs text-slate-500 mb-1">Payment</p>
+                            <p class="font-medium text-slate-700">${order.paymentMethod || 'COD'}</p>
+                        </div>
+                    </div>
+
+                    ${order.shippingDetails?.address ? `
+                        <div class="mb-4">
+                            <p class="text-xs text-slate-500 mb-1">Delivery Address</p>
+                            <p class="text-sm text-slate-700">${order.shippingDetails.address}</p>
+                        </div>
+                    ` : ''}
+
+                    <div class="flex space-x-3">
+                        <button onclick="showOrderDetail('${order.id}')" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            <span>View Details</span>
+                        </button>
+
+                        ${type === 'active' ? `
+                            ${order.status === 'packed' ? `
+                                <button onclick="markAsPicked('${order.id}')" class="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-colors">
+                                    Pick Up
+                                </button>
+                            ` : `
+                                <button onclick="markAsDelivered('${order.id}')" class="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-colors">
+                                    Deliver
+                                </button>
+                            `}
+                        ` : ''}
+
+                        ${order.shippingDetails?.phone ? `
+                            <button onclick="callCustomer('${order.shippingDetails.phone}')" class="bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-lg transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                                </svg>
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Navigation functions
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Show selected section
+            const targetSection = document.getElementById(sectionId);
+            if (targetSection) {
+                targetSection.classList.add('active');
+            }
+            
+            // Update navigation buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active-nav');
+            });
+            
+            event.target.closest('.nav-btn')?.classList.add('active-nav');
+        }
+
+        function switchOrderTab(tab) {
+            // Update tab buttons
+            document.querySelectorAll('.order-tab').forEach(btn => {
+                btn.classList.remove('bg-blue-500', 'text-white');
+                btn.classList.add('bg-slate-100', 'text-slate-600');
+            });
+            
+            event.target.classList.remove('bg-slate-100', 'text-slate-600');
+            event.target.classList.add('bg-blue-500', 'text-white');
+
+            // Show/hide content
+            document.querySelectorAll('.order-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            const contentMap = {
+                'active': 'activeOrders',
+                'delivered': 'deliveredOrders',
+                'failed': 'failedOrders'
+            };
+            
+            document.getElementById(contentMap[tab])?.classList.remove('hidden');
+        }
+
+        // Order actions
+        async function markAsPicked(orderId) {
+            if (!confirm('Confirm that you have picked up this order?')) return;
+
+            try {
+                await db.collection('orders').doc(orderId).update({
+                    status: 'out_for_delivery',
+                    pickedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                showToast('Order marked as picked up successfully!', 'success');
+                await loadOrders();
+                updateDashboardStats();
+            } catch (error) {
+                console.error('Error updating order:', error);
+                showToast('Failed to update order status.', 'error');
+            }
+        }
+
+        async function markAsDelivered(orderId) {
+            if (!confirm('Confirm that this order has been delivered?')) return;
+
+            try {
+                await db.collection('orders').doc(orderId).update({
+                    status: 'delivered',
+                    deliveredAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                showToast('Order delivered successfully!', 'success');
+                await loadOrders();
+                updateDashboardStats();
+            } catch (error) {
+                console.error('Error updating order:', error);
+                showToast('Failed to update order status.', 'error');
+            }
+        }
+
+        async function markAsReturned(orderId) {
+            const reason = prompt('Please enter the reason for return:');
+            if (!reason || reason.trim() === '') return;
+
+            try {
+                await db.collection('orders').doc(orderId).update({
+                    status: 'returned',
+                    returnReason: reason.trim(),
+                    returnedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                showToast('Order marked as returned.', 'success');
+                closeOrderDetail();
+                await loadOrders();
+                updateDashboardStats();
+            } catch (error) {
+                console.error('Error updating order:', error);
+                showToast('Failed to update order status.', 'error');
+            }
+        }
+
+        function callCustomer(phoneNumber) {
+            window.location.href = `tel:${phoneNumber}`;
+        }
+
+        function showOrderDetail(orderId) {
+            const order = allOrders.find(o => o.id === orderId);
+            if (!order) return;
+
+            const isDelivered = order.status === 'delivered';
+            const isPending = order.status === 'packed' || order.status === 'out_for_delivery';
+
+            let createdDate;
+            try {
+                if (order.createdAt && order.createdAt.toDate) {
+                    createdDate = order.createdAt.toDate().toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                } else {
+                    createdDate = new Date().toLocaleDateString('en-IN');
+                }
+            } catch (e) {
+                createdDate = 'Unknown date';
+            }
+
+            const statusBadge = isDelivered ? 
+                '<span class="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Delivered</span>' :
+                '<span class="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pending</span>';
+
+            const modalContent = `
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between p-6 border-b border-slate-200">
+                    <h2 class="text-xl font-bold text-slate-800">Order Details</h2>
+                    <button onclick="closeOrderDetail()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Modal Content -->
+                <div class="p-6">
+                    <!-- Order Header -->
+                    <div class="bg-gradient-to-r from-slate-50 to-slate-100 p-4 rounded-xl mb-6">
+                        <div class="flex items-start justify-between mb-3">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-800">Order #${order.id}</h3>
+                                <p class="text-sm text-slate-600">${createdDate}</p>
+                            </div>
+                            ${statusBadge}
+                        </div>
+                    </div>
+
+                    <!-- Customer Info -->
+                    <div class="mb-6 p-4 bg-slate-50 rounded-xl">
+                        <div class="flex items-center mb-3">
+                            <svg class="w-5 h-5 text-slate-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                            <span class="font-semibold text-slate-700">Customer: ${order.customerId}</span>
+                        </div>
+                        ${order.shippingDetails?.address ? `
+                            <div class="flex items-start mb-3">
+                                <svg class="w-5 h-5 text-slate-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                </svg>
+                                <span class="text-slate-600 text-sm">${order.shippingDetails.address}</span>
+                            </div>
+                        ` : ''}
+                        ${order.shippingDetails?.phone ? `
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 text-slate-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                                </svg>
+                                <a href="tel:${order.shippingDetails.phone}" class="text-blue-600 font-medium">${order.shippingDetails.phone}</a>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <!-- Items Section -->
+                    <div class="mb-6">
+                        <h4 class="font-semibold text-slate-800 mb-3">Order Items</h4>
+                        <div class="space-y-3">
+                            ${order.items && order.items.length > 0 ? order.items.map(item => `
+                                <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                                    <div>
+                                        <div class="font-medium text-slate-800">Product: ${item.productId}</div>
+                                        <div class="text-sm text-slate-600">Qty: ${item.quantity}</div>
+                                    </div>
+                                    <div class="font-bold text-green-600">₹${item.price}</div>
+                                </div>
+                            `).join('') : '<div class="text-slate-500 italic">No items found</div>'}
+                        </div>
+                    </div>
+
+                    <!-- Payment Info -->
+                    <div class="bg-green-50 rounded-xl p-4 mb-6">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="text-2xl font-bold text-green-700">₹${order.totalAmount || 0}</div>
+                            <span class="px-3 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">${order.paymentMethod || 'COD'}</span>
+                        </div>
+                        <div class="text-sm text-slate-600">
+                            Payment Status: <span class="font-medium">${order.paymentStatus || 'Pending'}</span>
+                        </div>
+                        
+                        ${isPending && order.paymentMethod === 'COD' ? `
+                            <div class="mt-4 text-center">
+                                <div class="font-semibold text-slate-700 mb-2">Payment QR Code</div>
+                                <div class="bg-white p-3 rounded-lg shadow-inner inline-block" id="qr-${order.id}"></div>
+                                <p class="text-xs text-slate-500 mt-2">Show this QR code to customer for digital payment</p>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <!-- Action Buttons -->
+                    ${isPending ? `
+                        <div class="space-y-3">
+                            ${order.status === 'packed' ? `
+                                <button class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors flex items-center justify-center" onclick="markAsPicked('${order.id}')">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    Mark as Picked Up
+                                </button>
+                            ` : `
+                                <button class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors flex items-center justify-center" onclick="markAsDelivered('${order.id}')">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    Mark as Delivered
+                                </button>
+                            `}
+                            <button class="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-4 rounded-xl transition-colors flex items-center justify-center" onclick="markAsReturned('${order.id}')">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                </svg>
+                                Mark as Returned
+                            </button>
+                            ${order.shippingDetails?.address ? `
+                                <button class="w-full bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 px-4 rounded-xl transition-colors flex items-center justify-center" onclick="openMaps('${encodeURIComponent(order.shippingDetails.address)}')">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                    </svg>
+                                    Open in Maps
+                                </button>
+                            ` : ''}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            document.getElementById('orderModalContent').innerHTML = modalContent;
+            document.getElementById('orderModal').classList.remove('hidden');
+            document.getElementById('orderModal').classList.add('flex');
+            
+            // Generate QR code if needed
+            if (isPending && order.paymentMethod === 'COD') {
+                setTimeout(() => generateQRCode(order.id, order.totalAmount), 100);
+            }
+        }
+
+        function closeOrderDetail() {
+            document.getElementById('orderModal').classList.add('hidden');
+            document.getElementById('orderModal').classList.remove('flex');
+        }
+
+        function generateQRCode(orderId, amount) {
+            const qrElement = document.getElementById(`qr-${orderId}`);
+            if (qrElement) {
+                const upiUrl = `upi://pay?pa=merchant@upi&pn=DeliveryApp&am=${amount}&cu=INR&tn=Order${orderId}`;
+                
+                QRCode.toCanvas(qrElement, upiUrl, {
+                    width: 120,
+                    height: 120,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff'
+                }, function (error) {
+                    if (error) {
+                        console.error('QR Code generation error:', error);
+                        qrElement.innerHTML = '<div class="text-red-500 text-xs">QR Code Error</div>';
+                    }
+                });
+            }
+        }
+
+        function openMaps(address) {
+            const encodedAddress = encodeURIComponent(address);
+            const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+            window.open(mapsUrl, '_blank');
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                // Clear any stored data
+                sessionStorage.clear();
+                localStorage.clear();
+                
+                // Redirect to login page or home
+                window.location.href = 'loginPage.html';
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-600' : 
+                           type === 'error' ? 'bg-red-600' : 'bg-blue-600';
+            
+            toast.className = `fixed top-24 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-slide-up`;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 4000);
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('orderModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeOrderDetail();
+            }
+        });
+
+        // Add CSS for navigation and sections
+        const style = document.createElement('style');
+        style.textContent = `
+            .section {
+                display: none;
+            }
+            .section.active {
+                display: block;
+            }
+            .nav-btn.active-nav {
+                background-color: #3B82F6;
+                color: white;
+            }
+            .nav-btn.active-nav svg {
+                color: white;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize the app
+        init();
+
+
+
+
+
+
+
+
+// new additions are starting from here
+
+/* Notification Department starts here */
+// Notification management system
+let notifications = [];
+let notificationCount = 0;
+
+// Initialize notification functionality
+function initializeNotifications() {
+    const notificationBtn = document.getElementById('notificationBtn');
+    const notificationBadge = document.getElementById('notificationBadge');
+    
+    // Handle notification button click
+    notificationBtn.addEventListener('click', function() {
+        toggleNotificationPanel();
+    });
+    
+    // Update badge visibility and count
+    updateNotificationBadge();
+}
+
+// Add a new notification
+function addNotification(type, message, orderId = null) {
+    const notification = {
+        id: Date.now(),
+        type: type, // 'new_order', 'delivery_update', 'system', etc.
+        message: message,
+        orderId: orderId,
+        timestamp: new Date(),
+        read: false
+    };
+    
+    notifications.unshift(notification); // Add to beginning of array
+    notificationCount++;
+    
+    updateNotificationBadge();
+    
+    // Optional: Show toast notification
+    showToastNotification(notification);
+    
+    return notification.id;
+}
+
+// Update notification badge
+function updateNotificationBadge() {
+    const badge = document.getElementById('notificationBadge');
+    
+    if (notificationCount > 0) {
+        badge.textContent = notificationCount > 99 ? '99+' : notificationCount;
+        badge.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
+    }
+}
+
+// Toggle notification panel
+function toggleNotificationPanel() {
+    // Check if panel already exists
+    let panel = document.getElementById('notificationPanel');
+    
+    if (panel) {
+        // Close existing panel
+        panel.remove();
+        return;
+    }
+    
+    // Create notification panel
+    panel = document.createElement('div');
+    panel.id = 'notificationPanel';
+    panel.className = 'absolute top-12 right-0 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-hidden';
+    
+    panel.innerHTML = `
+        <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="font-semibold text-gray-800">Notifications</h3>
+            <button onclick="clearAllNotifications()" class="text-sm text-blue-600 hover:text-blue-800">Clear All</button>
+        </div>
+        <div class="max-h-80 overflow-y-auto">
+            ${notifications.length === 0 ? 
+                '<div class="p-4 text-center text-gray-500">No notifications</div>' : 
+                notifications.map(notification => createNotificationItem(notification)).join('')
+            }
+        </div>
+    `;
+    
+    // Position panel relative to notification button
+    const notificationBtn = document.getElementById('notificationBtn');
+    notificationBtn.parentElement.style.position = 'relative';
+    notificationBtn.parentElement.appendChild(panel);
+    
+    // Mark all notifications as read
+    markAllAsRead();
+}
+
+// Create notification item HTML
+function createNotificationItem(notification) {
+    const timeAgo = getTimeAgo(notification.timestamp);
+    const iconClass = getNotificationIcon(notification.type);
+    
+    return `
+        <div class="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${!notification.read ? 'bg-blue-50' : ''}"
+             onclick="handleNotificationClick('${notification.id}')">
+            <div class="flex items-start space-x-3">
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            ${iconClass}
+                        </svg>
+                    </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm text-gray-800">${notification.message}</p>
+                    <p class="text-xs text-gray-500 mt-1">${timeAgo}</p>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Get notification icon based on type
+function getNotificationIcon(type) {
+    switch(type) {
+        case 'new_order':
+            return '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>';
+        case 'delivery_update':
+            return '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+        case 'system':
+            return '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+        default:
+            return '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5-5-5 5h5zm0 0v7"></path>';
+    }
+}
+
+// Handle notification click
+function handleNotificationClick(notificationId) {
+    const notification = notifications.find(n => n.id == notificationId);
+    if (notification && notification.orderId) {
+        // Navigate to specific order or perform action
+        console.log('Navigate to order:', notification.orderId);
+    }
+    
+    // Close notification panel
+    const panel = document.getElementById('notificationPanel');
+    if (panel) panel.remove();
+}
+
+// Mark all notifications as read
+function markAllAsRead() {
+    notifications.forEach(notification => notification.read = true);
+    notificationCount = 0;
+    updateNotificationBadge();
+}
+
+// Clear all notifications
+function clearAllNotifications() {
+    notifications = [];
+    notificationCount = 0;
+    updateNotificationBadge();
+    
+    const panel = document.getElementById('notificationPanel');
+    if (panel) panel.remove();
+}
+
+// Show toast notification (optional)
+function showToastNotification(notification) {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = 'fixed top-4 right-4 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-50 max-w-sm transform translate-x-full transition-transform duration-300';
+    
+    toast.innerHTML = `
+        <div class="flex items-start space-x-3">
+            <div class="flex-shrink-0">
+                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        ${getNotificationIcon(notification.type)}
+                    </svg>
+                </div>
+            </div>
+            <div class="flex-1">
+                <p class="text-sm font-medium text-gray-800">${notification.message}</p>
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Animate in
+    setTimeout(() => {
+        toast.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        toast.classList.add('translate-x-full');
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}
+
+// Get time ago string
+function getTimeAgo(timestamp) {
+    const now = new Date();
+    const diff = now - timestamp;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    return `${days}d ago`;
+}
+
+// Close notification panel when clicking outside
+document.addEventListener('click', function(event) {
+    const panel = document.getElementById('notificationPanel');
+    const notificationBtn = document.getElementById('notificationBtn');
+    
+    if (panel && !panel.contains(event.target) && !notificationBtn.contains(event.target)) {
+        panel.remove();
+    }
+});
+
+// Example usage functions:
+function simulateNewOrderNotification(orderId) {
+    addNotification('new_order', `New order #${orderId} received`, orderId);
+}
+
+function simulateDeliveryUpdateNotification(orderId, status) {
+    addNotification('delivery_update', `Order #${orderId} ${status}`, orderId);
+}
+
+function simulateSystemNotification(message) {
+    addNotification('system', message);
+}
+
+initializeNotifications();
+
+// Add notifications
+simulateNewOrderNotification('ORD-035');
+simulateDeliveryUpdateNotification('ORD-002', 'delivered');
+//simulateSystemNotification('System maintenance scheduled');
+/* Notification Department ends here */
+
+
+
+
+
+
+/* Change password starts here */
+// Client-side password validation ------to be corrected
+function validatePassword(password) {
+  const errors = [];
+  
+  if (password.length < 8 || password.length > 128) {
+    errors.push('Password must be between 8 and 128 characters');
+  }
+  
+  if (!/(?=.*[a-z])/.test(password)) {
+    errors.push('Password must contain at least one lowercase letter');
+  }
+  
+  if (!/(?=.*[A-Z])/.test(password)) {
+    errors.push('Password must contain at least one uppercase letter');
+  }
+  
+  if (!/(?=.*\d)/.test(password)) {
+    errors.push('Password must contain at least one number');
+  }
+  
+  if (!/(?=.*[@$!%*?&])/.test(password)) {
+    errors.push('Password must contain at least one special character (@$!%*?&)');
+  }
+  
+  return errors;
+}
+
+// Rate limiting tracking (client-side)
+let passwordChangeAttempts = 0;
+let lastAttemptTime = 0;
+const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
+const MAX_ATTEMPTS = 3;
+
+// Create password change modal
+function createPasswordChangeModal() {
+  const modal = document.createElement('div');
+  modal.id = 'passwordChangeModal';
+  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden';
+  
+  modal.innerHTML = `
+    <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold text-slate-800">Change Password</h2>
+        <button id="closeModal" class="text-slate-400 hover:text-slate-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      
+      <form id="passwordChangeForm" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Current Password</label>
+          <input type="password" id="currentPassword" required
+                 class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">New Password</label>
+          <input type="password" id="newPassword" required
+                 class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          <div class="mt-1 text-xs text-slate-500">
+            Must be 8+ characters with uppercase, lowercase, number, and special character
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Confirm New Password</label>
+          <input type="password" id="confirmPassword" required
+                 class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+        
+        <div id="errorMessages" class="hidden p-3 bg-red-50 border border-red-200 rounded-lg">
+          <ul id="errorList" class="text-sm text-red-600 space-y-1"></ul>
+        </div>
+        
+        <div id="successMessage" class="hidden p-3 bg-green-50 border border-green-200 rounded-lg">
+          <p class="text-sm text-green-600">Password changed successfully!</p>
+        </div>
+        
+        <div class="flex space-x-3 pt-4">
+          <button type="button" id="cancelChange" 
+                  class="flex-1 p-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
+            Cancel
+          </button>
+          <button type="submit" id="submitChange"
+                  class="flex-1 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            Change Password
+          </button>
+        </div>
+      </form>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  return modal;
+}
+
+// Show error messages
+function showErrors(errors) {
+  const errorContainer = document.getElementById('errorMessages');
+  const errorList = document.getElementById('errorList');
+  
+  errorList.innerHTML = '';
+  errors.forEach(error => {
+    const li = document.createElement('li');
+    li.textContent = error;
+    errorList.appendChild(li);
+  });
+  
+  errorContainer.classList.remove('hidden');
+  document.getElementById('successMessage').classList.add('hidden');
+}
+
+// Show success message
+function showSuccess() {
+  document.getElementById('successMessage').classList.remove('hidden');
+  document.getElementById('errorMessages').classList.add('hidden');
+}
+
+// Clear messages
+function clearMessages() {
+  document.getElementById('errorMessages').classList.add('hidden');
+  document.getElementById('successMessage').classList.add('hidden');
+}
+
+// Check rate limiting
+function checkRateLimit() {
+  const now = Date.now();
+  
+  // Reset attempts if window has passed
+  if (now - lastAttemptTime > RATE_LIMIT_WINDOW) {
+    passwordChangeAttempts = 0;
+  }
+  
+  if (passwordChangeAttempts >= MAX_ATTEMPTS) {
+    const timeRemaining = RATE_LIMIT_WINDOW - (now - lastAttemptTime);
+    const minutesRemaining = Math.ceil(timeRemaining / (60 * 1000));
+    return {
+      allowed: false,
+      message: `Too many attempts. Please try again in ${minutesRemaining} minutes.`
+    };
+  }
+  
+  return { allowed: true };
+}
+
+// Main password change function
+async function changePassword(currentPassword, newPassword) {
+  try {
+    // Get auth token (adjust based on your auth system)
+
+
+    
+sessionStorage.setItem('authToken',sessionStorage.getItem('userId'));
+
+    if (!token) {
+      throw new Error('Authentication required. Please log in again.');
+    }
+
+    const response = await fetch('/api/change-password', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        currentPassword,
+        newPassword,
+        confirmPassword: newPassword
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Password change failed');
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Initialize the password change functionality
+function initializePasswordChange() {
+  const changePasswordBtn = document.getElementById('changePassword');
+  
+  if (!changePasswordBtn) {
+    console.error('Change Password button not found');
+    return;
+  }
+
+  // Create modal on first use
+  let modal = null;
+
+  changePasswordBtn.addEventListener('click', function() {
+    // Check rate limiting
+    const rateLimitCheck = checkRateLimit();
+    if (!rateLimitCheck.allowed) {
+      alert(rateLimitCheck.message);
+      return;
+    }
+
+    // Create modal if it doesn't exist
+    if (!modal) {
+      modal = createPasswordChangeModal();
+      setupModalEvents(modal);
+    }
+
+    // Show modal
+    modal.classList.remove('hidden');
+    document.getElementById('currentPassword').focus();
+  });
+}
+
+// Setup modal event listeners
+function setupModalEvents(modal) {
+  const form = document.getElementById('passwordChangeForm');
+  const closeBtn = document.getElementById('closeModal');
+  const cancelBtn = document.getElementById('cancelChange');
+
+  // Close modal events
+  function closeModal() {
+    modal.classList.add('hidden');
+    form.reset();
+    clearMessages();
+  }
+
+  closeBtn.addEventListener('click', closeModal);
+  cancelBtn.addEventListener('click', closeModal);
+
+  // Close on outside click
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) {
+      closeModal();
+    }
+  });
+
+  // Close on Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+      closeModal();
+    }
+  });
+
+  // Form submission
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const submitBtn = document.getElementById('submitChange');
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    clearMessages();
+
+    // Client-side validation
+    const errors = [];
+
+    if (!currentPassword) {
+      errors.push('Current password is required');
+    }
+
+    if (!newPassword) {
+      errors.push('New password is required');
+    } else {
+      errors.push(...validatePassword(newPassword));
+    }
+
+    if (newPassword !== confirmPassword) {
+      errors.push('Password confirmation does not match');
+    }
+
+    if (currentPassword === newPassword) {
+      errors.push('New password must be different from current password');
+    }
+
+    if (errors.length > 0) {
+      showErrors(errors);
+      return;
+    }
+
+    // Rate limiting check
+    const rateLimitCheck = checkRateLimit();
+    if (!rateLimitCheck.allowed) {
+      showErrors([rateLimitCheck.message]);
+      return;
+    }
+
+    // Update attempt tracking
+    passwordChangeAttempts++;
+    lastAttemptTime = Date.now();
+
+    // Disable submit button during request
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Changing...';
+
+    try {
+      await changePassword(currentPassword, newPassword);
+      
+      showSuccess();
+      
+      // Reset form and close modal after delay
+      setTimeout(() => {
+        closeModal();
+        // Optional: Show success notification
+        showNotification('Password changed successfully!', 'success');
+      }, 2000);
+
+      // Reset rate limiting on success
+      passwordChangeAttempts = 0;
+
+    } catch (error) {
+      console.error('Password change error:', error);
+      
+      let errorMessage = error.message;
+      
+      // Handle specific error cases
+      if (error.message.includes('401')) {
+        errorMessage = 'Authentication failed. Please log in again.';
+      } else if (error.message.includes('400')) {
+        errorMessage = 'Current password is incorrect.';
+      } else if (error.message.includes('500')) {
+        errorMessage = 'Server error. Please try again later.';
+      }
+      
+      showErrors([errorMessage]);
+    } finally {
+      // Re-enable submit button
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Change Password';
+    }
+  });
+}
+
+// Optional: Show notification function
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+    type === 'success' ? 'bg-green-500 text-white' : 
+    type === 'error' ? 'bg-red-500 text-white' : 
+    'bg-blue-500 text-white'
+  }`;
+  notification.textContent = message;
+  
+  document.body.appendChild(notification);
+  
+  // Auto remove after 3 seconds
+  setTimeout(() => {
+    if (notification.parentNode) {
+      notification.parentNode.removeChild(notification);
+    }
+  }, 3000);
+}
+
+// Initialize when DOM is loaded
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializePasswordChange);
+} else {
+  initializePasswordChange();
+}
+/* Change password ends here */
+
+    </script>
+</body>
+</html>
