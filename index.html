@@ -1854,59 +1854,61 @@
             }
         }
 
-        function displayProducts(products) {
-            const container = document.getElementById('productsContainer');
-            const loading = document.getElementById('loadingIndicator');
-            const errorDiv = document.getElementById('errorMessage');
 
-            if (!container || !loading || !errorDiv) return;
 
-            loading.style.display = 'none';
-            errorDiv.style.display = 'none';
-            container.style.display = 'grid';
+function displayProducts(products) {
+    const container = document.getElementById('productsContainer');
+    const loading = document.getElementById('loadingIndicator');
+    const errorDiv = document.getElementById('errorMessage');
 
-            if (products.length === 0) {
-                container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: white; font-size: 1.2rem; padding: 40px;">No products found matching your search.</div>';
-            showNotification('No Products in DataBase','info',5000);
-    return;
-            }
+    if (!container || !loading || !errorDiv) return;
 
-            const limitedProducts = products.slice(0, 6);
+    loading.style.display = 'none';
+    errorDiv.style.display = 'none';
+    container.style.display = 'grid';
 
-            container.innerHTML = limitedProducts.map(product => `
-                <div class="product-card" data-product='${JSON.stringify(product).replace(/'/g, "&apos;")}' onclick="handleCardClick(this)">
-                    <div class="product-image-container">
-                        <img src="${product.imageUrl || 'https://via.placeholder.com/300x250?text=No+Image'}"
-                             alt="${product.name}"
-                             class="product-image"
-                             onerror="this.src='https://via.placeholder.com/300x250?text=No+Image'">
-                        ${product.badge ? `<span class="product-badge">${product.badge}</span>` : ''}
-                    </div>
-                    <div class="product-info">
-                        <div class="product-brand">${product.brand || 'Generic'}</div>
-                        <h3 class="product-name">${product.name}</h3>
-                   <!--     <p class="product-description mobile-hide">${product.description || 'No description available'}</p>  -->
-                        <div class="product-price">
-                            <span class="current-price">₹ ${product.price.toFixed(2)}</span>
-                            ${product.originalPrice ? `<span class="original-price">₹${product.originalPrice.toFixed(2)}</span>` : ''}
-                            ${product.originalPrice ? `<span class="discount">${Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% off</span>` : ''}
-                        </div>
-                        <div class="product-rating">
-                            <span class="stars">${generateStars(product.rating || 0)}</span>
-                            <span class="rating-count">(${product.reviewCount || 0})</span>
-                        </div>
-                        <div class="delivery-info">
-                            Get it by ${product.deliveryDate || 'N/A'}
-                            ${product.prime ? '<span class="prime-badge">Prime</span>' : ''}
-                        </div>
-                        <button class="add-to-cart" onclick="event.stopPropagation(); addToCart('${product.id}', '${product.name}', ${product.price || 0}, '${product.imageUrl}')">Add to Cart</button>
-                     <!--   <button class="buy-now" onclick="event.stopPropagation(); addToCart('${product.id}', '${product.name}', ${product.price || 0})">Buy Now</button> -->
-<button class="buy-now" onclick="event.stopPropagation(); proceedToCheckout('${product.id}', '${product.name}', ${product.price || 0})">Buy Now</button>
-                   
-                    </div>
+    if (products.length === 0) {
+        container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: white; font-size: 1.2rem; padding: 40px;">No products found matching your search.</div>';
+        showNotification('No Products in DataBase','info',5000);
+        return;
+    }
+
+    const limitedProducts = products.slice(0, 6);
+
+    container.innerHTML = limitedProducts.map(product => `
+        <div class="product-card" data-product='${JSON.stringify(product).replace(/'/g, "&apos;")}' onclick="handleCardClick(this)">
+            <div class="product-image-container">
+                <img src="${product.imageUrl || 'https://via.placeholder.com/300x250?text=No+Image'}"
+                     alt="${product.name}"
+                     class="product-image"
+                     onerror="this.src='https://via.placeholder.com/300x250?text=No+Image'">
+                ${product.badge ? `<span class="product-badge">${product.badge}</span>` : ''}
+            </div>
+            <div class="product-info">
+                <div class="product-brand">${product.brand || 'Generic'}</div>
+                <h3 class="product-name">${product.name}</h3>
+           <!--     <p class="product-description mobile-hide">${product.description || 'No description available'}</p>  -->
+                <div class="product-price">
+                    <span class="current-price">₹ ${product.price.toFixed(2)}</span>
+                    ${product.originalPrice ? `<span class="original-price">₹${product.originalPrice.toFixed(2)}</span>` : ''}
+                    ${product.originalPrice ? `<span class="discount">${Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% off</span>` : ''}
                 </div>
-            `).join('');
-        }
+                <div class="product-rating">
+                    <span class="stars">${generateStars(product.rating || 0)}</span>
+                    <span class="rating-count">(${product.reviewCount || 0})</span>
+                </div>
+                <div class="delivery-info">
+                    Get it by ${product.deliveryDate || 'N/A'}
+                    ${product.prime ? '<span class="prime-badge">Prime</span>' : ''}
+                </div>
+                <button class="add-to-cart" onclick="event.stopPropagation(); addToCart('${product.id}', '${product.name}', ${product.price || 0}, '${product.imageUrl}')">Add to Cart</button>
+             <!--   <button class="buy-now" onclick="event.stopPropagation(); addToCart('${product.id}', '${product.name}', ${product.price || 0})">Buy Now</button> -->
+                <button class="buy-now" onclick="event.stopPropagation(); proceedToCheckout('${product.id}', '${product.name}', ${product.price || 0})">Buy Now</button>
+           
+            </div>
+        </div>
+    `).join('');
+}
 
 function generateStars(rating) {
     const fullStars = Math.floor(rating);
@@ -1933,22 +1935,78 @@ function generateStars(rating) {
     return stars;
 }
 
-        function searchProducts(event) {
-            if (event && event.key !== 'Enter') return;
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            if (!searchTerm) {
-                displayProducts(allProducts);
-                return;
-            }
+function searchProducts(event) {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+    
+    // Show all products if search term is empty or less than 3 characters
+    if (!searchTerm || searchTerm.length < 3) {
+        displayProducts(allProducts);
+        return;
+    }
 
-            const filtered = allProducts.filter(product =>
-                product.name.toLowerCase().includes(searchTerm) ||
-                product.category?.toLowerCase().includes(searchTerm) ||
-                product.description?.toLowerCase().includes(searchTerm) ||
-                (product.tags && product.tags.some(tag => tag.toLowerCase().includes(searchTerm)))
-            );
-            displayProducts(filtered);
-        }
+    // Priority-based search: product name first, then other fields
+    const searchResults = [];
+    
+    // Priority 1: Exact matches in product name (highest priority)
+    const exactNameMatches = allProducts.filter(product =>
+        product.name.toLowerCase() === searchTerm
+    );
+    searchResults.push(...exactNameMatches);
+    
+    // Priority 2: Product name starts with search term
+    const nameStartsWithMatches = allProducts.filter(product =>
+        product.name.toLowerCase().startsWith(searchTerm) &&
+        !searchResults.some(existing => existing.id === product.id)
+    );
+    searchResults.push(...nameStartsWithMatches);
+    
+    // Priority 3: Product name contains search term
+    const nameContainsMatches = allProducts.filter(product =>
+        product.name.toLowerCase().includes(searchTerm) &&
+        !searchResults.some(existing => existing.id === product.id)
+    );
+    searchResults.push(...nameContainsMatches);
+    
+    // Priority 4: Brand matches
+    const brandMatches = allProducts.filter(product =>
+        product.brand && product.brand.toLowerCase().includes(searchTerm) &&
+        !searchResults.some(existing => existing.id === product.id)
+    );
+    searchResults.push(...brandMatches);
+    
+    // Priority 5: Category matches
+    const categoryMatches = allProducts.filter(product =>
+        product.category && product.category.toLowerCase().includes(searchTerm) &&
+        !searchResults.some(existing => existing.id === product.id)
+    );
+    searchResults.push(...categoryMatches);
+    
+    // Priority 6: Description matches
+    const descriptionMatches = allProducts.filter(product =>
+        product.description && product.description.toLowerCase().includes(searchTerm) &&
+        !searchResults.some(existing => existing.id === product.id)
+    );
+    searchResults.push(...descriptionMatches);
+    
+    // Priority 7: Tags matches (lowest priority)
+    const tagMatches = allProducts.filter(product =>
+        product.tags && product.tags.some(tag => tag.toLowerCase().includes(searchTerm)) &&
+        !searchResults.some(existing => existing.id === product.id)
+    );
+    searchResults.push(...tagMatches);
+
+    displayProducts(searchResults);
+    
+    // Show search feedback
+    if (searchResults.length > 0) {
+        showNotification(`Found ${searchResults.length} product${searchResults.length === 1 ? '' : 's'} for "${searchTerm}"`, 'success', 3000);
+    } else {
+        showNotification(`No products found for "${searchTerm}"`, 'warning', 4000);
+    }
+}
+
+
+
 
 
 
@@ -2539,54 +2597,422 @@ function updateCartDisplay() {
     
     if (cart.length === 0) {
         cartItemsContainer.innerHTML = `
-            <div class="empty-cart">
-                <div class="empty-cart-icon">🛒</div>
-                <p>Your cart is empty</p>
-                <button class="btn btn-continue" onclick="closeCart()">Continue Shopping</button>
+            <div style="
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 40px 20px;
+                text-align: center;
+                background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+                border-radius: 16px;
+                margin: 20px 0;
+                border: 2px dashed #dee2e6;
+            ">
+                <div style="
+                    font-size: 4rem;
+                    margin-bottom: 20px;
+                    opacity: 0.7;
+                    filter: grayscale(0.3);
+                ">🛒</div>
+                <h3 style="
+                    margin: 0 0 12px 0;
+                    color: #495057;
+                    font-size: 22px;
+                    font-weight: 600;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                ">Your cart is empty</h3>
+                <p style="
+                    margin: 0 0 25px 0;
+                    color: #6c757d;
+                    font-size: 16px;
+                    opacity: 0.8;
+                ">Add some products to get started</p>
+                <button onclick="closeCart()" style="
+                    padding: 12px 30px;
+                    background: linear-gradient(135deg, #007bff, #0056b3);
+                    color: white;
+                    border: none;
+                    border-radius: 25px;
+                    font-size: 16px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(0,123,255,0.4)'"
+                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(0,123,255,0.3)'">
+                    Continue Shopping
+                </button>
             </div>
         `;
-        totalItemsSpan.textContent = '0';
-        totalPriceSpan.textContent = '₹0.00';
+        if (totalItemsSpan) totalItemsSpan.textContent = '0';
+        if (totalPriceSpan) totalPriceSpan.textContent = '₹0.00';
         return;
     }
+    
+    // Check if mobile
+    const isMobile = window.innerWidth <= 768;
     
     // Display cart items
     cart.forEach(item => {
         const cartItemElement = document.createElement('div');
-        cartItemElement.className = 'cart-item';
-        cartItemElement.innerHTML = `
-            <div class="cart-item-image">
-                <img src="${item.imageUrl}" alt="${item.name}" loading="lazy">
-            </div>
-            <div class="cart-item-details">
-                <h4 class="cart-item-name">${item.name}</h4>
-                <p class="cart-item-brand">${item.brand}</p>
-                <p class="cart-item-price">₹${item.price.toFixed(2)}</p>
-            </div>
-            <div class="cart-item-quantity">
-                <button class="quantity-btn" onclick="updateQuantity('${item.id}', -1)">-</button>
-                <span class="quantity">${item.quantity}</span>
-                <button class="quantity-btn" onclick="updateQuantity('${item.id}', 1)">+</button>
-            </div>
-            <div class="cart-item-total">
-                <p>₹${item.totalPrice.toFixed(2)}</p>
-            </div>
-            <button class="remove-item-btn" onclick="removeFromCart('${item.id}')" title="Remove item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14zM10 11v6M14 11v6"/>
-                </svg>
-            </button>
+        cartItemElement.style.cssText = `
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            padding: ${isMobile ? '16px' : '20px'};
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            border: 1px solid #f1f3f4;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         `;
+        
+        if (isMobile) {
+            // Mobile layout - stacked design
+            cartItemElement.innerHTML = `
+                <div style="
+                    display: flex;
+                    gap: 15px;
+                    margin-bottom: 15px;
+                ">
+                    <div style="
+                        width: 80px;
+                        height: 80px;
+                        border-radius: 10px;
+                        overflow: hidden;
+                        flex-shrink: 0;
+                        background: #f8f9fa;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    ">
+                        <img src="${item.imageUrl}" alt="${item.name}" style="
+                            width: 90%;
+                            height: 90%;
+                            object-fit: cover;
+                            transition: transform 0.3s ease;
+                        " loading="lazy">
+                    </div>
+                    
+                    <div style="
+                        flex: 1;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: space-between;
+                        min-height: 80px;
+                    ">
+                        <div>
+                            <h4 style="
+                                margin: 0 0 4px 0;
+                                font-size: 12px;
+                                font-weight: 600;
+                                color: #212529;
+                                line-height: 1.3;
+                                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                            ">${item.name}</h4>
+                            <p style="
+                                margin: 0 0 8px 0;
+                                font-size: 13px;
+                                color: #6c757d;
+                                font-weight: 500;
+                            ">${item.brand}</p>
+                        </div>
+                        
+                        <div style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                        ">
+                            <span style="
+                                font-size: 16px;
+                                font-weight: 700;
+                                color: #007bff;
+                            ">₹${item.price.toFixed(2)}</span>
+                            
+                            <button onclick="removeFromCart('${item.id}')" style="
+                                background: #dc3545;
+                                color: white;
+                                border: none;
+                                border-radius: 6px;
+                                padding: 8px 10px;
+                                font-size: 12px;
+                                font-weight: 600;
+                                cursor: pointer;
+                                transition: all 0.3s ease;
+                                display: flex;
+                                align-items: center;
+                                gap: 4px;
+                            " onmouseover="this.style.background='#c82333'"
+                               onmouseout="this.style.background='#dc3545'"
+                               title="Remove item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14zM10 11v6M14 11v6"/>
+                                </svg>
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding-top: 15px;
+                    border-top: 1px solid #f1f3f4;
+                ">
+                    <div style="
+                        display: flex;
+                        align-items: center;
+                        gap: 2px;
+                        background: #f8f9fa;
+                        border-radius: 8px;
+                        padding: 2px;
+                        border: 1px solid #e9ecef;
+                    ">
+                        <button onclick="updateQuantity('${item.id}', -1)" style="
+                            background: white;
+                            border: none;
+                            border-radius: 6px;
+                            width: 36px;
+                            height: 36px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            cursor: pointer;
+                            font-size: 18px;
+                            font-weight: 600;
+                            color: #495057;
+                            transition: all 0.2s ease;
+                            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                        " onmouseover="this.style.background='#e9ecef'"
+                           onmouseout="this.style.background='white'">−</button>
+                        
+                        <span style="
+                            min-width: 45px;
+                            text-align: center;
+                            font-size: 16px;
+                            font-weight: 600;
+                            color: #212529;
+                            padding: 0 8px;
+                        ">${item.quantity}</span>
+                        
+                        <button onclick="updateQuantity('${item.id}', 1)" style="
+                            background: white;
+                            border: none;
+                            border-radius: 6px;
+                            width: 36px;
+                            height: 36px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            cursor: pointer;
+                            font-size: 18px;
+                            font-weight: 600;
+                            color: #495057;
+                            transition: all 0.2s ease;
+                            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                        " onmouseover="this.style.background='#e9ecef'"
+                           onmouseout="this.style.background='white'">+</button>
+                    </div>
+                    
+                    <div style="
+                        text-align: right;
+                    ">
+                        <div style="
+                            font-size: 18px;
+                            font-weight: 700;
+                            color: #28a745;
+                            margin-bottom: 2px;
+                        ">₹${item.totalPrice.toFixed(2)}</div>
+                        <div style="
+                            font-size: 12px;
+                            color: #6c757d;
+                        ">Total</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Desktop layout - horizontal design
+            cartItemElement.innerHTML = `
+                <div style="
+                    display: grid;
+                    grid-template-columns: 100px 1fr auto auto auto;
+                    gap: 20px;
+                    align-items: center;
+                ">
+                    <div style="
+                        width: 100px;
+                        height: 100px;
+                        border-radius: 12px;
+                        overflow: hidden;
+                        background: #f8f9fa;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        position: relative;
+                    ">
+                        <img src="${item.imageUrl}" alt="${item.name}" style="
+                            width: 100%;
+                            height: 100%;
+                            object-fit: cover;
+                            transition: transform 0.3s ease;
+                        " loading="lazy"
+                        onmouseover="this.style.transform='scale(1.05)'"
+                        onmouseout="this.style.transform='scale(1)'">
+                    </div>
+                    
+                    <div style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 8px;
+                    ">
+                        <h4 style="
+                            margin: 0;
+                            font-size: 18px;
+                            font-weight: 600;
+                            color: #212529;
+                            line-height: 1.3;
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        ">${item.name}</h4>
+                        <p style="
+                            margin: 0;
+                            font-size: 14px;
+                            color: #6c757d;
+                            font-weight: 500;
+                        ">${item.brand}</p>
+                        <span style="
+                            font-size: 16px;
+                            font-weight: 700;
+                            color: #007bff;
+                        ">₹${item.price.toFixed(2)} each</span>
+                    </div>
+                    
+                    <div style="
+                        display: flex;
+                        align-items: center;
+                        gap: 4px;
+                        background: #f8f9fa;
+                        border-radius: 10px;
+                        padding: 4px;
+                        border: 1px solid #e9ecef;
+                    ">
+                        <button onclick="updateQuantity('${item.id}', -1)" style="
+                            background: white;
+                            border: none;
+                            border-radius: 8px;
+                            width: 40px;
+                            height: 40px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            cursor: pointer;
+                            font-size: 20px;
+                            font-weight: 600;
+                            color: #495057;
+                            transition: all 0.2s ease;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        " onmouseover="this.style.background='#e9ecef'; this.style.transform='scale(1.05)'"
+                           onmouseout="this.style.background='white'; this.style.transform='scale(1)'">−</button>
+                        
+                        <span style="
+                            min-width: 50px;
+                            text-align: center;
+                            font-size: 18px;
+                            font-weight: 600;
+                            color: #212529;
+                            padding: 0 12px;
+                        ">${item.quantity}</span>
+                        
+                        <button onclick="updateQuantity('${item.id}', 1)" style="
+                            background: white;
+                            border: none;
+                            border-radius: 8px;
+                            width: 40px;
+                            height: 40px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            cursor: pointer;
+                            font-size: 20px;
+                            font-weight: 600;
+                            color: #495057;
+                            transition: all 0.2s ease;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        " onmouseover="this.style.background='#e9ecef'; this.style.transform='scale(1.05)'"
+                           onmouseout="this.style.background='white'; this.style.transform='scale(1)'">+</button>
+                    </div>
+                    
+                    <div style="
+                        text-align: right;
+                        min-width: 120px;
+                    ">
+                        <div style="
+                            font-size: 20px;
+                            font-weight: 700;
+                            color: #28a745;
+                            margin-bottom: 4px;
+                        ">₹${item.totalPrice.toFixed(2)}</div>
+                        <div style="
+                            font-size: 13px;
+                            color: #6c757d;
+                            font-weight: 500;
+                        ">Subtotal</div>
+                    </div>
+                    
+                    <button onclick="removeFromCart('${item.id}')" style="
+                        background: linear-gradient(135deg, #dc3545, #c82333);
+                        color: white;
+                        border: none;
+                        border-radius: 10px;
+                        width: 44px;
+                        height: 44px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 4px 8px rgba(220,53,69,0.3);
+                    " onmouseover="this.style.transform='translateY(-2px) scale(1.05)'; this.style.boxShadow='0 6px 16px rgba(220,53,69,0.4)'"
+                       onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 4px 8px rgba(220,53,69,0.3)'"
+                       title="Remove item">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14zM10 11v6M14 11v6"/>
+                        </svg>
+                    </button>
+                </div>
+            `;
+        }
+        
+        // Add hover effect to cart item
+        cartItemElement.onmouseover = () => {
+            cartItemElement.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
+            cartItemElement.style.transform = 'translateY(-2px)';
+        };
+        cartItemElement.onmouseout = () => {
+            cartItemElement.style.boxShadow = '0 2px 12px rgba(0,0,0,0.08)';
+            cartItemElement.style.transform = 'translateY(0)';
+        };
+        
         cartItemsContainer.appendChild(cartItemElement);
     });
     
-    // Update summary
+    // Update summary with animation
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
     const totalPrice = cart.reduce((sum, item) => sum + item.totalPrice, 0);
     
-    totalItemsSpan.textContent = totalItems;
-    totalPriceSpan.textContent = `₹${totalPrice.toFixed(2)}`;
+    if (totalItemsSpan) {
+        totalItemsSpan.style.transition = 'all 0.3s ease';
+        totalItemsSpan.textContent = totalItems;
+    }
+    if (totalPriceSpan) {
+        totalPriceSpan.style.transition = 'all 0.3s ease';
+        totalPriceSpan.textContent = `₹${totalPrice.toFixed(2)}`;
+    }
 }
+
+
 
 
 // Update quantity of an item
@@ -2798,7 +3224,7 @@ loadShippingAddress().then(savedAddress => {
 
 
 
-window.proceedToCheckout = function proceedToCheckout(productId, productName, productPrice) {
+window.proceedToCheckout = function proceedToCheckout(productId, productName, productPrice, selectMode = 'addtocart') {
     const isSingleProduct = productId && productName && productPrice;
 
     const cartItems = isSingleProduct
@@ -2814,7 +3240,6 @@ window.proceedToCheckout = function proceedToCheckout(productId, productName, pr
     const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   
 let savedAddress = '';
-
 
     const savedPaymentMethod = localStorage.getItem("paymentMethod") || "UPI";
 
@@ -2844,7 +3269,8 @@ let savedAddress = '';
             <p><strong>Total Items:</strong> ${totalItems}</p>
             <p><strong>Total Price:</strong> ₹${totalPrice.toFixed(2)}</p>
 
-            <div class="items-header">
+<!--     
+    <div class="items-header">
                 <div style="flex: 2;">Item</div>
                 <div style="flex: 1; text-align: center;">Qty</div>
                 <div style="flex: 1; text-align: right;">Price</div>
@@ -2855,8 +3281,10 @@ let savedAddress = '';
                     <div style="flex: 2;">${item.name}</div>
                     <div style="flex: 1; text-align: center;">${item.quantity}</div>
                     <div style="flex: 1; text-align: right;">₹${item.totalPrice.toFixed(2)}</div>
-                </div>
-            `).join('')}
+                </div>  
+            `
+	   ).join('')}
+-->
 
             <div class="modal-buttons">
                 <button class="cancel-btn">Cancel</button>
@@ -3015,6 +3443,9 @@ loadShippingAddress().then(savedAddress => {
         }
     };
 };
+
+
+
 
 // corrected upto here
 
@@ -3298,9 +3729,10 @@ loadShopName();
 
 
 
+
 //payment section
 async function proceedPayment(selectedPayment, totalPrice, confirmBtn) {
-    showNotification('Note 12 digit UPI Transaction ID generated on successful payment. Click Complete', 'prompt', 5000);
+    showNotification('Note: 12 digit UPI Transaction ID generated on successful payment. Click Complete', 'info', 5000);
     const upiId = "sunilskutan@oksbi";
     const infoPhone = "9446266822";
     const payeeName = "SJPSS";
@@ -3316,96 +3748,594 @@ async function proceedPayment(selectedPayment, totalPrice, confirmBtn) {
         position: fixed;
         top: 0; left: 0;
         width: 100vw; height: 100vh;
-        background: rgba(0,0,0,0.8);
+        background: rgba(0,0,0,0.85);
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 2100;
+        backdrop-filter: blur(5px);
     `;
 
-    let paymentContent = `
-        <div style="background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; text-align: center;">
-            <h3>${selectedPayment} Payment</h3>
-            <p>Amount: ₹${totalPrice.toFixed(2)}</p>
-    `;
+    let paymentContent = '';
 
     if (selectedPayment === 'UPI') {
         if (isMobile) {
-            setTimeout(() => window.location.href = upiUri, 500);
-            paymentContent += `<p>Redirecting to UPI app...</p>`;
+            // Mobile: Show payment method selection
+            paymentContent = `
+                <div style="
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    padding: 35px;
+                    border-radius: 20px;
+                    width: 90%;
+                    max-width: 420px;
+                    text-align: center;
+                    color: white;
+                    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                ">
+                    <div style="
+                        background: rgba(255,255,255,0.2);
+                        padding: 20px;
+                        border-radius: 15px;
+                        margin-bottom: 25px;
+                        backdrop-filter: blur(10px);
+                    ">
+                        <h3 style="
+                            margin: 0 0 10px 0;
+                            font-size: 24px;
+                            font-weight: 700;
+                        ">💳 UPI Payment</h3>
+                        <p style="
+                            margin: 0;
+                            font-size: 20px;
+                            font-weight: 600;
+                            color: #ffeaa7;
+                        ">₹${totalPrice.toFixed(2)}</p>
+                    </div>
+
+                    <div style="
+                        background: rgba(255,255,255,0.1);
+                        padding: 20px;
+                        border-radius: 15px;
+                        margin-bottom: 25px;
+                        text-align: left;
+                    ">
+                        <p style="margin: 5px 0; font-size: 14px;"><strong>UPI ID:</strong> ${upiId}</p>
+                        <p style="margin: 5px 0; font-size: 14px;"><strong>Payee:</strong> ${payeeName}</p>
+                        <p style="margin: 5px 0; font-size: 14px;"><strong>Phone:</strong> ${infoPhone}</p>
+                    </div>
+
+                    <h4 style="
+                        margin: 0 0 20px 0;
+                        font-size: 18px;
+                        font-weight: 600;
+                    ">Choose Payment Method:</h4>
+
+                    <div style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 15px;
+                        margin-bottom: 25px;
+                    ">
+                        <button id="payByApp" style="
+                            padding: 15px 20px;
+                            background: linear-gradient(135deg, #00b894, #00a085);
+                            color: white;
+                            border: none;
+                            border-radius: 12px;
+                            font-size: 16px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                            box-shadow: 0 5px 15px rgba(0,184,148,0.4);
+                        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(0,184,148,0.5)'"
+                           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 5px 15px rgba(0,184,148,0.4)'">
+                            📱 Open UPI App
+                        </button>
+
+                        <button id="payByQR" style="
+                            padding: 15px 20px;
+                            background: linear-gradient(135deg, #0984e3, #6c5ce7);
+                            color: white;
+                            border: none;
+                            border-radius: 12px;
+                            font-size: 16px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                            box-shadow: 0 5px 15px rgba(9,132,227,0.4);
+                        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(9,132,227,0.5)'"
+                           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 5px 15px rgba(9,132,227,0.4)'">
+                            📷 Scan QR Code
+                        </button>
+                    </div>
+
+                    <button id="closePayment" style="
+                        padding: 12px 30px;
+                        background: rgba(255,255,255,0.2);
+                        color: white;
+                        border: 2px solid rgba(255,255,255,0.3);
+                        border-radius: 25px;
+                        font-size: 14px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                    " onmouseover="this.style.background='rgba(255,255,255,0.3)'"
+                       onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                        ✕ Cancel
+                    </button>
+                </div>
+            `;
         } else {
-            paymentContent += `
-                <p>Scan the QR code below with any UPI app:</p>
-                <div id="qrContainer" style="margin: 10px auto;"></div>
+            // Desktop: Show QR code only
+            paymentContent = `
+                <div style="
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    padding: 35px;
+                    border-radius: 20px;
+                    width: 90%;
+                    max-width: 450px;
+                    text-align: center;
+                    color: white;
+                    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                ">
+                    <div style="
+                        background: rgba(255,255,255,0.2);
+                        padding: 20px;
+                        border-radius: 15px;
+                        margin-bottom: 25px;
+                        backdrop-filter: blur(10px);
+                    ">
+                        <h3 style="
+                            margin: 0 0 10px 0;
+                            font-size: 24px;
+                            font-weight: 700;
+                        ">💳 UPI Payment</h3>
+                        <p style="
+                            margin: 0;
+                            font-size: 20px;
+                            font-weight: 600;
+                            color: #ffeaa7;
+                        ">₹${totalPrice.toFixed(2)}</p>
+                    </div>
+
+                    <div style="
+                        background: white;
+                        padding: 20px;
+                        border-radius: 15px;
+                        margin-bottom: 20px;
+                        display: inline-block;
+                        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                    ">
+                        <p style="
+                            margin: 0 0 15px 0;
+                            color: #2d3436;
+                            font-size: 16px;
+                            font-weight: 600;
+                        ">📷 Scan QR Code with any UPI app</p>
+                        <div id="qrContainer" style="margin: 0 auto;"></div>
+                    </div>
+
+                    <div style="
+                        background: rgba(255,255,255,0.1);
+                        padding: 15px;
+                        border-radius: 12px;
+                        margin-bottom: 25px;
+                        text-align: left;
+                    ">
+                        <p style="margin: 5px 0; font-size: 14px;"><strong>UPI ID:</strong> ${upiId}</p>
+                        <p style="margin: 5px 0; font-size: 14px;"><strong>Payee:</strong> ${payeeName}</p>
+                        <p style="margin: 5px 0; font-size: 14px;"><strong>Phone:</strong> ${infoPhone}</p>
+                    </div>
+
+                    <div style="
+                        display: flex;
+                        gap: 15px;
+                        justify-content: center;
+                    ">
+                        <button id="completePayment" style="
+                            flex: 1;
+                            padding: 15px 20px;
+                            background: linear-gradient(135deg, #00b894, #00a085);
+                            color: white;
+                            border: none;
+                            border-radius: 12px;
+                            font-size: 16px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                            box-shadow: 0 5px 15px rgba(0,184,148,0.4);
+                        " onmouseover="this.style.transform='translateY(-2px)'"
+                           onmouseout="this.style.transform='translateY(0)'">
+                            ✓ Complete Payment
+                        </button>
+
+                        <button id="closePayment" style="
+                            flex: 1;
+                            padding: 15px 20px;
+                            background: rgba(255,255,255,0.2);
+                            color: white;
+                            border: 2px solid rgba(255,255,255,0.3);
+                            border-radius: 12px;
+                            font-size: 16px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        " onmouseover="this.style.background='rgba(255,255,255,0.3)'"
+                           onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                            ✕ Cancel
+                        </button>
+                    </div>
+                </div>
             `;
         }
-        paymentContent += `
-            <p><strong>UPI ID:</strong> ${upiId}</p>
-            <p><strong>Phone:</strong> ${infoPhone}</p>
+    } else {
+        // Other payment methods (Card, etc.)
+        paymentContent = `
+            <div style="
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 35px;
+                border-radius: 20px;
+                width: 90%;
+                max-width: 400px;
+                text-align: center;
+                color: white;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            ">
+                <h3 style="
+                    margin: 0 0 20px 0;
+                    font-size: 24px;
+                    font-weight: 700;
+                ">${selectedPayment} Payment</h3>
+                <p style="
+                    margin: 0 0 25px 0;
+                    font-size: 20px;
+                    font-weight: 600;
+                    color: #ffeaa7;
+                ">Amount: ₹${totalPrice.toFixed(2)}</p>
+                
+                <div style="
+                    display: flex;
+                    gap: 15px;
+                    justify-content: center;
+                ">
+                    <button id="completePayment" style="
+                        flex: 1;
+                        padding: 15px 20px;
+                        background: linear-gradient(135deg, #00b894, #00a085);
+                        color: white;
+                        border: none;
+                        border-radius: 12px;
+                        font-size: 16px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                    ">Complete</button>
+                    
+                    <button id="closePayment" style="
+                        flex: 1;
+                        padding: 15px 20px;
+                        background: rgba(255,255,255,0.2);
+                        color: white;
+                        border: 2px solid rgba(255,255,255,0.3);
+                        border-radius: 12px;
+                        font-size: 16px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                    ">Close</button>
+                </div>
+            </div>
         `;
     }
 
-    paymentContent += `
-        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
-            <button id="completePayment" style="padding: 10px; background-color: #00b894; color: white; border: none; border-radius: 5px;">Complete</button>
-            <button id="closePayment" style="padding: 10px; background-color: #d63031; color: white; border: none; border-radius: 5px;">Close</button>
-        </div>
-    `;
-
-    paymentOverlay.innerHTML = `<div style="background: white; padding: 20px; border-radius: 10px; max-width: 400px;">${paymentContent}</div>`;
+    paymentOverlay.innerHTML = paymentContent;
     document.body.appendChild(paymentOverlay);
 
+    // Generate QR code for desktop or when QR option is selected on mobile
+    function showQRCode() {
+        const qrContainer = document.getElementById("qrContainer");
+        if (qrContainer && typeof QRCode !== 'undefined') {
+            new QRCode(qrContainer, {
+                text: upiUri,
+                width: 200,
+                height: 200,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+    }
+
+    // For desktop UPI, show QR immediately
     if (!isMobile && selectedPayment === 'UPI') {
-        new QRCode(document.getElementById("qrContainer"), {
-            text: upiUri,
-            width: 250,
-            height: 250,
-            colorDark: "#000000",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.H
-        });
+        showQRCode();
     }
 
     // Return a Promise that resolves only on successful submit
     return new Promise((resolve) => {
-        paymentOverlay.querySelector('#completePayment').onclick = () => {
+        // Mobile UPI app option
+        const payByAppBtn = paymentOverlay.querySelector('#payByApp');
+        if (payByAppBtn) {
+            payByAppBtn.onclick = () => {
+                setTimeout(() => window.location.href = upiUri, 500);
+                payByAppBtn.textContent = '🔄 Opening UPI App...';
+                payByAppBtn.style.background = 'linear-gradient(135deg, #fdcb6e, #e17055)';
+                
+                // Show complete button after a delay
+                setTimeout(() => {
+                    paymentOverlay.innerHTML = `
+                        <div style="
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            padding: 35px;
+                            border-radius: 20px;
+                            width: 90%;
+                            max-width: 400px;
+                            text-align: center;
+                            color: white;
+                            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        ">
+                            <h3 style="margin: 0 0 20px 0; font-size: 24px; font-weight: 700;">
+                                ✅ Payment Initiated
+                            </h3>
+                            <p style="margin: 0 0 25px 0; font-size: 16px; opacity: 0.9;">
+                                Complete your payment in the UPI app and return here
+                            </p>
+                            
+                            <div style="display: flex; gap: 15px; justify-content: center;">
+                                <button id="completePayment" style="
+                                    flex: 1; padding: 15px 20px;
+                                    background: linear-gradient(135deg, #00b894, #00a085);
+                                    color: white; border: none; border-radius: 12px;
+                                    font-size: 16px; font-weight: 600; cursor: pointer;
+                                ">✓ I've Completed Payment</button>
+                                
+                                <button id="closePayment" style="
+                                    flex: 1; padding: 15px 20px;
+                                    background: rgba(255,255,255,0.2);
+                                    color: white; border: 2px solid rgba(255,255,255,0.3);
+                                    border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer;
+                                ">✕ Cancel</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Re-attach event listeners
+                    attachCompletePaymentHandler();
+                    attachClosePaymentHandler();
+                }, 3000);
+            };
+        }
+
+        // Mobile QR option
+        const payByQRBtn = paymentOverlay.querySelector('#payByQR');
+        if (payByQRBtn) {
+            payByQRBtn.onclick = () => {
+                paymentOverlay.innerHTML = `
+                    <div style="
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        padding: 35px;
+                        border-radius: 20px;
+                        width: 90%;
+                        max-width: 420px;
+                        text-align: center;
+                        color: white;
+                        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    ">
+                        <h3 style="margin: 0 0 20px 0; font-size: 24px; font-weight: 700;">
+                            📷 Scan QR Code
+                        </h3>
+                        
+                        <div style="
+                            background: white;
+                            padding: 20px;
+                            border-radius: 15px;
+                            margin-bottom: 20px;
+                            display: inline-block;
+                            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                        ">
+                            <div id="qrContainer" style="margin: 0 auto;"></div>
+                        </div>
+
+                        <p style="margin: 0 0 25px 0; font-size: 14px; opacity: 0.9;">
+                            Scan with any UPI app to pay ₹${totalPrice.toFixed(2)}
+                        </p>
+                        
+                        <div style="display: flex; gap: 15px; justify-content: center;">
+                            <button id="completePayment" style="
+                                flex: 1; padding: 15px 20px;
+                                background: linear-gradient(135deg, #00b894, #00a085);
+                                color: white; border: none; border-radius: 12px;
+                                font-size: 16px; font-weight: 600; cursor: pointer;
+                            ">✓ Complete Payment</button>
+                            
+                            <button id="closePayment" style="
+                                flex: 1; padding: 15px 20px;
+                                background: rgba(255,255,255,0.2);
+                                color: white; border: 2px solid rgba(255,255,255,0.3);
+                                border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer;
+                            ">✕ Cancel</button>
+                        </div>
+                    </div>
+                `;
+                
+                // Generate QR code
+                showQRCode();
+                
+                // Re-attach event listeners
+                attachCompletePaymentHandler();
+                attachClosePaymentHandler();
+            };
+        }
+
+        function attachCompletePaymentHandler() {
+            const completeBtn = paymentOverlay.querySelector('#completePayment');
+            if (completeBtn) {
+                completeBtn.onclick = () => showTransactionPopup();
+            }
+        }
+
+        function attachClosePaymentHandler() {
+            const closeBtn = paymentOverlay.querySelector('#closePayment');
+            if (closeBtn) {
+                closeBtn.onclick = () => {
+                    paymentOverlay.remove();
+                    resolve(null);
+                };
+            }
+        }
+
+        function showTransactionPopup() {
             const popup = document.createElement('div');
-            popup.style = `position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-                background: #fff; border: 1px solid #ccc; padding: 20px; z-index: 9999;
-                box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); border-radius: 10px;`;
+            popup.style.cssText = `
+                position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                background: rgba(0,0,0,0.9); padding: 0; z-index: 9999;
+                border-radius: 15px; backdrop-filter: blur(10px);
+            `;
 
             popup.innerHTML = `
-                <h3>Enter 12-digit Transaction Code</h3>
-                <input type="text" id="txnInput" maxlength="12" style="width: 100%; padding: 8px;" placeholder="Enter code..." />
-                <button id="submitTxn" style="margin-top: 10px; padding: 8px 12px;">Submit</button>
+                <div style="
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    padding: 35px;
+                    border-radius: 15px;
+                    max-width: 400px;
+                    width: 90vw;
+                    color: white;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+                ">
+                    <h3 style="
+                        margin: 0 0 25px 0;
+                        text-align: center;
+                        font-size: 22px;
+                        font-weight: 700;
+                    ">🔢 Enter Transaction Code</h3>
+                    
+                    <div style="margin-bottom: 25px;">
+                        <label style="
+                            display: block;
+                            margin-bottom: 10px;
+                            font-size: 14px;
+                            font-weight: 600;
+                            opacity: 0.9;
+                        ">12-Digit Transaction Code</label>
+                        
+                        <input 
+                            type="text" 
+                            id="txnInput" 
+                            maxlength="12" 
+                            placeholder="Enter transaction code..." 
+                            style="
+                                width: 100%;
+                                padding: 15px;
+                                border: none;
+                                border-radius: 10px;
+                                font-size: 18px;
+                                font-family: 'Courier New', monospace;
+                                letter-spacing: 2px;
+                                box-sizing: border-box;
+                                text-align: center;
+                                background: rgba(255,255,255,0.95);
+                                color: #2d3436;
+                                font-weight: 600;
+                                outline: none;
+                                transition: all 0.3s ease;
+                            "
+                            onkeypress="return /[0-9]/.test(event.key)"
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                            onfocus="this.style.background='white'; this.style.transform='scale(1.02)'"
+                            onblur="this.style.background='rgba(255,255,255,0.95)'; this.style.transform='scale(1)'"
+                        />
+                    </div>
+                    
+                    <div style="
+                        display: flex;
+                        gap: 15px;
+                        justify-content: center;
+                    ">
+                        <button 
+                            id="cancelTxn" 
+                            style="
+                                flex: 1;
+                                padding: 15px 20px;
+                                background: rgba(255,255,255,0.2);
+                                color: white;
+                                border: 2px solid rgba(255,255,255,0.3);
+                                border-radius: 10px;
+                                font-size: 16px;
+                                font-weight: 600;
+                                cursor: pointer;
+                                transition: all 0.3s ease;
+                            "
+                            onmouseover="this.style.background='rgba(255,255,255,0.3)'"
+                            onmouseout="this.style.background='rgba(255,255,255,0.2)'"
+                        >✕ Cancel</button>
+                        
+                        <button 
+                            id="submitTxn" 
+                            style="
+                                flex: 1;
+                                padding: 15px 20px;
+                                background: linear-gradient(135deg, #00b894, #00a085);
+                                color: white;
+                                border: none;
+                                border-radius: 10px;
+                                font-size: 16px;
+                                font-weight: 600;
+                                cursor: pointer;
+                                transition: all 0.3s ease;
+                                box-shadow: 0 5px 15px rgba(0,184,148,0.4);
+                            "
+                            onmouseover="this.style.transform='translateY(-2px)'"
+                            onmouseout="this.style.transform='translateY(0)'"
+                        >✓ Submit</button>
+                    </div>
+                    
+                    <p style="
+                        margin: 20px 0 0 0;
+                        text-align: center;
+                        font-size: 12px;
+                        opacity: 0.8;
+                    ">💡 Enter the 12-digit code from your payment confirmation</p>
+                </div>
             `;
+            
             document.body.appendChild(popup);
 
             const txnInput = popup.querySelector('#txnInput');
-            txnInput.addEventListener('input', () => {
-                txnInput.value = txnInput.value.replace(/\D/g, '').slice(0, 12);
-            });
+            txnInput.focus();
+
+            popup.querySelector('#cancelTxn').onclick = () => {
+                popup.remove();
+            };
 
             popup.querySelector('#submitTxn').onclick = () => {
                 if (txnInput.value.length !== 12) {
-                    alert("Please enter a valid 12-digit code.");
+                    txnInput.style.border = '2px solid #e74c3c';
+                    txnInput.style.background = '#fff5f5';
+                    setTimeout(() => {
+                        txnInput.style.border = 'none';
+                        txnInput.style.background = 'rgba(255,255,255,0.95)';
+                    }, 2000);
                     return;
                 }
                 const txnCode = txnInput.value;
                 popup.remove();
                 paymentOverlay.remove();
                 confirmBtn.textContent = 'Place Order';
-                resolve(txnCode);  // Resolve with txnCode
+                resolve(txnCode);
             };
-        };
+        }
 
-        paymentOverlay.querySelector('#closePayment').onclick = () => {
-            paymentOverlay.remove();
-            resolve(null); // Resolve as null if payment aborted
-        };
+        // Initial event listeners
+        attachCompletePaymentHandler();
+        attachClosePaymentHandler();
     });
 }
-
 
 
 
@@ -3879,7 +4809,7 @@ function toggleSidebar(e) {
 
             <div class="search-container">
                 <div class="search-dropdown">All</div>
-                <input type="text" class="search-input" id="searchInput" placeholder="Search ShopVibe" onkeyup="searchProducts(event)">
+                <input type="text" class="search-input" id="searchInput" placeholder="Search SJPSS" onkeyup="searchProducts(event)">
                 <button class="search-btn" onclick="searchProducts()">🔍</button>
             </div>
 
