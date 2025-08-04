@@ -1855,7 +1855,6 @@
         }
 
 
-
 function displayProducts(products) {
     const container = document.getElementById('productsContainer');
     const loading = document.getElementById('loadingIndicator');
@@ -1936,7 +1935,30 @@ function generateStars(rating) {
 }
 
 function searchProducts(event) {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+    // Get search term from both desktop and mobile search inputs
+    const desktopInput = document.getElementById('searchInput');
+    const mobileInput = document.getElementById('mobileSearchInput');
+    
+    let searchTerm = '';
+    
+    // Determine which input triggered the search and get its value
+    if (event && event.target) {
+        searchTerm = event.target.value.toLowerCase().trim();
+    } else {
+        // If no event target, check both inputs and use the one with content
+        const desktopValue = desktopInput ? desktopInput.value.toLowerCase().trim() : '';
+        const mobileValue = mobileInput ? mobileInput.value.toLowerCase().trim() : '';
+        searchTerm = desktopValue || mobileValue;
+    }
+    
+    // Sync the search terms between desktop and mobile inputs
+    if (desktopInput && mobileInput) {
+        if (event && event.target.id === 'searchInput') {
+            mobileInput.value = desktopInput.value;
+        } else if (event && event.target.id === 'mobileSearchInput') {
+            desktopInput.value = mobileInput.value;
+        }
+    }
     
     // Show all products if search term is empty or less than 3 characters
     if (!searchTerm || searchTerm.length < 3) {
@@ -2005,6 +2027,58 @@ function searchProducts(event) {
     }
 }
 
+// Mobile-friendly search initialization function
+function initializeSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const mobileSearchInput = document.getElementById('mobileSearchInput');
+    
+    // Initialize desktop search input
+    if (searchInput) {
+        // Remove any existing event listeners
+        searchInput.removeEventListener('input', searchProducts);
+        searchInput.removeEventListener('keyup', searchProducts);
+        searchInput.removeEventListener('paste', handlePasteEvent);
+
+        // Add multiple event listeners for better compatibility
+        searchInput.addEventListener('input', searchProducts);
+        searchInput.addEventListener('keyup', searchProducts);
+        searchInput.addEventListener('paste', handlePasteEvent);
+        searchInput.addEventListener('compositionend', searchProducts);
+        searchInput.addEventListener('change', searchProducts);
+    }
+    
+    // Initialize mobile search input
+    if (mobileSearchInput) {
+        // Remove any existing event listeners
+        mobileSearchInput.removeEventListener('input', searchProducts);
+        mobileSearchInput.removeEventListener('keyup', searchProducts);
+        mobileSearchInput.removeEventListener('paste', handleMobilePasteEvent);
+
+        // Add multiple event listeners for better mobile compatibility
+        mobileSearchInput.addEventListener('input', searchProducts);
+        mobileSearchInput.addEventListener('keyup', searchProducts);
+        mobileSearchInput.addEventListener('paste', handleMobilePasteEvent);
+        mobileSearchInput.addEventListener('compositionend', searchProducts);
+        mobileSearchInput.addEventListener('change', searchProducts);
+    }
+}
+
+// Handle paste events with slight delay to ensure value is updated
+function handlePasteEvent() {
+    setTimeout(() => {
+        searchProducts();
+    }, 10);
+}
+
+// Handle mobile paste events
+function handleMobilePasteEvent() {
+    setTimeout(() => {
+        searchProducts();
+    }, 10);
+}
+
+// Call this function when the page loads or when the search input is created
+// Example: initializeSearch();
 
 
 
@@ -4657,7 +4731,7 @@ async function loadShopName() {
 
 
 
-
+/*
 async function loadNavCategories() {
        const navContainer = document.getElementById('navCategories');
        navContainer.innerHTML = ''; // Clear existing
@@ -4694,6 +4768,64 @@ async function loadNavCategories() {
   }
 }
 
+if (typeof db !== 'undefined') {
+  loadNavCategories();
+}
+*/
+
+
+
+async function loadNavCategories() {
+  const navContainer = document.getElementById('navCategories');
+  navContainer.innerHTML = ''; // Clear existing
+
+  const isMobile = window.innerWidth <= 768; // Define mobile width breakpoint
+
+  // Sidebar toggle (☰)
+  const link1 = document.createElement('a');
+  link1.href = "#";
+  link1.onclick = toggleSidebar;
+  link1.className = "nav-item dynamic-item";
+  link1.textContent = '☰';
+  navContainer.appendChild(link1);
+
+  // "All" category
+  const link2 = document.createElement('a');
+  link2.href = "#";
+  link2.className = "nav-item dynamic-item";
+  link2.textContent = 'All';
+  navContainer.appendChild(link2);
+
+  try {
+    const querySnapshot = await getDocs(collection(db, 'categories'));
+
+    querySnapshot.forEach(doc => {
+      const data = doc.data();
+
+      const link = document.createElement('a');
+      link.href = "#";
+      link.className = "nav-item dynamic-item";
+ link.style.margin = '0'; 
+      if (isMobile && data.iconImageUrl) {
+        const img = document.createElement('img');
+        img.src = data.iconImageUrl;
+        img.alt = data.name;
+        img.style.width = '20px'; // Small icon
+        img.style.height = '20px';
+        img.style.objectFit = 'contain';
+        link.appendChild(img);
+      } else {
+       link.textContent = data.name.slice(0, 3);
+      }
+
+      navContainer.appendChild(link);
+    });
+  } catch (error) {
+    console.error('Error loading nav categories:', error);
+  }
+}
+
+// Call it only if 'db' is available
 if (typeof db !== 'undefined') {
   loadNavCategories();
 }
