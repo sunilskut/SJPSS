@@ -1690,7 +1690,7 @@ if (!customerId) {
                 if (typeof this.handleSuccess === 'function') {
                     this.handleSuccess(`Welcome back! Continuing with your order.`);
                 }
-                
+                window.location.reload();
                 // Continue with the original function logic
                 // You can call the next part of your function here
                 
@@ -3105,3 +3105,4 @@ document.addEventListener("DOMContentLoaded", listenOrdersBadge);
     </script>
 </body>
 </html>
+
