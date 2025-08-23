@@ -413,29 +413,43 @@
                         </div>
                     </div>
 
-                    <!-- Custom Captcha -->
-                    <div class="group">
-                        <label class="block text-sm font-semibold text-gray-200 mb-3 flex items-center">
-                            <i class="fas fa-shield-alt mr-2 text-indigo-400"></i>
-                            Security Verification <span class="text-red-400 ml-1">*</span>
-                        </label>
-                        <div class="flex items-center gap-4">
-                            <div class="captcha-canvas relative">
-                                <canvas id="captchaCanvas" width="180" height="60" class="rounded-lg"></canvas>
-                                <button type="button" onclick="generateCaptcha()" 
-                                        class="absolute top-1 right-1 bg-white/20 hover:bg-white/30 rounded p-2 transition-colors">
-                                    <i class="fas fa-sync-alt text-white text-sm"></i>
-                                </button>
-                            </div>
-                            <input type="text" id="captchaInput" name="captcha" required
-                                   class="flex-1 px-6 py-4 glass-morphism rounded-xl text-white placeholder-gray-400 input-glow focus:ring-2 focus:ring-indigo-400 transition-all duration-300 border-0"
-                                   placeholder="Enter the code above">
-                        </div>
-                        <div id="captchaError" class="text-red-400 text-sm mt-2 hidden flex items-center">
-                            <i class="fas fa-exclamation-circle mr-2"></i>
-                            <span></span>
-                        </div>
-                    </div>
+                   
+<!-- Mobile-Responsive Custom Captcha -->
+<div class="group">
+    <label class="block text-sm font-semibold text-gray-200 mb-3 flex items-center">
+        <i class="fas fa-shield-alt mr-2 text-indigo-400"></i>
+        Security Verification <span class="text-red-400 ml-1">*</span>
+    </label>
+    
+    <!-- Mobile-first responsive layout -->
+    <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+        <!-- Captcha Canvas Container -->
+        <div class="captcha-canvas relative w-full sm:w-auto flex-shrink-0">
+            <div class="bg-white/10 rounded-lg p-2 backdrop-blur-sm border border-white/20">
+                <canvas id="captchaCanvas" 
+                        class="rounded block mx-auto bg-white/90" 
+                        style="max-width: 100%; height: auto;"></canvas>
+            </div>
+            <button type="button" onclick="generateCaptcha()" 
+                    class="absolute -top-2 -right-2 bg-indigo-500 hover:bg-indigo-600 rounded-full p-2 transition-colors shadow-lg border border-white/20">
+                <i class="fas fa-sync-alt text-white text-xs"></i>
+            </button>
+        </div>
+        
+        <!-- Input Field -->
+        <input type="text" id="captchaInput" name="captcha" required
+               class="w-full sm:flex-1 px-4 py-3 sm:px-6 sm:py-4 glass-morphism rounded-xl text-white placeholder-gray-400 input-glow focus:ring-2 focus:ring-indigo-400 transition-all duration-300 border-0 text-center sm:text-left"
+               placeholder="Enter the code above"
+               autocomplete="off"
+               autocapitalize="none">
+    </div>
+    
+    <div id="captchaError" class="text-red-400 text-sm mt-2 hidden flex items-center">
+        <i class="fas fa-exclamation-circle mr-2"></i>
+        <span></span>
+    </div>
+</div>
+
 
                     <!-- Submit Button -->
                     <div class="pt-4">
