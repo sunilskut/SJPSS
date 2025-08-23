@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Account Details - ShopApp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+     tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideUp 0.6s ease-out',
+                        'slide-down': 'slideDown 0.4s ease-out',
+                        'bounce-in': 'bounceIn 0.6s ease-out',
+                        'pulse-ring': 'pulseRing 1.5s ease-out infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                        'shimmer': 'shimmer 2s linear infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            'from': { opacity: '0', transform: 'translateY(-10px)' },
+                            'to': { opacity: '1', transform: 'translateY(0)' }
+                        },
+                        slideUp: {
+                            'from': { opacity: '0', transform: 'translateY(30px)' },
+                            'to': { opacity: '1', transform: 'translateY(0)' }
+                        },
+                        slideDown: {
+                            'from': { opacity: '0', transform: 'translateY(-20px)' },
+                            'to': { opacity: '1', transform: 'translateY(0)' }
+                        },
+                        bounceIn: {
+                            '0%': { opacity: '0', transform: 'scale(0.3)' },
+                            '50%': { opacity: '1', transform: 'scale(1.05)' },
+                            '70%': { transform: 'scale(0.9)' },
+                            '100%': { opacity: '1', transform: 'scale(1)' }
+                        },
+                        pulseRing: {
+                            '0%': { transform: 'scale(0.33)', opacity: '1' },
+                            '40%, 50%': { opacity: '1' },
+                            '100%': { opacity: '0', transform: 'scale(1.2)' }
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' }
+                        },
+                        glow: {
+                            'from': { boxShadow: '0 0 20px rgba(99, 102, 241, 0.4)' },
+                            'to': { boxShadow: '0 0 30px rgba(99, 102, 241, 0.8)' }
+                        },
+                        shimmer: {
+                            '0%': { backgroundPosition: '-200% 0' },
+                            '100%': { backgroundPosition: '200% 0' }
+                        }
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+                        'shimmer': 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+                    }
+                }
+            }
+        }
+
+    </script>
+    <style>
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .input-glow:focus {
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1), 0 0 20px rgba(99, 102, 241, 0.2);
+        }
+        
+        .floating-particles::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(120, 119, 198, 0.1) 2px, transparent 2px),
+                radial-gradient(circle at 60% 70%, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.08) 1.5px, transparent 1.5px);
+            background-size: 100px 100px, 80px 80px, 120px 120px;
+            animation: float 20s linear infinite;
+            pointer-events: none;
+        }
+
+        .captcha-canvas {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .shimmer-effect {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+    </style>
+
+</head>
+<body class="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 relative">
+    <!-- Animated Background -->
+    <div class="fixed inset-0 floating-particles"></div>
+    <div class="fixed inset-0 bg-gradient-to-br from-indigo-600/20 via-purple-600/20 to-pink-600/20"></div>
+    
+    <!-- Floating Elements -->
+    <div class="fixed top-10 left-10 w-20 h-20 bg-white/10 rounded-full animate-float delay-300"></div>
+    <div class="fixed top-1/2 right-20 w-16 h-16 bg-indigo-400/20 rounded-full animate-float delay-700"></div>
+    <div class="fixed bottom-20 left-1/4 w-12 h-12 bg-purple-400/15 rounded-full animate-float delay-1000"></div>
+
+    <!-- Access Control Overlay -->
+    <div id="accessDenied" class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 hidden">
+        <div class="glass-morphism rounded-2xl p-8 max-w-md mx-4 text-center animate-bounce-in">
+            <div class="text-red-400 text-7xl mb-6 animate-pulse">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-white mb-4">Access Restricted</h2>
+            <p class="text-gray-300 mb-8 leading-relaxed">This secure form can only be accessed through authorized channels.</p>
+            <button onclick="window.location='loginPage.html'" 
+                    class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg">
+                <i class="fas fa-arrow-left mr-2"></i>Go Back
+            </button>
+        </div>
+    </div>
+
+    <!-- Location Permission Modal -->
+    <div id="locationModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-40 hidden">
+        <div class="glass-morphism rounded-2xl p-8 max-w-md mx-4 shadow-2xl animate-bounce-in">
+            <div class="text-center">
+                <div class="text-6xl mb-6 text-blue-400 animate-pulse">
+                    <i class="fas fa-map-marker-alt"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-4">Enable Location Services</h3>
+                <p class="text-gray-300 mb-8 leading-relaxed">We'd like to access your location to provide better delivery services and personalized offers.</p>
+                <div class="flex gap-4">
+                    <button onclick="requestLocation()" 
+                            class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105">
+                        <i class="fas fa-check mr-2"></i>Allow
+                    </button>
+                    <button onclick="skipLocation()" 
+                            class="flex-1 glass-morphism text-gray-300 hover:text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105">
+                        <i class="fas fa-times mr-2"></i>Skip
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="relative z-10 py-8 px-4">
+        <div class="w-full max-w-5xl glass-morphism rounded-3xl overflow-hidden animate-slide-up shadow-2xl mx-auto">
+            <!-- Header Section -->
+            <div class="relative bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-8 py-10 overflow-hidden">
+                <div class="absolute inset-0 shimmer-effect"></div>
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 id="shopHeading" class="text-white/90 text-xl font-medium flex items-center">
+                            <span class="animate-pulse mr-3">🌿</span>
+                            <span class="shimmer-effect">Loading Shop Name...</span>
+                        </h2>
+                        <div class="text-white/70">
+                            <i class="fas fa-user-plus text-2xl"></i>
+                        </div>
+                    </div>
+                    <h1 class="text-white text-4xl md:text-5xl font-bold mb-4 animate-fade-in">
+                        Create Your Account
+                    </h1>
+                    <p class="text-indigo-100 text-lg animate-fade-in delay-300">
+                        Join thousands of happy customers and start your shopping journey
+                    </p>
+                </div>
+            </div>
+
+            <!-- Form Container -->
+            <div class="p-8 md:p-10">
+                <!-- Success Message -->
+                <div id="successMessage" class="hidden mb-8 p-6 glass-morphism rounded-2xl animate-fade-in border border-green-400/30">
+                    <div class="flex items-center">
+                        <div class="text-green-400 text-3xl mr-4 animate-bounce">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-green-300 font-bold text-lg">Account Created Successfully!</h4>
+                            <p class="text-green-200">Welcome aboard! Your journey begins now.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Message -->
+                <div id="errorMessage" class="hidden mb-8 p-6 glass-morphism rounded-2xl animate-fade-in border border-red-400/30">
+                    <div class="flex items-center">
+                        <div class="text-red-400 text-3xl mr-4 animate-pulse">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-red-300 font-bold text-lg">Oops! Something went wrong</h4>
+                            <p class="text-red-200" id="errorText">Please check your details and try again.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="customerForm" class="space-y-8" novalidate>
+                    <!-- Phone Number -->
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="group">
+                        <label for="phone" class="block text-sm font-semibold text-gray-200 mb-3 flex items-center">
+                            <i class="fas fa-phone mr-2 text-indigo-400"></i>
+                            Phone Number <span class="text-red-400 ml-1">*</span>
+                        </label>
+                        <input type="tel" id="phone" name="phone" required 
+                               class="w-full px-6 py-4 glass-morphism rounded-xl text-white placeholder-gray-400 input-glow focus:ring-2 focus:ring-indigo-400 transition-all duration-300 border-0"
+                               placeholder="+91 98765 43210">
+                        <div id="phoneError" class="text-red-400 text-sm mt-2 hidden flex items-center">
+                            <i class="fas fa-exclamation-circle mr-2"></i>
+                            <span></span>
+                        </div>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="group">
+                        <label for="email" class="block text-sm font-semibold text-gray-200 mb-3 flex items-center">
+                            <i class="fas fa-envelope mr-2 text-indigo-400"></i>
+                            Email Address <span class="text-gray-400 ml-1">(Optional)</span>
+                        </label>
+                        <input type="email" id="email" name="email"
+                               class="w-full px-6 py-4 glass-morphism rounded-xl text-white placeholder-gray-400 input-glow focus:ring-2 focus:ring-indigo-400 transition-all duration-300 border-0"
+                               placeholder="your.email@example.com">
+                        <div id="emailError" class="text-red-400 text-sm mt-2 hidden flex items-center">
+                            <i class="fas fa-exclamation-circle mr-2"></i>
+                            <span></span>
+                        </div>
+                    </div>
+   </div>
+
+                    <!-- Full Name -->
+                    <div class="group">
+                        <label for="fullName" class="block text-sm font-semibold text-gray-200 mb-3 flex items-center">
+                            <i class="fas fa-user mr-2 text-indigo-400"></i>
+                            Full Name
+                        </label>
+                        <input type="text" id="fullName" name="fullName"
+                               class="w-full px-6 py-4 glass-morphism rounded-xl text-white placeholder-gray-400 input-glow focus:ring-2 focus:ring-indigo-400 transition-all duration-300 border-0"
+                               placeholder="Enter your full name">
+                        <div id="fullNameError" class="text-red-400 text-sm mt-2 hidden flex items-center">
+                            <i class="fas fa-exclamation-circle mr-2"></i>
+                            <span></span>
+                        </div>
+                    </div>
+
+                    <!-- Address -->
+                    <div class="group">
+                        <label for="address" class="block text-sm font-semibold text-gray-200 mb-3 flex items-center">
+                            <i class="fas fa-map-marker-alt mr-2 text-indigo-400"></i>
+                            Shipping Address <span class="text-red-400 ml-1">*</span>
+                        </label>
+                        <textarea id="address" name="address" required rows="3"
+                                  class="w-full px-6 py-4 glass-morphism rounded-xl text-white placeholder-gray-400 input-glow focus:ring-2 focus:ring-indigo-400 transition-all duration-300 border-0 resize-y"
+                                  placeholder="House/Flat No., Building Name, Street Name, Area"></textarea>
+                        <div id="addressError" class="text-red-400 text-sm mt-2 hidden flex items-center">
+                            <i class="fas fa-exclamation-circle mr-2"></i>
+                            <span></span>
+                        </div>
+                    </div>
+
+                    <!-- City and State Row -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="group">
+                            <label for="city" class="block text-sm font-semibold text-gray-200 mb-3 flex items-center">
+                                <i class="fas fa-city mr-2 text-indigo-400"></i>
+                                City <span class="text-red-400 ml-1">*</span>
+                            </label>
+                            <input type="text" id="city" name="city" required
+                                   class="w-full px-6 py-4 glass-morphism rounded-xl text-white placeholder-gray-400 input-glow focus:ring-2 focus:ring-indigo-400 transition-all duration-300 border-0"
+                                   placeholder="Mumbai">
+                            <div id="cityError" class="text-red-400 text-sm mt-2 hidden flex items-center">
+                                <i class="fas fa-exclamation-circle mr-2"></i>
+                                <span></span>
+                            </div>
+                        </div>
+                        <div class="group">
+                            <label for="state" class="block text-sm font-semibold text-gray-200 mb-3 flex items-center">
+                                <i class="fas fa-flag mr-2 text-indigo-400"></i>
+                                State <span class="text-red-400 ml-1">*</span>
+                            </label>
+                            <select id="state" name="state" required
+                                    class="w-full px-6 py-4 glass-morphism rounded-xl text-white input-glow focus:ring-2 focus:ring-indigo-400 transition-all duration-300 border-0">
+                                <option value="" class="bg-gray-800">Select State</option>
+                                <option value="KL" class="bg-gray-800">Kerala</option>
+                                <option value="TN" class="bg-gray-800">Tamil Nadu</option>
+                                <option value="MH" class="bg-gray-800">Maharashtra</option>
+                                <option value="KA" class="bg-gray-800">Karnataka</option>
+                                <option value="AP" class="bg-gray-800">Andhra Pradesh</option>
+                                <option value="GJ" class="bg-gray-800">Gujarat</option>
+                                <option value="DL" class="bg-gray-800">Delhi</option>
+                            </select>
+                            <div id="stateError" class="text-red-400 text-sm mt-2 hidden flex items-center">
+                                <i class="fas fa-exclamation-circle mr-2"></i>
+                                <span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PIN Code and Landmark Row -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="group">
+                            <label for="pinCode" class="block text-sm font-semibold text-gray-200 mb-3 flex items-center">
+                                <i class="fas fa-mail-bulk mr-2 text-indigo-400"></i>
+                                PIN Code <span class="text-red-400 ml-1">*</span>
+                            </label>
+                            <input type="text" id="pinCode" name="pinCode" required maxlength="6"
+                                   class="w-full px-6 py-4 glass-morphism rounded-xl text-white placeholder-gray-400 input-glow focus:ring-2 focus:ring-indigo-400 transition-all duration-300 border-0"
+                                   placeholder="400001">
+                            <div id="pinCodeError" class="text-red-400 text-sm mt-2 hidden flex items-center">
+                                <i class="fas fa-exclamation-circle mr-2"></i>
+                                <span></span>
+                            </div>
+                        </div>
+                        <div class="group">
+                            <label for="landmark" class="block text-sm font-semibold text-gray-200 mb-3 flex items-center">
+                                <i class="fas fa-landmark mr-2 text-indigo-400"></i>
+                                Landmark
+                            </label>
+                            <input type="text" id="landmark" name="landmark"
+                                   class="w-full px-6 py-4 glass-morphism rounded-xl text-white placeholder-gray-400 input-glow focus:ring-2 focus:ring-indigo-400 transition-all duration-300 border-0"
+                                   placeholder="Near Metro Station">
+                        </div>
+                    </div>
+
+                    <!-- Date of Birth and Gender Row -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="group">
+                            <label for="dateOfBirth" class="block text-sm font-semibold text-gray-200 mb-3 flex items-center">
+                                <i class="fas fa-birthday-cake mr-2 text-indigo-400"></i>
+                                Date of Birth
+                            </label>
+                            <input type="date" id="dateOfBirth" name="dateOfBirth"
+                                   class="w-full px-6 py-4 glass-morphism rounded-xl text-white input-glow focus:ring-2 focus:ring-indigo-400 transition-all duration-300 border-0">
+                        </div>
+                        <div class="group">
+                            <label for="gender" class="block text-sm font-semibold text-gray-200 mb-3 flex items-center">
+                                <i class="fas fa-venus-mars mr-2 text-indigo-400"></i>
+                                Gender
+                            </label>
+                            <select id="gender" name="gender"
+                                    class="w-full px-6 py-4 glass-morphism rounded-xl text-white input-glow focus:ring-2 focus:ring-indigo-400 transition-all duration-300 border-0">
+                                <option value="" class="bg-gray-800">Select Gender</option>
+                                <option value="male" class="bg-gray-800">Male</option>
+                                <option value="female" class="bg-gray-800">Female</option>
+                                <option value="other" class="bg-gray-800">Other</option>
+                                <option value="prefer-not-to-say" class="bg-gray-800">Prefer not to say</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Language and Alternate Phone Row -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="group">
+                            <label for="preferredLanguage" class="block text-sm font-semibold text-gray-200 mb-3 flex items-center">
+                                <i class="fas fa-language mr-2 text-indigo-400"></i>
+                                Preferred Language
+                            </label>
+                            <select id="preferredLanguage" name="preferredLanguage"
+                                    class="w-full px-6 py-4 glass-morphism rounded-xl text-white input-glow focus:ring-2 focus:ring-indigo-400 transition-all duration-300 border-0">
+                                <option value="en" class="bg-gray-800">English</option>
+                                <option value="hi" class="bg-gray-800">മലയാളം</option>
+                                <option value="hi" class="bg-gray-800">हिंदी</option>
+                                <option value="ta" class="bg-gray-800">தமிழ்</option>
+                            </select>
+                        </div>
+                        <div class="group">
+                            <label for="alternatePhone" class="block text-sm font-semibold text-gray-200 mb-3 flex items-center">
+                                <i class="fas fa-phone-alt mr-2 text-indigo-400"></i>
+                                Alternate Phone
+                            </label>
+                            <input type="tel" id="alternatePhone" name="alternatePhone"
+                                   class="w-full px-6 py-4 glass-morphism rounded-xl text-white placeholder-gray-400 input-glow focus:ring-2 focus:ring-indigo-400 transition-all duration-300 border-0"
+                                   placeholder="+91 98765 43210">
+                        </div>
+                    </div>
+
+                    <!-- Shopping Interests -->
+                    <div class="group">
+                        <label for="interests" class="block text-sm font-semibold text-gray-200 mb-3 flex items-center">
+                            <i class="fas fa-shopping-bag mr-2 text-indigo-400"></i>
+                            Shopping Interests
+                        </label>
+                        <textarea id="interests" name="interests" rows="2"
+                                  class="w-full px-6 py-4 glass-morphism rounded-xl text-white placeholder-gray-400 input-glow focus:ring-2 focus:ring-indigo-400 transition-all duration-300 border-0 resize-y"
+                                  placeholder="Fashion, Electronics, Home & Kitchen, Books, etc."></textarea>
+                    </div>
+
+                    <!-- Location Status -->
+                    <div id="locationStatus" class="hidden glass-morphism p-6 rounded-2xl border border-blue-400/30 animate-fade-in">
+                        <div class="flex items-center">
+                            <div class="text-blue-400 text-2xl mr-4 animate-pulse">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div>
+                                <p class="text-blue-300 font-semibold">Location Captured Successfully</p>
+                                <p class="text-blue-200 text-sm" id="locationText"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Custom Captcha -->
+                    <div class="group">
+                        <label class="block text-sm font-semibold text-gray-200 mb-3 flex items-center">
+                            <i class="fas fa-shield-alt mr-2 text-indigo-400"></i>
+                            Security Verification <span class="text-red-400 ml-1">*</span>
+                        </label>
+                        <div class="flex items-center gap-4">
+                            <div class="captcha-canvas relative">
+                                <canvas id="captchaCanvas" width="180" height="60" class="rounded-lg"></canvas>
+                                <button type="button" onclick="generateCaptcha()" 
+                                        class="absolute top-1 right-1 bg-white/20 hover:bg-white/30 rounded p-2 transition-colors">
+                                    <i class="fas fa-sync-alt text-white text-sm"></i>
+                                </button>
+                            </div>
+                            <input type="text" id="captchaInput" name="captcha" required
+                                   class="flex-1 px-6 py-4 glass-morphism rounded-xl text-white placeholder-gray-400 input-glow focus:ring-2 focus:ring-indigo-400 transition-all duration-300 border-0"
+                                   placeholder="Enter the code above">
+                        </div>
+                        <div id="captchaError" class="text-red-400 text-sm mt-2 hidden flex items-center">
+                            <i class="fas fa-exclamation-circle mr-2"></i>
+                            <span></span>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="pt-4">
+                        <button type="submit" id="submitBtn" 
+                                class="w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white font-bold py-5 px-8 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden group">
+                            <div class="absolute inset-0 shimmer-effect opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            <span id="btnText" class="relative z-10 flex items-center justify-center text-lg">
+                                <i class="fas fa-user-plus mr-3"></i>
+                                Create My Account
+                            </span>
+                            <div id="btnLoading" class="hidden relative z-10 flex items-center justify-center">
+                                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
+                                <span class="text-lg">Creating Your Account...</span>
+                            </div>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import {
+            getFirestore,
+            collection,
+            query,
+            orderBy,
+            limit,
+            getDocs,
+            doc,
+	    where,
+            setDoc,
+            getDoc,
+            Timestamp
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+         // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+            authDomain: "sjpss-f504b.firebaseapp.com",
+            projectId: "sjpss-f504b",
+            storageBucket: "sjpss-f504b.firebasestorage.app",
+            messagingSenderId: "227402980311",
+            appId: "1:227402980311:web:56b580456ab6b9c6758992",
+            measurementId: "G-LZ4YP9YPN6"
+        };
+
+        // Initialize Firebase
+        let app, db;
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+        } catch (error) {
+            console.error('Firebase initialization failed:', error);
+            showError('Failed to initialize database connection');
+        }
+
+        // Global variables
+        let userLocation = null;
+        let captchaText = '';
+
+        // Access Control - Check if accessed properly
+        function checkAccess() {
+            const referrer = document.referrer;
+            const isDirectAccess = !referrer || referrer === '';
+            const hasValidParameter = window.location.search.includes('authorized=true');
+            const isFromValidDomain = referrer && (referrer.includes('shopapp.com') || referrer.includes('localhost'));
+/*            
+            if (isDirectAccess && !hasValidParameter && !isFromValidDomain) {
+                document.getElementById('accessDenied').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+                return false;
+            }
+*/
+            return true;
+        }
+
+        // Custom Captcha Generator
+        function generateCaptcha() {
+            const canvas = document.getElementById('captchaCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Generate random text
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+            captchaText = '';
+            for (let i = 0; i < 6; i++) {
+                captchaText += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, '#667eea');
+            gradient.addColorStop(1, '#764ba2');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Add noise lines
+            for (let i = 0; i < 8; i++) {
+                ctx.strokeStyle = `rgba(255, 255, 255, ${Math.random() * 0.3 + 0.1})`;
+                ctx.lineWidth = Math.random() * 2 + 1;
+                ctx.beginPath();
+                ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+                ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
+                ctx.stroke();
+            }
+            
+            // Add noise dots
+            for (let i = 0; i < 30; i++) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.4 + 0.1})`;
+                ctx.beginPath();
+                ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, Math.random() * 2 + 1, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Draw text with variations
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            for (let i = 0; i < captchaText.length; i++) {
+                const char = captchaText[i];
+                const x = 30 + i * 20 + (Math.random() - 0.5) * 10;
+                const y = 30 + (Math.random() - 0.5) * 10;
+                const rotation = (Math.random() - 0.5) * 0.5;
+                
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+                
+                // Shadow
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.fillText(char, 2, 2);
+                
+                // Main text
+                ctx.fillStyle = 'white';
+                ctx.fillText(char, 0, 0);
+                
+                ctx.restore();
+            }
+        }
+
+        // Input Sanitization
+        function sanitizeInput(input) {
+            if (typeof input !== 'string') return input;
+            return DOMPurify.sanitize(input, {
+                ALLOWED_TAGS: [],
+                ALLOWED_ATTR: []
+            }).trim();
+        }
+
+        function sanitizePhoneNumber(phone) {
+            return phone.replace(/[^\d+\s-]/g, '');
+        }
+
+        function sanitizeEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email) ? email.toLowerCase() : '';
+        }
+
+        // Location Services
+        window.requestLocation = function() {
+            if ('geolocation' in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        userLocation = {
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            accuracy: position.coords.accuracy,
+                            timestamp: new Date().toISOString()
+                        };
+                        
+                        document.getElementById('locationModal').classList.add('hidden');
+                        showLocationStatus(`Coordinates: ${userLocation.latitude.toFixed(6)}, ${userLocation.longitude.toFixed(6)}`);
+                    },
+                    (error) => {
+                        console.error('Error getting location:', error);
+                        document.getElementById('locationModal').classList.add('hidden');
+                        showLocationStatus('Location access was denied', 'error');
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 15000,
+                        maximumAge: 300000
+                    }
+                );
+            } else {
+                document.getElementById('locationModal').classList.add('hidden');
+                showLocationStatus('Location services not supported', 'error');
+            }
+        };
+
+        window.skipLocation = function() {
+            document.getElementById('locationModal').classList.add('hidden');
+        };
+
+        function showLocationStatus(text, type = 'success') {
+            const locationStatus = document.getElementById('locationStatus');
+            const locationText = document.getElementById('locationText');
+            
+            locationText.textContent = text;
+            locationStatus.classList.remove('hidden');
+            
+            if (type === 'error') {
+                locationStatus.className = locationStatus.className.replace('border-blue-400/30', 'border-red-400/30');
+                locationStatus.querySelector('i').className = 'fas fa-exclamation-triangle text-red-400 text-2xl mr-4 animate-pulse';
+                locationStatus.querySelector('p').className = 'text-red-300 font-semibold';
+                locationText.className = 'text-red-200 text-sm';
+            }
+        }
+
+        // Form Validation
+        function setupFormValidation() {
+            const inputs = document.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.addEventListener('blur', validateField);
+                input.addEventListener('input', clearFieldError);
+            });
+
+            // Phone formatting
+            const phoneFields = ['phone', 'alternatePhone'];
+            phoneFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                field.addEventListener('input', function(e) {
+                    let value = sanitizePhoneNumber(e.target.value).replace(/\D/g, '');
+                    
+                    if (value.startsWith('91') && value.length > 2) {
+                        value = value.substring(2);
+                    }
+                    
+                    if (value.length <= 10) {
+                        if (value.length >= 6) {
+                            value = value.replace(/(\d{5})(\d{0,5})/, '$1 $2');
+                        }
+                        e.target.value = '+91 ' + value;
+                    } else {
+                        e.target.value = '+91 ' + value.substring(0, 10).replace(/(\d{5})(\d{5})/, '$1 $2');
+                    }
+                });
+            });
+
+            // PIN Code formatting
+            document.getElementById('pinCode').addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 6) {
+                    value = value.substring(0, 6);
+                }
+                e.target.value = value;
+            });
+
+            // Captcha validation
+            document.getElementById('captchaInput').addEventListener('input', function(e) {
+                const input = e.target.value;
+                const errorElement = document.getElementById('captchaError');
+                
+                if (input.length === 6) {
+                    if (input.toUpperCase() === captchaText.toUpperCase()) {
+                        e.target.classList.add('border-green-400');
+                        e.target.classList.remove('border-red-400');
+                        errorElement.classList.add('hidden');
+                    } else {
+                        e.target.classList.add('border-red-400');
+                        e.target.classList.remove('border-green-400');
+                        errorElement.querySelector('span').textContent = 'Incorrect code. Please try again.';
+                        errorElement.classList.remove('hidden');
+                    }
+                }
+            });
+        }
+
+        function validateField(e) {
+            const field = e.target;
+            const value = sanitizeInput(field.value.trim());
+            const errorElement = document.getElementById(field.name + 'Error');
+
+            // Clear previous styling
+            field.classList.remove('border-red-400', 'border-green-400');
+            if (errorElement) errorElement.classList.add('hidden');
+
+            let isValid = true;
+            let errorMessage = '';
+
+            // Required field validation
+            if (field.hasAttribute('required') && !value) {
+                isValid = false;
+                errorMessage = 'This field is required';
+            }
+
+            // Email validation
+            if (field.type === 'email' && value && !sanitizeEmail(value)) {
+                isValid = false;
+                errorMessage = 'Please enter a valid email address';
+            }
+
+            // Phone validation
+            if (field.type === 'tel' && value && !validateIndianPhone(value)) {
+                isValid = false;
+                errorMessage = 'Please enter a valid Indian phone number';
+            }
+
+            // PIN Code validation
+            if (field.name === 'pinCode' && value && !/^[1-9][0-9]{5}$/.test(value)) {
+                isValid = false;
+                errorMessage = 'Please enter a valid 6-digit PIN code';
+            }
+
+            // Name validation
+            if (field.name === 'fullName' && value && !/^[a-zA-Z\s]+$/.test(value)) {
+                isValid = false;
+                errorMessage = 'Name should only contain letters and spaces';
+            }
+
+            // Date of Birth validation
+            if (field.name === 'dateOfBirth' && value) {
+                const today = new Date();
+                const inputDate = new Date(value);
+                if (inputDate > today) {
+                    isValid = false;
+                    errorMessage = 'Date of birth cannot be in the future';
+                }
+            }
+
+            // Show validation result
+            if (!isValid) {
+                field.classList.add('border-red-400');
+                if (errorElement) {
+                    errorElement.querySelector('span').textContent = errorMessage;
+                    errorElement.classList.remove('hidden');
+                }
+            } else if (value) {
+                field.classList.add('border-green-400');
+            }
+
+            return isValid;
+        }
+
+        function clearFieldError(e) {
+            const field = e.target;
+            field.classList.remove('border-red-400');
+            const errorElement = document.getElementById(field.name + 'Error');
+            if (errorElement) errorElement.classList.add('hidden');
+        }
+
+        function validateIndianPhone(phone) {
+            const cleanPhone = phone.replace(/\D/g, '');
+            if (cleanPhone.startsWith('91')) {
+                return cleanPhone.length === 12 && /^91[6-9]\d{9}$/.test(cleanPhone);
+            }
+            return cleanPhone.length === 10 && /^[6-9]\d{9}$/.test(cleanPhone);
+        }
+
+        // Form submission handler
+        function setupFormHandlers() {
+            document.getElementById('customerForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                // Validate captcha
+                const captchaInput = document.getElementById('captchaInput').value;
+                if (captchaInput.toUpperCase() !== captchaText.toUpperCase()) {
+                    showError('Please enter the correct security code');
+                    return;
+                }
+
+                // Validate all required fields
+                const inputs = document.querySelectorAll('input[required], select[required], textarea[required]');
+                let isFormValid = true;
+                inputs.forEach(input => {
+                    if (!validateField({ target: input })) {
+                        isFormValid = false;
+                    }
+                });
+
+                if (!isFormValid) {
+                    showError('Please correct the errors above');
+                    return;
+                }
+
+                const submitBtn = document.getElementById('submitBtn');
+                const btnText = document.getElementById('btnText');
+                const btnLoading = document.getElementById('btnLoading');
+
+                // Show loading state
+                submitBtn.disabled = true;
+                btnText.classList.add('hidden');
+                btnLoading.classList.remove('hidden');
+
+                try {
+                    if (!db) {
+                        throw new Error('Database not initialized');
+                    }
+
+                    // Check if phone number already exists
+                    const phoneQuery = query(collection(db, 'customers'), where('phone', '==', sanitizePhoneNumber(document.getElementById('phone').value)));
+                    const phoneSnapshot = await getDocs(phoneQuery);
+                    if (!phoneSnapshot.empty) {
+                        throw new Error('Phone number already registered');
+                    }
+
+                    // Get the highest current ID
+                    const q = query(collection(db, 'customers'), orderBy('id', 'desc'), limit(1));
+                    const snapshot = await getDocs(q);
+
+                    let newId = 1;
+                    if (!snapshot.empty) {
+                        const lastItem = snapshot.docs[0].data();
+                        newId = parseInt(lastItem.id) + 1;
+                    }
+
+                    const newIdStr = newId.toString();
+
+                    // Sanitize form data
+                    const formData = new FormData(e.target);
+                    const sanitizedData = {
+                        id: newIdStr,
+                        phone: sanitizePhoneNumber(formData.get('phone')),
+                        email: sanitizeEmail(formData.get('email') || '') || null,
+                        fullName: sanitizeInput(formData.get('fullName') || '') || null,
+                        shippingAddress: {
+                            address: sanitizeInput(formData.get('address')),
+                            city: sanitizeInput(formData.get('city')),
+                            state: formData.get('state'),
+                            pinCode: formData.get('pinCode'),
+                            landmark: sanitizeInput(formData.get('landmark') || '') || null,
+                            country: 'IN'
+                        },
+                        dateOfBirth: formData.get('dateOfBirth') || null,
+                        gender: formData.get('gender') || null,
+                        preferredLanguage: formData.get('preferredLanguage') || 'en',
+                        alternatePhone: sanitizePhoneNumber(formData.get('alternatePhone') || '') || null,
+                        interests: sanitizeInput(formData.get('interests') || '') || '',
+                        location: userLocation,
+                        userAgent: navigator.userAgent,
+                        accountStatus: 'active',
+                        emailVerified: false,
+                        phoneVerified: false,
+                        createdAt: Timestamp.now(),
+                        updatedAt: Timestamp.now()
+                    };
+
+                    // Create document with numeric ID as string
+                    const docRef = doc(db, 'customers', newIdStr);
+                    await setDoc(docRef, sanitizedData);
+
+                    showSuccess();
+                    e.target.reset();
+                    generateCaptcha();
+                } catch (error) {
+                    console.error('Error creating account:', error);
+                    showError(error.message || 'Failed to create account. Please try again.');
+                } finally {
+                    // Reset button state
+                    submitBtn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    btnLoading.classList.add('hidden');
+                }
+            });
+        }
+
+        // Load shop name from Firebase
+        async function loadShopName() {
+            if (!db) {
+                document.getElementById('shopHeading').innerHTML = '<span class="text-2xl">🌿</span> <span class="font-bold">ShopApp</span>';
+                return;
+            }
+            
+            try {
+                const metaDoc = doc(db, 'meta', 'metadata');
+                const docSnap = await getDoc(metaDoc);
+                
+                const shopHeading = document.getElementById('shopHeading');
+                
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    shopHeading.innerHTML = `
+                        <span class="text-2xl mr-3">🌿</span>
+                        <span class="font-bold">${sanitizeInput(data.shopName || 'ShopApp')}</span>
+                        <span class="text-indigo-200 ml-2">- ${sanitizeInput(data.place || 'India')}</span>
+                    `;
+                } else {
+                    shopHeading.innerHTML = '<span class="text-2xl">🌿</span> <span class="font-bold">ShopApp</span>';
+                }
+            } catch (error) {
+                console.error('Error fetching shop name:', error);
+                document.getElementById('shopHeading').innerHTML = '<span class="text-2xl">🌿</span> <span class="font-bold">ShopApp</span>';
+            }
+        }
+
+        // Message handlers
+        function showSuccess() {
+            const successMessage = document.getElementById('successMessage');
+            successMessage.classList.remove('hidden');
+            successMessage.scrollIntoView({ behavior: 'smooth' });
+            
+            setTimeout(() => {
+                successMessage.classList.add('hidden');
+            }, 6000);
+        }
+
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            
+            errorText.textContent = message;
+            errorMessage.classList.remove('hidden');
+            errorMessage.scrollIntoView({ behavior: 'smooth' });
+            
+            setTimeout(() => {
+                errorMessage.classList.add('hidden');
+            }, 6000);
+        }
+
+        // Initialize everything
+        async function initialize() {
+            if (!checkAccess()) return;
+
+            try {
+                // Load DOMPurify for better sanitization
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.4.0/purify.min.js';
+                script.async = true;
+                document.head.appendChild(script);
+
+                await new Promise(resolve => {
+                    script.onload = resolve;
+                    script.onerror = () => {
+                        console.warn('DOMPurify failed to load, falling back to basic sanitization');
+                        resolve();
+                    };
+                });
+
+                setupFormValidation();
+                setupFormHandlers();
+                await loadShopName();
+                generateCaptcha();
+                
+                // Show location modal after page load
+                setTimeout(() => {
+                    document.getElementById('locationModal').classList.remove('hidden');
+                }, 1500);
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showError('Failed to initialize form');
+            }
+        }
+
+        // Start initialization
+        initialize();
+    </script>
+
+</body>
+</html>
