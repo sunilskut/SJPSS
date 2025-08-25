@@ -3,23 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta property="og:title" content="SJPSS Trivandrum">
-    <meta property="og:description" content="Get your needs delivered at Home">
-    <meta property="og:image" content="https://media.self.com/photos/599c997a774b667d3bbe1214/master/pass/groceries-family-month.jpg">
-    <meta property="og:url" content="https://sunilskut.github.io/SJPSS/">
-    <meta property="og:type" content="website">
-    <meta property="fb:app_id" content="1234567890">
-
-    <!-- Twitter Card for better preview on Twitter -->
-    <meta name="twitter:card" content="https://media.self.com/photos/599c997a774b667d3bbe1214/master/pass/groceries-family-month.jpg">
-    <meta name="twitter:title" content="SJPSS Trivandrum">
-    <meta name="twitter:description" content="Get your needs delivered at Home">
-    <meta name="twitter:image" content="https://media.self.com/photos/599c997a774b667d3bbe1214/master/pass/groceries-family-month.jpg">
-
     <title>SJPSS</title>
     <script src="https://cdn.tailwindcss.com"></script>
+<!-- Add this to your HTML
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+ -->
+<!--
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         /* Professional CSS Variables */
@@ -227,6 +220,23 @@
             @apply opacity-50 cursor-not-allowed;
         }
 
+	/* add-cart& buy-now button css for consistency 
+.btn-add-cart {
+    @apply bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+}
+
+.btn-buy-now {
+    @apply bg-orange-600 hover:bg-orange-700 text-white py-2 px-3 rounded-lg text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2;
+}
+
+.btn-add-cart-alt {
+    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-3 rounded-lg text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 border border-gray-300;
+}
+
+.btn-buy-now-alt {
+    @apply bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-lg text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2;
+}
+*/
 
     </style>
 </head>
@@ -309,6 +319,13 @@
     Search
 </button>
 
+
+                
+         
+
+
+
+
                     </div>
                 </div>
 
@@ -345,6 +362,18 @@
                             <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span>
                         </a>
                     </div>
+
+
+
+
+
+
+
+
+
+
+
+
 
 <!-- Mobile Filters Button -->
 <span id="mobileFiltersBtn" 
@@ -814,21 +843,22 @@
         // Import Firebase modules
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 	import { getApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-        import { 
-            getFirestore, 
-            collection, 
-            doc,
-            getDoc,
-            getDocs, 
-            setDoc,
-            updateDoc,
-            query, 
-            orderBy,
-	    onSnapshot,
-            limit,
-            where,
-            serverTimestamp
-        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { 
+    getFirestore, 
+    collection, 
+    doc,
+    getDoc,
+    getDocs, 
+    setDoc,
+    updateDoc,
+    query, 
+    orderBy,
+    onSnapshot,
+    limit,
+    where,
+    serverTimestamp,
+    writeBatch
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';     
 
 
         // Professional Firebase Configuration
@@ -967,20 +997,22 @@
             // Fetch products from Firebase
             async fetchProducts() {
                 try {
-                    const q = query(
-                        collection(db, 'products'),
-                        where('status', '==', 'active')
-                    );
+
+		const q = query(
+  			collection(db, "products"),
+  			where("status", "==", "active")
+		);
 
                     const querySnapshot = await getDocs(q);
                     this.products = [];
 
                     querySnapshot.forEach((doc) => {
                         const data = doc.data();
-                        this.products.push({
+                        if (data.stockQuantity > 0) {this.products.push({
                             id: doc.id,
                             ...data
                         });
+		     }
                     });
 
                     // Sort products by name
@@ -1690,7 +1722,10 @@ if (!customerId) {
                 if (typeof this.handleSuccess === 'function') {
                     this.handleSuccess(`Welcome back! Continuing with your order.`);
                 }
-                window.location.reload();
+                
+
+		window.location.reload();
+
                 // Continue with the original function logic
                 // You can call the next part of your function here
                 
@@ -1771,6 +1806,19 @@ if (!customerId) {
     
     return; // Exit the function
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
                 const itemsToShow = itemsOverride || this.cart;
@@ -1875,94 +1923,128 @@ if (!customerId) {
                 }
             }
 
-            async placeOrder() {
-                try {
-                    const customerId = localStorage.getItem("customerId");
-                    if (!customerId) {
-                        this.handleError('Please register or log in before placing an order');
-                        return;
-                    }
 
-                    const selectedMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || "COD";
-                    const orderSource = (window.tempBuyNowOrder && window.tempBuyNowOrder.length > 0)
-                        ? window.tempBuyNowOrder
-                        : this.cart;
+//start
 
-                    if (!orderSource || orderSource.length === 0) {
-                        this.handleError('Your cart is empty');
-                        return;
-                    }
 
-                    // If UPI selected, redirect to payment
-                    if (selectedMethod === "UPI") {
-                        this.proceedToPayment(orderSource);
-                        return;
-                    }
+           async placeOrder() {
+    try {
+        const customerId = localStorage.getItem("customerId");
+        if (!customerId) {
+            this.handleError('Please register or log in before placing an order');
+            return;
+        }
+        const selectedMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || "COD";
+        const orderSource = (window.tempBuyNowOrder && window.tempBuyNowOrder.length > 0)
+            ? window.tempBuyNowOrder
+            : this.cart;
+        if (!orderSource || orderSource.length === 0) {
+            this.handleError('Your cart is empty');
+            return;
+        }
 
-                    // Get next orderId
-                    let newOrderId = 1;
-                    const qOrders = query(collection(db, "orders"), orderBy("orderId", "desc"), limit(1));
-                    const querySnapshot = await getDocs(qOrders);
-                    if (!querySnapshot.empty) {
-                        const lastOrder = querySnapshot.docs[0].data();
-                        newOrderId = (lastOrder.orderId || 0) + 1;
-                    }
-
-                    // Prepare order data
-                    const itemsArray = orderSource.map(item => ({
-                        price: item.price,
-                        productId: item.id,
-                        quantity: item.quantity
-                    }));
-                    const totalAmount = itemsArray.reduce((sum, i) => sum + i.price * i.quantity, 0);
-
-                    // Get shipping address
-                    const customerSnap = await getDoc(doc(db, "customers", customerId));
-                    const customer = customerSnap.data();
-                    const shipping = customer.shippingAddress || {};
-                    const phone = customer.phone;
-
-                    const orderData = {
-                        orderId: newOrderId,
-                        createdAt: new Date().toISOString(),
-                        customerId: customerId,
-                        deliveryStaff: null,
-                        items: itemsArray,
-                        paymentMethod: selectedMethod,
-                        paymentStatus: "unpaid",
-                        shippingDetails: {
-                            address: shipping.address || "Not Set",
-                            method: "standard",
-			    phone: phone,
-                            pincode: shipping.pinCode || ""
-                        },
-                        status: "pending",
-                        totalAmount: totalAmount
-                    };
-
-                    // Save to Firestore
-                    await setDoc(doc(db, "orders", String(newOrderId)), orderData);
-
-                    this.handleSuccess(`Order #${newOrderId} placed successfully! 🎉`);
-
-                    // Clear cart only for normal checkout
-                    if (!window.tempBuyNowOrder) {
-                        this.cart = [];
-                        this.saveCart();
-                        this.showCart();
-                    }
-
-                    // Close modals
-                    document.getElementById('orderSummaryModal').classList.add('hidden');
-                    this.closeCart();
-
-                    // Clear Buy Now temp data
-                    window.tempBuyNowOrder = null;
-
-                } catch (error) {
-                    this.handleError('Failed to place order', error);
-                }
+        // Check stock availability before proceeding
+        for (const item of orderSource) {
+            const productRef = doc(db, "products", item.id);
+            const productSnap = await getDoc(productRef);
+            
+            if (!productSnap.exists()) {
+                this.handleError(`Product ${item.id} not found`);
+                return;
             }
+            
+            const product = productSnap.data();
+            const currentStock = product.stockQuantity || 0;
+            
+            if (currentStock < item.quantity) {
+                this.handleError(`Insufficient stock for ${product.name || item.id}. Available: ${currentStock}, Required: ${item.quantity}`);
+                return;
+            }
+        }
+
+        // If UPI selected, redirect to payment
+        if (selectedMethod === "UPI") {
+            this.proceedToPayment(orderSource);
+            return;
+        }
+        // Get next orderId
+        let newOrderId = 1;
+        const qOrders = query(collection(db, "orders"), orderBy("orderId", "desc"), limit(1));
+        const querySnapshot = await getDocs(qOrders);
+        if (!querySnapshot.empty) {
+            const lastOrder = querySnapshot.docs[0].data();
+            newOrderId = (lastOrder.orderId || 0) + 1;
+        }
+        // Prepare order data
+        const itemsArray = orderSource.map(item => ({
+            price: item.price,
+            productId: item.id,
+            quantity: item.quantity
+        }));
+        const totalAmount = itemsArray.reduce((sum, i) => sum + i.price * i.quantity, 0);
+        // Get shipping address
+        const customerSnap = await getDoc(doc(db, "customers", customerId));
+        const customer = customerSnap.data();
+        const shipping = customer.shippingAddress || {};
+        const phone = customer.phone;
+        const orderData = {
+            orderId: newOrderId,
+            createdAt: new Date().toISOString(),
+            customerId: customerId,
+            deliveryStaff: null,
+            items: itemsArray,
+            paymentMethod: selectedMethod,
+            paymentStatus: "unpaid",
+            shippingDetails: {
+                address: shipping.address || "Not Set",
+                method: "standard",
+                phone: phone,
+                pincode: shipping.pinCode || ""
+            },
+            status: "pending",
+            totalAmount: totalAmount
+        };
+
+        // Use a batch to ensure atomic operations
+        const batch = writeBatch(db);
+
+        // Add order to batch
+        batch.set(doc(db, "orders", String(newOrderId)), orderData);
+
+        // Deduct stock quantities for each item
+        for (const item of orderSource) {
+            const productRef = doc(db, "products", item.id);
+            const productSnap = await getDoc(productRef);
+            const product = productSnap.data();
+            const newStockQuantity = (product.stockQuantity || 0) - item.quantity;
+            
+            batch.update(productRef, {
+                stockQuantity: newStockQuantity
+            });
+        }
+
+        // Commit all operations atomically
+        await batch.commit();
+
+        this.handleSuccess(`Order #${newOrderId} placed successfully! 🎉`);
+        // Clear cart only for normal checkout
+        if (!window.tempBuyNowOrder) {
+            this.cart = [];
+            this.saveCart();
+            this.showCart();
+        }
+        // Close modals
+        document.getElementById('orderSummaryModal').classList.add('hidden');
+        this.closeCart();
+        // Clear Buy Now temp data
+        window.tempBuyNowOrder = null;
+    } catch (error) {
+        this.handleError('Failed to place order', error);
+    }
+}
+
+//end
+
 
 
 // Professional Payment System with QR Code Generation
@@ -1971,6 +2053,20 @@ proceedToPayment(orderSource) {
     const total = orderSource.reduce((sum, item) => sum + item.price * item.quantity, 0);
     document.getElementById("orderSummaryModal").classList.add("hidden");
 
+
+
+/*
+
+let upiUrl='';
+(async () => {
+   upiUrl = await getUpiUrl(total);
+  if (upiUrl) {
+    console.log("Generated UPI URL:", upiUrl);
+    // You can now generate QR code or redirect
+  }
+})();
+
+*/
 	const now = new Date();
 	const time = now.toLocaleString();
     	const customerId = localStorage.getItem("customerId");
@@ -2878,6 +2974,61 @@ function speak(message) {
   }
 }
 
+
+/*
+//qr code
+async function generateUPIQr(amount) {
+  try {
+    // Get payee details from Firestore
+    const metaDoc = await db.collection("meta").doc("metadata").get();
+    if (!metaDoc.exists) {
+      console.error("Meta document not found");
+      return;
+    }
+
+    const { upiId, payeeName } = metaDoc.data();
+
+    // Get customerId from localStorage
+    const customerId = localStorage.getItem("customerId") || "GUEST";
+
+    // Current date & time
+    const now = new Date();
+    const dateTime = now.toLocaleString("en-IN", { 
+      dateStyle: "short", 
+      timeStyle: "medium" 
+    });
+
+    // Transaction reference = customerId
+    const tr = customerId;
+
+    // Note includes customerId + datetime
+    const note = `Payment from customer ${customerId} on ${dateTime}`;
+
+    // Build UPI Dynamic QR URL (fixed amount)
+    const upiUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&am=${encodeURIComponent(amount)}&cu=INR&tr=${encodeURIComponent(tr)}&tn=${encodeURIComponent(note)}`;
+
+    // Generate QR inside element #upiQrCode
+    QRCode.toCanvas(document.getElementById("upiQrCode"), upiUrl, {
+      width: 240,
+      margin: 2,
+      color: {
+        dark: "#000000",
+        light: "#ffffff"
+      }
+    }, function (error) {
+      if (error) console.error("QR Generation Error:", error);
+      else console.log("UPI Dynamic QR Generated:", upiUrl);
+    });
+
+    return upiUrl; // return for logging/saving
+  } catch (err) {
+    console.error("Error generating UPI QR:", err);
+  }
+}
+
+*/
+
+
 document.getElementById('btnShowQR')?.addEventListener('click', () => {
     document.getElementById('qrContainer').classList.remove('hidden');
     generateUPIQr(totalAmount);
@@ -2886,7 +3037,6 @@ document.getElementById('btnShowQR')?.addEventListener('click', () => {
 
 
 // Account (Profile) routines starts here
-
 
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -2931,7 +3081,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // Attach click handler for showing menu
-  function attachProfileHandler(el) {
+  function attachProfileHandler(el, isMobile = false) {
     if (!el) return;
 
     el.addEventListener("click", async (e) => {
@@ -2945,7 +3095,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const customerSnap = await getDoc(customerRef);
 
         if (customerSnap.exists()) {
-          showAccountMenu(customerSnap.data(), el);
+          showAccountMenu(customerSnap.data(), el, isMobile);
         } else {
           alert("Customer record not found. Please register again.");
           localStorage.removeItem("customerId");
@@ -2955,8 +3105,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // Account popup menu
-  function showAccountMenu(customerData, triggerEl) {
+  // Account popup menu with responsive positioning
+  function showAccountMenu(customerData, triggerEl, isMobile = false) {
     const existing = document.querySelector("#accountMenuPopup");
     if (existing) existing.remove();
 
@@ -2965,7 +3115,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const menu = document.createElement("div");
     menu.id = "accountMenuPopup";
     menu.className =
-      "absolute bg-white border rounded-xl shadow-xl w-64 z-50 text-sm overflow-hidden";
+      "fixed bg-white border rounded-xl shadow-xl w-64 z-50 text-sm overflow-hidden";
 
     const profileImage = imageUrl
       ? `<img src="${imageUrl}" alt="Profile" class="w-12 h-12 rounded-full object-cover">`
@@ -2993,9 +3143,32 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     document.body.appendChild(menu);
 
+    // Position menu based on device type
     const rect = triggerEl.getBoundingClientRect();
-    menu.style.top = rect.bottom + window.scrollY + "px";
-    menu.style.left = rect.left + "px";
+    
+    if (isMobile) {
+      // Mobile: Menu appears above the footer button
+      menu.style.bottom = (window.innerHeight - rect.top) + "px";
+      menu.style.left = Math.max(10, rect.left - (menu.offsetWidth / 2) + (rect.width / 2)) + "px";
+      
+      // Ensure menu doesn't go off screen horizontally
+      const menuWidth = 256; // w-64 = 16rem = 256px
+      if (rect.left - (menuWidth / 2) + (rect.width / 2) < 10) {
+        menu.style.left = "10px";
+      } else if (rect.left + (menuWidth / 2) + (rect.width / 2) > window.innerWidth - 10) {
+        menu.style.left = (window.innerWidth - menuWidth - 10) + "px";
+      }
+    } else {
+      // Desktop: Menu appears below the header button
+      menu.style.top = (rect.bottom + 5) + "px";
+      menu.style.left = rect.left + "px";
+      
+      // Ensure menu doesn't go off screen horizontally
+      const menuWidth = 256; // w-64 = 16rem = 256px
+      if (rect.left + menuWidth > window.innerWidth - 10) {
+        menu.style.left = (window.innerWidth - menuWidth - 10) + "px";
+      }
+    }
 
     document.getElementById("logoutBtn").addEventListener("click", () => {
       localStorage.removeItem("customerId");
@@ -3003,18 +3176,26 @@ document.addEventListener("DOMContentLoaded", async () => {
       window.location.href = "customerRegistration.html";
     });
 
+    // Close menu when clicking outside
     document.addEventListener("click", function handler(e) {
       if (!menu.contains(e.target) && e.target !== triggerEl) {
         menu.remove();
         document.removeEventListener("click", handler);
       }
     });
+
+    // Close menu on scroll (especially useful for mobile)
+    const scrollHandler = () => {
+      menu.remove();
+      window.removeEventListener("scroll", scrollHandler);
+    };
+    window.addEventListener("scroll", scrollHandler);
   }
 
   // Run initial setup
   await updateProfileIcons();
-  attachProfileHandler(profileAccount);
-  attachProfileHandler(mbBtnYou);
+  attachProfileHandler(profileAccount, false); // Desktop - menu comes down
+  attachProfileHandler(mbBtnYou, true);        // Mobile - menu comes up
 });
 
 
@@ -3102,7 +3283,56 @@ function listenOrdersBadge() {
 // Start listening when page loads
 document.addEventListener("DOMContentLoaded", listenOrdersBadge);
 
+
+
+
+/*
+
+/ Function to build and return UPI URL
+window.getUpiUrl = async function getUpiUrl(total) {
+  try {
+    // Get payee details from Firestore
+    const metaRef = doc(db, "meta", "metadata");
+    const metaDoc = await getDoc(metaRef);
+
+    if (!metaDoc.exists()) {
+      console.error("Meta document not found");
+      return null;
+    }
+
+    const { upiId, payeeName } = metaDoc.data();
+
+    // Get customerId from localStorage
+    const customerId = localStorage.getItem("customerId") || "GUEST";
+
+    // Current date & time
+    const now = new Date();
+    const dateTime = now.toLocaleString("en-IN", {
+      dateStyle: "short",
+      timeStyle: "medium"
+    });
+
+    // Transaction reference = customerId
+    const tr = customerId;
+
+    // Note includes customerId + datetime
+    const note = `Payment from customer ${customerId} on ${dateTime}`;
+
+    // Build UPI Dynamic QR URL (fixed amount)
+    const upiUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(
+      payeeName
+    )}&am=${encodeURIComponent(total)}&cu=INR&tr=${encodeURIComponent(
+      tr
+    )}&tn=${encodeURIComponent(note)}`;
+
+    return upiUrl;
+  } catch (error) {
+    console.error("Error building UPI URL:", error);
+    return null;
+  }
+}
+
+*/
     </script>
 </body>
 </html>
-
