@@ -5,14 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SJPSS</title>
     <script src="https://cdn.tailwindcss.com"></script>
-<!-- Add this to your HTML
-    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
- -->
-<!--
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
- -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         /* Professional CSS Variables */
@@ -220,7 +213,10 @@
             @apply opacity-50 cursor-not-allowed;
         }
 
-	/* add-cart& buy-now button css for consistency 
+	
+
+
+ add-cart& buy-now button css for consistency 
 .btn-add-cart {
     @apply bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
 }
@@ -236,7 +232,11 @@
 .btn-buy-now-alt {
     @apply bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-lg text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2;
 }
-*/
+
+
+
+
+
 
     </style>
 </head>
@@ -281,121 +281,85 @@
         </div>
     </nav>
 
-    <!-- Professional Header -->
-    <header class="header-backdrop sticky top-0 z-30 border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <!-- Logo Section -->
-                <div class="flex items-center space-x-4">
-                    <button id="openMobileMenu" class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors focus-ring">
-                        <i class="fas fa-bars text-xl text-gray-600"></i>
+  <!-- Professional Header -->
+<header class="header-backdrop sticky top-0 z-30 border-b border-gray-200 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-14 sm:h-16">
+            <!-- Logo Section -->
+            <div class="flex items-center space-x-2">
+                <button id="openMobileMenu" class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <i class="fas fa-bars text-lg text-gray-600"></i>
+                </button>
+                <div class="flex items-center space-x-2">
+                    <!-- Mobile: Show only SJPSS -->
+                    <div class="block sm:hidden">
+                        <h1 class="text-lg font-bold text-green-800 m-0">SJPSS</h1>
+                    </div>
+                    <!-- Tablet & Desktop: Show SJPSS + subtitle -->
+                    <div class="hidden sm:block">
+                        <h1 class="text-xl font-bold text-gray-800">SJPSS</h1>
+                        <p class="text-xs text-gray-500">Professional Shopping</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enhanced Search Bar -->
+            <div class="flex-1 max-w-xs sm:max-w-2xl mx-2 sm:mx-6">
+                <div class="relative">
+                    <input
+                        type="text"
+                        id="searchInput"
+                        placeholder="Search products..."
+                        class="w-full px-3 py-2 sm:px-4 sm:py-3 pl-10 sm:pl-12 pr-10 sm:pr-16 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all text-sm sm:text-base"
+                    >
+                    <i class="fas fa-search absolute left-3 sm:left-4 top-3 sm:top-4 text-gray-400 text-sm sm:text-base"></i>
+                    <button class="absolute right-1 sm:right-2 top-1 sm:top-1.5 bg-blue-600 text-white px-2 sm:px-4 py-1 sm:py-2 rounded-lg hover:bg-blue-700 text-xs sm:text-sm font-medium transition-colors hidden sm:block">
+                        Search
                     </button>
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center shadow-md">
-                            <i class="fas fa-store text-white text-lg"></i>
-                        </div>
-                        <div class="hidden sm:block">
-                            <h1 class="text-xl font-bold text-gray-800">SJPSS</h1>
-                            <p class="text-xs text-gray-500">Professional Shopping</p>
-                        </div>
-                    </div>
                 </div>
+            </div>
 
-                <!-- Enhanced Search Bar -->
-                <div class="flex-1 max-w-2xl mx-6">
-                    <div class="relative">
-                        <input
-                            type="text"
-                            id="searchInput"
-                            placeholder="Search for products, brands, categories..."
-                            class="w-full px-4 py-3 pl-12 pr-16 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all"
-                        >
-                        <i class="fas fa-search absolute left-4 top-4 text-gray-400"></i>
-                   <!--     <button class="absolute right-2 top-1.5 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors">
-                            Search
-                        </button>
-		  -->
-<button class="absolute right-2 top-1.5 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors hidden sm:block">
-    Search
-</button>
-
-
-                
-         
-
-
-
-
-                    </div>
+            <!-- Professional Header Actions -->
+            <div class="flex items-center space-x-1 sm:space-x-2 md:space-x-6">
+                <!-- Desktop: Show additional icons -->
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="#" id="profileAccount" class="flex flex-col items-center text-gray-700 hover:text-blue-600 transition-colors group relative">
+                        <i class="fas fa-user text-base group-hover:scale-110 transition-transform text-gray-600"></i>
+                        <span class="text-xs mt-1">Account</span>
+                    </a>
+                    <button id="ordersIcon" 
+                        onclick="window.location.href='myOrders.html'"
+                        class="flex flex-col items-center text-gray-700 hover:text-blue-600 transition-colors group relative focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg p-2">
+                        <i class="fas fa-box text-base group-hover:scale-110 transition-transform"></i>
+                        <span class="hidden sm:block text-xs mt-1">Orders</span>
+                        <span id="ordersNumber" 
+                            class="absolute -top-1 -right-1 bg-green-600 text-white text-xs rounded-full h-4 sm:h-5 w-4 sm:w-5 flex items-center justify-center font-semibold">
+                            0
+                        </span>
+                    </button>
+                    <a href="#" class="flex flex-col items-center text-gray-700 hover:text-blue-600 transition-colors group relative">
+                        <i class="fas fa-heart text-base group-hover:scale-110 transition-transform"></i>
+                        <span class="text-xs mt-1">Wishlist</span>
+                        <span class="absolute -top-1 sm:-top-2 -right-1 sm:-right-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span>
+                    </a>
                 </div>
-
-                <!-- Professional Header Actions -->
-                <div class="flex items-center space-x-2 md:space-x-6">
-                    <div class="hidden md:flex items-center space-x-6">
-                       <a href="#" id="profileAccount" class="flex flex-col items-center text-gray-700 hover:text-blue-600 transition-colors group relative">
-    <!-- Profile Image OR Default Icon will be injected by JS
-    <span id="profileIconWrapper" class="w-7 h-7 flex items-center justify-center rounded-full overflow-hidden bg-gray-200"> -->
-        <i class="fas fa-user text-lg group-hover:scale-110 transition-transform text-gray-600"></i>
-    </span>
-    <span class="text-xs mt-1">Account</span>
-</a>
-
-
-<button id="ordersIcon" 
-  onclick="window.location.href='myOrders.html'"
-  class="flex flex-col items-center text-gray-700 hover:text-blue-600 transition-colors group relative focus-ring rounded-lg p-2">
-  
-  <i class="fas fa-box text-lg group-hover:scale-110 transition-transform"></i>
-  <span class="hidden sm:block text-xs mt-1">Orders</span>
-  
-  <!-- Optional badge for pending orders count -->
-  <span id="ordersNumber" 
-    class="absolute -top-1 -right-1 bg-green-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold ">
-    0
-  </span>
-</button>
-
-
-                        <a href="#" class="flex flex-col items-center text-gray-700 hover:text-blue-600 transition-colors group relative">
-                            <i class="fas fa-heart text-lg group-hover:scale-110 transition-transform"></i>
-                            <span class="text-xs mt-1">Wishlist</span>
-                            <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span>
-                        </a>
-                    </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- Mobile Filters Button -->
-<span id="mobileFiltersBtn" 
-      class="lg:hidden mb-6 inline-flex items-center justify-center space-x-2 cursor-pointer align-middle">
-  <i class="fas fa-filter text-blue-600 text-lg leading-none"></i>
-  <span class="hidden sm:inline font-medium text-gray-700"></span>
-</span>
-
-
-
-
-
-                                   
-                    <button id="cartIcon" class="flex flex-col items-center text-gray-700 hover:text-blue-600 transition-colors group relative focus-ring rounded-lg p-2">
-                        <i class="fas fa-shopping-cart text-lg group-hover:scale-110 transition-transform"></i>
-                        <span class="hidden sm:block text-xs mt-1">Cart</span>
-                        <span id="cartItemsNumber" class="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold">0</span>
+                <!-- Mobile: Show only filter and cart icons -->
+                <div class="flex md:hidden items-center space-x-1">
+                    <span id="mobileFiltersBtn" 
+                        class="inline-flex items-center justify-center p-2 text-gray-600 hover:text-blue-600 transition-colors cursor-pointer">
+                        <i class="fas fa-filter text-base"></i>
+                    </span>
+                    <button id="cartIcon" 
+                        class="flex flex-col items-center text-gray-700 hover:text-blue-600 transition-colors group relative focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg p-2">
+                        <i class="fas fa-shopping-cart text-base group-hover:scale-110 transition-transform"></i>
+                        <span id="cartItemsNumber" 
+                            class="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-semibold">0</span>
                     </button>
                 </div>
             </div>
         </div>
-    </header>
+    </div>
+</header>
 
     <!-- Main Content Container -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
