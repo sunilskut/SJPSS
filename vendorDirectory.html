@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Directory</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-functions-compat.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'spin-slow': 'spin 2s linear infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' }
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-green-500 via-blue-600 to-indigo-700" oncontextmenu="return false;" onkeydown="if(event.keyCode==123) return false;">
+    <div class="min-h-screen p-4 md:p-6 lg:p-8">
+        <div class="max-w-7xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden animate-fade-in">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-slate-800 via-blue-600 to-blue-700 text-white p-6 md:p-8 lg:p-12">
+                <div class="text-center">
+                    <div class="flex items-center justify-between mb-3 md:mb-4">
+                        <a href="adminPanel.html#vendors" class="group inline-flex items-center px-4 py-2 text-sm font-medium text-blue-100 bg-white/10 border border-white/20 rounded-lg hover:bg-white/20 hover:text-white transition-all duration-200 backdrop-blur-sm">
+                            <svg class="w-4 h-4 mr-2 transition-transform duration-200 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                            <span>Admin Panel</span>
+                        </a>
+                        <h1 class="text-3xl md:text-2xl lg:text-3xl font-light">
+                            <i class="fas fa-store mr-3"></i>Vendor Directory System
+                        </h1>
+                        <div class="w-32"></div>
+                    </div>
+           <p class="text-blue-100 text-base md:text-base opacity-90">
+    View vendor profiles securely
+</p>
+                </div>
+            </div>
+
+
+                <!-- Vendor List Section -->
+                <div id="vendorList" class="hidden bg-white rounded-2xl p-4 md:p-6 lg:p-8 animate-slide-up">
+                    <h2 class="text-2xl md:text-3xl font-semibold text-gray-800 pb-4 border-b-4 border-green-500 flex items-center mb-6">
+                        <i class="fas fa-users mr-3 text-green-500"></i>Existing Vendors
+                    </h2>
+                    <div id="vendorCards" class="space-y-4 md:space-y-6"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <script>
+        // Production-ready vendor management script
+
+       const firebaseConfig = {
+  apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+  authDomain: "sjpss-f504b.firebaseapp.com",
+  projectId: "sjpss-f504b",
+  storageBucket: "sjpss-f504b.firebasestorage.app",
+  messagingSenderId: "227402980311",
+  appId: "1:227402980311:web:56b580456ab6b9c6758992",
+  measurementId: "G-LZ4YP9YPN6"
+};
+
+        // Initialize Firebase
+        let db;
+        try {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            db = firebase.firestore();
+
+            // Enable offline persistence
+            db.enablePersistence().catch((err) => {
+                console.warn('Firebase persistence failed:', err.code);
+                utils.showNotification('Offline support is limited', 'error');
+            });
+        } catch (error) {
+            console.error('Firebase initialization failed:', error);
+            utils.showNotification('Database connection failed. Please try again later.', 'error');
+            throw new Error('Database connection failed');
+        }
+
+        // Global variables
+        let editingVendorId = null;
+        let isFormSubmitting = false;
+
+        // Utility Functions
+        const utils = {
+            sanitizeInput: (input) => {
+                if (typeof input !== 'string') return input;
+                return input.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+            },
+
+            showNotification: (message, type = 'success') => {
+                const container = document.getElementById('notificationContainer');
+                if (!container) return;
+
+                const notification = document.createElement('div');
+                const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+                const icon = type === 'success' ? 'check-circle' : 'exclamation-circle';
+
+                notification.className = `${bgColor} text-white px-6 py-4 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 flex items-center space-x-3 max-w-sm`;
+
+                const sanitizedMessage = utils.sanitizeInput(message);
+
+                notification.innerHTML = `
+                    <i class="fas fa-${icon}" aria-hidden="true"></i>
+                    <span class="font-medium">${sanitizedMessage}</span>
+                    <button type="button" onclick="this.parentElement.remove()" class="ml-auto text-white hover:text-gray-200" aria-label="Close notification">
+                        <i class="fas fa-times" aria-hidden="true"></i>
+                    </button>
+                `;
+
+                container.appendChild(notification);
+
+                setTimeout(() => notification.classList.remove('translate-x-full'), 100);
+
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.classList.add('translate-x-full');
+                        setTimeout(() => notification.remove(), 300);
+                    }
+                }, 5000);
+            },
+
+           
+            debounce: (func, wait) => {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+        };
+
+        // Form Management
+        const formManager = {
+            clearForm: () => {
+                const form = document.getElementById('vendorForm');
+                if (!form) return;
+
+                form.reset();
+                editingVendorId = null;
+                isFormSubmitting = false;
+
+                const submitBtn = document.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.innerHTML = '<i class="fas fa-save mr-3" aria-hidden="true"></i>Create Vendor';
+                    submitBtn.disabled = false;
+                }
+
+                form.querySelectorAll('input, select, textarea').forEach(element => {
+                    element.classList.remove('border-red-500', 'border-green-500');
+                    element.classList.add('border-gray-200');
+                });
+
+                utils.showNotification('Form cleared');
+            },
+
+            populateForm: (vendor) => {
+                const form = document.getElementById('vendorForm');
+                if (!form || !vendor) return;
+
+                try {
+                    Object.keys(vendor).forEach(key => {
+                        const element = form.elements[key];
+                        if (element) {
+                            if (element.type === 'checkbox') {
+                                element.checked = Boolean(vendor[key]);
+                            } else if (key !== 'passwordHash' && key !== 'createdAt' && key !== 'updatedAt') {
+                                element.value = utils.sanitizeInput(vendor[key]) || '';
+                            }
+                        }
+                    });
+
+                    editingVendorId = vendor.vendorId;
+                    const submitBtn = document.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.innerHTML = '<i class="fas fa-edit mr-3" aria-hidden="true"></i>Update Vendor';
+                    }
+
+                    utils.showNotification('Vendor loaded for editing');
+                } catch (error) {
+                    console.error('Error populating form:', error);
+                    utils.showNotification('Error loading vendor data', 'error');
+                }
+            },
+
+            validateForm: (formData) => {
+                const errors = [];
+
+                const requiredFields = ['name', 'email', 'phone', 'companyName', 'addressLine1', 'city', 'state', 'postalCode', 'country'];
+                requiredFields.forEach(field => {
+                    if (!formData.get(field) || !formData.get(field).trim()) {
+                        errors.push(`${field} is required`);
+                    }
+                });
+
+                const email = formData.get('email');
+                if (email && !utils.validateEmail(email)) {
+                    errors.push('Invalid email format');
+                }
+
+                const phone = formData.get('phone');
+                if (phone && !utils.validatePhone(phone)) {
+                    errors.push('Invalid phone number format');
+                }
+
+                const gstNumber = formData.get('gstNumber');
+                if (gstNumber && !utils.validateGST(gstNumber)) {
+                    errors.push('Invalid GST number format');
+                }
+
+                const panNumber = formData.get('panNumber');
+                if (panNumber && !utils.validatePAN(panNumber)) {
+                    errors.push('Invalid PAN number format');
+                }
+
+                const ifscCode = formData.get('ifscCode');
+                if (ifscCode && !utils.validateIFSC(ifscCode)) {
+                    errors.push('Invalid IFSC code format');
+                }
+
+                return errors;
+            }
+        };
+
+        // Vendor Operations
+        const vendorOperations = {
+            loadVendors: async () => {
+                const vendorList = document.getElementById('vendorList');
+                const vendorCards = document.getElementById('vendorCards');
+
+                if (!vendorList || !vendorCards) return;
+
+                vendorCards.innerHTML = `
+                    <div class="flex justify-center items-center py-12">
+                        <div class="text-center">
+                            <i class="fas fa-spinner animate-spin text-4xl text-gray-400 mb-4" aria-hidden="true"></i>
+                            <p class="text-gray-500 text-lg">Loading vendors...</p>
+                        </div>
+                    </div>
+                `;
+                vendorList.classList.remove('hidden');
+
+                try {
+                    const snapshot = await db.collection('vendors')
+                        .orderBy('updatedAt', 'desc')
+                        .limit(50)
+                        .get();
+
+                    if (snapshot.empty) {
+                        vendorCards.innerHTML = `
+                            <div class="text-center py-12">
+                                <i class="fas fa-store text-6xl text-gray-300 mb-4" aria-hidden="true"></i>
+                                <p class="text-gray-500 text-xl">No vendors found</p>
+                                <p class="text-gray-400">Create your first vendor above!</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    vendorCards.innerHTML = '';
+                    const fragment = document.createDocumentFragment();
+
+                    snapshot.forEach(doc => {
+                        const vendor = doc.data();
+                        vendor.id = doc.id;
+                        const vendorCard = vendorOperations.createVendorCard(vendor);
+                        fragment.appendChild(vendorCard);
+                    });
+
+                    vendorCards.appendChild(fragment);
+                    utils.showNotification(`Loaded ${snapshot.size} vendors`);
+
+                } catch (error) {
+                    console.error('Error loading vendors:', error);
+                    vendorCards.innerHTML = `
+                        <div class="text-center py-12">
+                            <i class="fas fa-exclamation-triangle text-6xl text-red-300 mb-4" aria-hidden="true"></i>
+                            <p class="text-red-500 text-xl">Error loading vendors</p>
+                            <p class="text-red-400">Please try again later</p>
+                            <button onclick="vendorOperations.loadVendors()" 
+                                    class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                                Retry
+                            </button>
+                        </div>
+                    `;
+                    utils.showNotification('Failed to load vendors', 'error');
+                }
+            },
+
+            createVendorCard: (vendor) => {
+                const card = document.createElement('div');
+                card.className = 'bg-gray-50 rounded-2xl p-6 border-l-4 border-blue-500 hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1';
+
+                const safeVendor = {
+                    name: utils.sanitizeInput(vendor.name) || 'N/A',
+                    email: utils.sanitizeInput(vendor.email) || 'N/A',
+                    phone: utils.sanitizeInput(vendor.phone) || 'N/A',
+                    companyName: utils.sanitizeInput(vendor.companyName) || 'N/A',
+                    gstNumber: utils.sanitizeInput(vendor.gstNumber) || 'N/A',
+                    city: utils.sanitizeInput(vendor.city) || 'N/A',
+                    vendorId: utils.sanitizeInput(vendor.vendorId) || vendor.id,
+                    rating: Number(vendor.rating) || 0,
+                    totalProducts: Number(vendor.totalProducts) || 0,
+                    isActive: Boolean(vendor.isActive),
+                    isVerified: Boolean(vendor.isVerified)
+                };
+
+                card.innerHTML = `
+                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4">
+                        <div class="mb-4 lg:mb-0">
+                            <h3 class="text-xl md:text-2xl font-bold text-gray-800 mb-2">${safeVendor.name}</h3>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="px-3 py-1 rounded-full text-sm font-medium ${safeVendor.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                    <i class="fas fa-circle text-xs mr-1" aria-hidden="true"></i>${safeVendor.isActive ? 'Active' : 'Inactive'}
+                                </span>
+                                <span class="px-3 py-1 rounded-full text-sm font-medium ${safeVendor.isVerified ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}">
+                                    <i class="fas fa-${safeVendor.isVerified ? 'check-circle' : 'clock'} text-xs mr-1" aria-hidden="true"></i>${safeVendor.isVerified ? 'Verified' : 'Unverified'}
+                                </span>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                        <div class="space-y-1">
+                            <p class="text-gray-500 font-medium">Vendor ID</p>
+                            <p class="text-gray-800 font-mono text-xs">${safeVendor.vendorId}</p>
+                        </div>
+                        <div class="space-y-1">
+                            <p class="text-gray-500 font-medium">Email</p>
+                            <p class="text-gray-800 truncate">${safeVendor.email}</p>
+                        </div>
+                        <div class="space-y-1">
+                            <p class="text-gray-500 font-medium">Phone</p>
+                            <p class="text-gray-800">${safeVendor.phone}</p>
+                        </div>
+                        <div class="space-y-1">
+                            <p class="text-gray-500 font-medium">Company</p>
+                            <p class="text-gray-800 truncate">${safeVendor.companyName}</p>
+                        </div>
+                        <div class="space-y-1">
+                            <p class="text-gray-500 font-medium">GST Number</p>
+                            <p class="text-gray-800 font-mono text-xs">${safeVendor.gstNumber}</p>
+                        </div>
+                        <div class="space-y-1">
+                            <p class="text-gray-500 font-medium">City</p>
+                            <p class="text-gray-800">${safeVendor.city}</p>
+                        </div>
+                        <div class="space-y-1">
+                            <p class="text-gray-500 font-medium">Rating</p>
+                            <div class="flex items-center space-x-1">
+                                <span class="text-yellow-500 font-bold">${safeVendor.rating.toFixed(1)}</span>
+                                <div class="flex text-yellow-400" aria-label="Rating: ${safeVendor.rating} out of 5 stars">
+                                    ${Array.from({length: 5}, (_, i) => 
+                                        `<i class="fas fa-star ${i < Math.floor(safeVendor.rating) ? '' : 'text-gray-300'}" aria-hidden="true"></i>`
+                                    ).join('')}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <p class="text-gray-500 font-medium">Products</p>
+                            <p class="text-gray-800 font-semibold">${safeVendor.totalProducts}</p>
+                        </div>
+                    </div>
+                `;
+
+                return card;
+            },
+
+           
+
+saveVendor: async (vendorData) => {
+    try {
+        const now = new Date().toISOString();
+
+        const emailQuery = await db.collection('vendors')
+            .where('email', '==', vendorData.email)
+            .where('vendorId', '!=', editingVendorId || '')
+            .get();
+
+        if (!emailQuery.empty) {
+            utils.showNotification('A vendor with this email already exists', 'error');
+            return false;
+        }
+
+        if (vendorData.password) {
+            delete vendorData.password;
+            vendorData.hasPassword = true;
+        }
+
+        if (editingVendorId) {
+            vendorData.updatedAt = now;
+            await db.collection('vendors').doc(editingVendorId).set(vendorData, { merge: true });
+            utils.showNotification('Vendor updated successfully!');
+        } else {
+            vendorData.vendorId = utils.generateVendorId();
+            vendorData.createdAt = now;
+            vendorData.updatedAt = now;
+            const createVendorFunction = firebase.functions().httpsCallable('createVendor');
+            await createVendorFunction(vendorData);
+            utils.showNotification('Vendor created successfully!');
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error saving vendor:', error);
+        if (error.code === 'permission-denied') {
+            utils.showNotification('Permission denied. Please check your access rights.', 'error');
+        } else if (error.code === 'unavailable') {
+            utils.showNotification('Service temporarily unavailable. Please try again.', 'error');
+        } else {
+            utils.showNotification('Error saving vendor. Please try again.', 'error');
+        }
+        return false;
+    }
+}
+
+        };
+
+        // Event Listeners Setup
+        const setupEventListeners = () => {
+            const vendorForm = document.getElementById('vendorForm');
+            if (vendorForm) {
+                vendorForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+
+                    if (isFormSubmitting) {
+                        utils.showNotification('Please wait, form is being submitted...', 'error');
+                        return;
+                    }
+
+                    isFormSubmitting = true;
+                    const submitBtn = document.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin mr-3" aria-hidden="true"></i>Saving...';
+                    }
+
+                    try {
+                        const formData = new FormData(e.target);
+
+                        const errors = formManager.validateForm(formData);
+                        if (errors.length > 0) {
+                            utils.showNotification(errors[0], 'error');
+                            return;
+                        }
+
+                        const vendorData = {};
+
+                        for (let [key, value] of formData.entries()) {
+                            if (key === 'password' && value) {
+                                vendorData.hasPassword = true;
+                            } else if (key === 'deliveryZones' && value) {
+                                vendorData.deliveryZones = value.split(',').map(zone => utils.sanitizeInput(zone.trim()));
+                            } else if (value !== '') {
+                                vendorData[key] = utils.sanitizeInput(value);
+                            }
+                        }
+
+                        vendorData.isActive = formData.has('isActive');
+                        vendorData.isVerified = formData.has('isVerified');
+                        vendorData.paymentVerified = formData.has('paymentVerified');
+
+                        if (vendorData.rating) vendorData.rating = Math.max(0, Math.min(5, parseFloat(vendorData.rating)));
+                        if (vendorData.totalProducts) vendorData.totalProducts = Math.max(0, parseInt(vendorData.totalProducts));
+
+                        const success = await vendorOperations.saveVendor(vendorData);
+
+                        if (success) {
+                            formManager.clearForm();
+
+                            const vendorList = document.getElementById('vendorList');
+                            if (vendorList && !vendorList.classList.contains('hidden')) {
+                                await vendorOperations.loadVendors();
+                            }
+                        }
+
+                    } catch (error) {
+                        console.error('Form submission error:', error);
+                        utils.showNotification('An unexpected error occurred. Please try again.', 'error');
+                    } finally {
+                        isFormSubmitting = false;
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = editingVendorId ? 
+                                '<i class="fas fa-edit mr-3" aria-hidden="true"></i>Update Vendor' : 
+                                '<i class="fas fa-save mr-3" aria-hidden="true"></i>Create Vendor';
+                        }
+                    }
+                });
+            }
+
+            
+           
+
+          
+
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    const form = document.getElementById('vendorForm');
+                    if (form && !isFormSubmitting) {
+                        form.dispatchEvent(new Event('submit'));
+                    }
+                }
+                if (e.ctrlKey && e.key === 'r') {
+                    e.preventDefault();
+                    formManager.clearForm();
+                }
+            });
+        };
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+		
+		vendorOperations.loadVendors();
+
+
+
+                utils.showNotification('Vendor Directory initialized');
+
+            } catch (error) {
+                console.error('Initialization error:', error);
+                utils.showNotification('System initialization failed', 'error');
+            }
+        });
+
+        // Global functions for button onclick handlers
+        window.vendorOperations = vendorOperations;
+        window.formManager = formManager;
+        window.utils = utils;
+
+
+
+
+    </script>
+</body>
+</html>

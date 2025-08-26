@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Order Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/umd/lucide.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
+    <style>
+        .status-badge {
+            @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+        }
+        .status-draft { @apply bg-gray-100 text-gray-800; }
+        .status-approved { @apply bg-blue-100 text-blue-800; }
+        .status-sent { @apply bg-yellow-100 text-yellow-800; }
+        .status-confirmed { @apply bg-green-100 text-green-800; }
+        .status-inTransit { @apply bg-purple-100 text-purple-800; }
+        .status-delivered { @apply bg-indigo-100 text-indigo-800; }
+        .status-verified { @apply bg-emerald-100 text-emerald-800; }
+        .status-closed { @apply bg-gray-100 text-gray-800; }
+        .status-cancelled { @apply bg-red-100 text-red-800; }
+
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #3B82F6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .modal {
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Loading State -->
+    <div id="loadingState" class="fixed inset-0 bg-white flex items-center justify-center z-50">
+        <div class="text-center">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-600">Loading Purchase Orders...</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="mainContent" class="hidden">
+        <!-- Header -->
+        <div class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-6">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+                            <i data-lucide="package" class="mr-3"></i>
+                            Purchase Order Management
+                        </h1>
+                        <p class="text-gray-600 mt-1">Manage warehouse operations and PO lifecycle</p>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button id="refreshBtn" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                            <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Filters and Stats -->
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Status Filter -->
+                <div class="lg:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
+                    <select id="statusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Status</option>
+                        <option value="approved">Approved</option>
+                        <option value="sent">Sent to Vendor</option>
+                        <option value="confirmed">Confirmed by Vendor</option>
+                        <option value="inTransit">In Transit</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="verified">Verified</option>
+                        <option value="closed">Closed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="text-2xl font-bold text-blue-600" id="totalPOs">0</div>
+                    <div class="text-sm text-gray-600">Total POs</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="text-2xl font-bold text-green-600" id="pendingPOs">0</div>
+                    <div class="text-sm text-gray-600">Pending Actions</div>
+                </div>
+            </div>
+
+            <!-- Purchase Orders Table -->
+            <div class="bg-white shadow-xl rounded-lg overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Purchase Orders</h2>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PO Details</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expected Delivery</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="poTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Purchase orders will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden text-center py-12">
+                    <i data-lucide="inbox" class="w-16 h-16 text-gray-300 mx-auto mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No Purchase Orders Found</h3>
+                    <p class="text-gray-500">No purchase orders match your current filter criteria.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PO Details Modal -->
+    <div id="poModal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900" id="modalTitle">Purchase Order Details</h2>
+                    <button id="closeModal" class="text-gray-400 hover:text-gray-600">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+
+                <div id="modalContent">
+                    <!-- Modal content will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Update Modal -->
+    <div id="statusModal" class="hidden fixed inset-0 bg-black bg-opacity-50 modal flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg max-w-md w-full mx-4">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Update PO Status</h3>
+                <form id="statusUpdateForm">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">New Status</label>
+                            <select id="newStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md" required>
+                                <option value="">Select Status</option>
+                                <option value="sent">Send to Vendor</option>
+                                <option value="confirmed">Mark as Confirmed</option>
+                                <option value="inTransit">Mark as In Transit</option>
+                                <option value="delivered">Mark as Delivered</option>
+                                <option value="verified">Mark as Verified</option>
+                                <option value="closed">Close PO</option>
+                                <option value="cancelled">Cancel PO</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                            <textarea id="statusNotes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Add notes about this status change..."></textarea>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button type="button" id="cancelStatusUpdate" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                            Update Status
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+            authDomain: "sjpss-f504b.firebaseapp.com",
+            projectId: "sjpss-f504b",
+            storageBucket: "sjpss-f504b.firebasestorage.app",
+            messagingSenderId: "227402980311",
+            appId: "1:227402980311:web:56b580456ab6b9c6758992",
+            measurementId: "G-LZ4YP9YPN6"
+        };
+
+        // Firebase initialization
+        let db = null;
+        let purchaseOrders = [];
+        let vendors = [];
+        let currentPO = null;
+
+        // Initialize Firebase and load data
+        function initializeApp() {
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                
+                loadData();
+            } catch (error) {
+                console.error('Firebase initialization error:', error);
+                alert('Failed to connect to database: ' + error.message);
+            }
+        }
+
+        // Load all required data
+        async function loadData() {
+            try {
+                await Promise.all([loadPurchaseOrders(), loadVendors()]);
+                
+                setupEventListeners();
+                renderPurchaseOrders();
+                updateStats();
+                
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('mainContent').classList.remove('hidden');
+                
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+                alert('Failed to load data: ' + error.message);
+            }
+        }
+
+        // Load purchase orders from Firestore
+        async function loadPurchaseOrders() {
+            try {
+                const snapshot = await db.collection('purchaseOrders').get();
+                
+                purchaseOrders = [];
+                snapshot.forEach(doc => {
+                    const poData = doc.data();
+                    // Only include POs that are not in draft status
+                    if (poData.status !== 'draft') {
+                        purchaseOrders.push({
+                            id: doc.id,
+                            ...poData
+                        });
+                    }
+                });
+                
+                // Sort by creation date (newest first)
+                purchaseOrders.sort((a, b) => {
+                    const dateA = a.createdAt?.toDate() || new Date(0);
+                    const dateB = b.createdAt?.toDate() || new Date(0);
+                    return dateB - dateA;
+                });
+                
+                console.log(`Loaded ${purchaseOrders.length} purchase orders`);
+            } catch (error) {
+                console.error('Error loading purchase orders:', error);
+                throw error;
+            }
+        }
+
+        // Load vendors for reference
+        async function loadVendors() {
+            try {
+                const snapshot = await db.collection('vendors').get();
+                
+                vendors = [];
+                snapshot.forEach(doc => {
+                    vendors.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                console.log(`Loaded ${vendors.length} vendors`);
+            } catch (error) {
+                console.error('Error loading vendors:', error);
+                throw error;
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Refresh button
+            document.getElementById('refreshBtn').addEventListener('click', function() {
+                document.getElementById('loadingState').classList.remove('hidden');
+                document.getElementById('mainContent').classList.add('hidden');
+                loadData();
+            });
+
+            // Status filter
+            document.getElementById('statusFilter').addEventListener('change', function() {
+                renderPurchaseOrders();
+            });
+
+            // Modal close buttons
+            document.getElementById('closeModal').addEventListener('click', closeModal);
+            document.getElementById('cancelStatusUpdate').addEventListener('click', closeStatusModal);
+
+            // Status update form
+            document.getElementById('statusUpdateForm').addEventListener('submit', handleStatusUpdate);
+
+            // Close modals when clicking outside
+            document.getElementById('poModal').addEventListener('click', function(e) {
+                if (e.target === this) closeModal();
+            });
+            document.getElementById('statusModal').addEventListener('click', function(e) {
+                if (e.target === this) closeStatusModal();
+            });
+        }
+
+        // Render purchase orders table
+        function renderPurchaseOrders() {
+            const tbody = document.getElementById('poTableBody');
+            const emptyState = document.getElementById('emptyState');
+            const statusFilter = document.getElementById('statusFilter').value;
+            
+            // Filter POs based on status
+            let filteredPOs = purchaseOrders;
+            if (statusFilter) {
+                filteredPOs = purchaseOrders.filter(po => po.status === statusFilter);
+            }
+
+            if (filteredPOs.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            tbody.innerHTML = '';
+
+            filteredPOs.forEach(po => {
+                const vendor = vendors.find(v => v.vendorId === po.vendorId || v.id === po.vendorId);
+                const expectedDelivery = po.expectedDeliveryDate ? new Date(po.expectedDeliveryDate).toLocaleDateString() : 'Not set';
+                
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="font-medium text-gray-900">${po.poId}</div>
+                        <div class="text-sm text-gray-500">${po.totalQuantity} items</div>
+                        <div class="text-sm text-gray-500">Created: ${po.createdAt?.toDate().toLocaleDateString() || 'N/A'}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="font-medium text-gray-900">${vendor?.companyName || 'Unknown Vendor'}</div>
+                        <div class="text-sm text-gray-500">${vendor?.name || ''}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="font-medium text-gray-900">₹${po.totalAmount?.toFixed(2) || '0.00'}</div>
+                        <div class="text-sm text-gray-500">Tax: ₹${po.totalTax?.toFixed(2) || '0.00'}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="status-badge status-${po.status}">${getStatusDisplay(po.status)}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${expectedDelivery}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                        <button onclick="viewPO('${po.id}')" class="text-blue-600 hover:text-blue-900">View</button>
+                        ${getActionButtons(po.status, po.id)}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
+        // Get status display text
+        function getStatusDisplay(status) {
+            const statusMap = {
+                'approved': 'Approved',
+                'sent': 'Sent to Vendor',
+                'confirmed': 'Confirmed',
+                'inTransit': 'In Transit',
+                'delivered': 'Delivered',
+                'verified': 'Verified',
+                'closed': 'Closed',
+                'cancelled': 'Cancelled'
+            };
+            return statusMap[status] || status;
+        }
+
+        // Get action buttons based on status
+        function getActionButtons(status, poId) {
+            const nextActions = {
+                'approved': 'sent',
+                'sent': 'confirmed',
+                'confirmed': 'inTransit',
+                'inTransit': 'delivered',
+                'delivered': 'verified',
+                'verified': 'closed'
+            };
+
+            if (status === 'closed' || status === 'cancelled') {
+                return '';
+            }
+
+            return `<button onclick="openStatusModal('${poId}')" class="text-green-600 hover:text-green-900">Update Status</button>`;
+        }
+
+        // View PO details
+        function viewPO(poId) {
+            const po = purchaseOrders.find(p => p.id === poId);
+            if (!po) return;
+
+            currentPO = po;
+            const vendor = vendors.find(v => v.vendorId === po.vendorId || v.id === po.vendorId);
+
+            document.getElementById('modalTitle').textContent = `Purchase Order - ${po.poId}`;
+            
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <!-- PO Information -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Order Information</h3>
+                        <div class="space-y-2 text-sm">
+                            <div><span class="font-medium">PO Number:</span> ${po.poId}</div>
+                            <div><span class="font-medium">Status:</span> <span class="status-badge status-${po.status}">${getStatusDisplay(po.status)}</span></div>
+                            <div><span class="font-medium">PO Date:</span> ${new Date(po.poDate).toLocaleDateString()}</div>
+                            <div><span class="font-medium">Expected Delivery:</span> ${po.expectedDeliveryDate ? new Date(po.expectedDeliveryDate).toLocaleDateString() : 'Not set'}</div>
+                            <div><span class="font-medium">Payment Terms:</span> ${po.paymentTerms || 'Not specified'}</div>
+                        </div>
+                    </div>
+
+                    <!-- Vendor Information -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Vendor Information</h3>
+                        <div class="space-y-2 text-sm">
+                            <div><span class="font-medium">Company:</span> ${vendor?.companyName || 'Unknown'}</div>
+                            <div><span class="font-medium">Contact:</span> ${vendor?.name || 'N/A'}</div>
+                            <div><span class="font-medium">Phone:</span> ${vendor?.phone || 'N/A'}</div>
+                            <div><span class="font-medium">Email:</span> ${vendor?.email || 'N/A'}</div>
+                            <div><span class="font-medium">City:</span> ${vendor?.city || 'N/A'}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products Table -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Products Ordered</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Price</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tax</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                ${po.products?.map(product => `
+                                    <tr>
+                                        <td class="px-4 py-3 text-sm">${product.name || product.productId}</td>
+                                        <td class="px-4 py-3 text-sm">${product.quantity}</td>
+                                        <td class="px-4 py-3 text-sm">₹${product.unitPrice?.toFixed(2) || '0.00'}</td>
+                                        <td class="px-4 py-3 text-sm">₹${product.lineTax?.toFixed(2) || '0.00'}</td>
+                                        <td class="px-4 py-3 text-sm font-medium">₹${((product.lineTotal || 0) + (product.lineTax || 0)).toFixed(2)}</td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="5" class="px-4 py-3 text-sm text-gray-500 text-center">No products found</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Totals -->
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <span class="font-medium text-gray-700">Total Quantity:</span>
+                            <p class="text-lg font-semibold text-gray-900">${po.totalQuantity || 0}</p>
+                        </div>
+                        <div>
+                            <span class="font-medium text-gray-700">Subtotal:</span>
+                            <p class="text-lg font-semibold text-gray-900">₹${po.subtotalAmount?.toFixed(2) || '0.00'}</p>
+                        </div>
+                        <div>
+                            <span class="font-medium text-gray-700">Total Tax:</span>
+                            <p class="text-lg font-semibold text-gray-900">₹${po.totalTax?.toFixed(2) || '0.00'}</p>
+                        </div>
+                        <div>
+                            <span class="font-medium text-gray-700">Grand Total:</span>
+                            <p class="text-xl font-bold text-blue-600">₹${po.totalAmount?.toFixed(2) || '0.00'}</p>
+                        </div>
+                    </div>
+                </div>
+
+                ${po.remarks ? `
+                    <div class="mt-6">
+                        <h4 class="font-medium text-gray-900 mb-2">Remarks:</h4>
+                        <p class="text-sm text-gray-600 bg-gray-50 p-3 rounded">${po.remarks}</p>
+                    </div>
+                ` : ''}
+            `;
+
+            document.getElementById('poModal').classList.remove('hidden');
+            
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
+        // Open status update modal
+        function openStatusModal(poId) {
+            currentPO = purchaseOrders.find(p => p.id === poId);
+            if (!currentPO) return;
+
+            // Filter status options based on current status
+            const statusSelect = document.getElementById('newStatus');
+            const currentStatus = currentPO.status;
+            
+            // Define allowed transitions
+            const allowedTransitions = {
+                'approved': ['sent', 'cancelled'],
+                'sent': ['confirmed', 'cancelled'],
+                'confirmed': ['inTransit', 'cancelled'],
+                'inTransit': ['delivered', 'cancelled'],
+                'delivered': ['verified', 'cancelled'],
+                'verified': ['closed']
+            };
+
+            const options = allowedTransitions[currentStatus] || [];
+            
+            statusSelect.innerHTML = '<option value="">Select Status</option>';
+            options.forEach(status => {
+                const option = document.createElement('option');
+                option.value = status;
+                option.textContent = getStatusDisplay(status);
+                statusSelect.appendChild(option);
+            });
+
+            document.getElementById('statusModal').classList.remove('hidden');
+        }
+
+        // Handle status update
+        async function handleStatusUpdate(e) {
+            e.preventDefault();
+            
+            const newStatus = document.getElementById('newStatus').value;
+            const notes = document.getElementById('statusNotes').value;
+            
+            if (!newStatus || !currentPO) return;
+
+            try {
+                const updateData = {
+                    status: newStatus,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                // Add status-specific fields
+                if (newStatus === 'delivered') {
+                    updateData.deliveredAt = firebase.firestore.FieldValue.serverTimestamp();
+                } else if (newStatus === 'verified') {
+                    updateData.verifiedAt = firebase.firestore.FieldValue.serverTimestamp();
+                } else if (newStatus === 'closed') {
+                    updateData.closedAt = firebase.firestore.FieldValue.serverTimestamp();
+                }
+
+                // Add notes if provided
+                if (notes.trim()) {
+                    updateData.statusNotes = notes.trim();
+                }
+
+                await db.collection('purchaseOrders').doc(currentPO.id).update(updateData);
+                
+                alert('Status updated successfully!');
+                closeStatusModal();
+                
+                // Reload data
+                await loadPurchaseOrders();
+                renderPurchaseOrders();
+                updateStats();
+                
+            } catch (error) {
+                console.error('Error updating status:', error);
+                alert('Failed to update status: ' + error.message);
+            }
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('poModal').classList.add('hidden');
+            currentPO = null;
+        }
+
+        // Close status modal
+        function closeStatusModal() {
+            document.getElementById('statusModal').classList.add('hidden');
+            document.getElementById('statusUpdateForm').reset();
+            currentPO = null;
+        }
+
+        // Update statistics
+        function updateStats() {
+            const totalPOs = purchaseOrders.length;
+            const pendingPOs = purchaseOrders.filter(po => 
+                !['closed', 'cancelled'].includes(po.status)
+            ).length;
+
+            document.getElementById('totalPOs').textContent = totalPOs;
+            document.getElementById('pendingPOs').textContent = pendingPOs;
+        }
+
+        // Initialize the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                initializeApp();
+            }, 100);
+        });
+    </script>
+</body>
+</html>

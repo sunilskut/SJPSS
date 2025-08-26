@@ -1,0 +1,1953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COD Payment Management - DeliveryHub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+        import { getFirestore, collection, getDocs, doc, updateDoc, onSnapshot, query, orderBy, where, Timestamp, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+        
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+            authDomain: "sjpss-f504b.firebaseapp.com",
+            projectId: "sjpss-f504b",
+            storageBucket: "sjpss-f504b.firebasestorage.app",
+            messagingSenderId: "227402980311",
+            appId: "1:227402980311:web:56b580456ab6b9c6758992",
+            measurementId: "G-LZ4YP9YPN6"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // Make Firebase available globally
+        window.db = db;
+        window.firestoreFunctions = {
+            collection,
+            getDocs,
+            doc,
+            updateDoc,
+            onSnapshot,
+            query,
+            orderBy,
+            where,
+            Timestamp,
+            addDoc
+        };
+    </script>
+    
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --mobile-footer-height: 70px;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding-bottom: 2rem;
+        }
+        
+        .mobile-footer {
+            height: var(--mobile-footer-height);
+            background: linear-gradient(90deg, #1e293b 0%, #334155 100%);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .nav-item {
+            transition: all 0.3s ease;
+        }
+        
+        .nav-item:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateX(4px);
+        }
+        
+        .nav-item.active {
+            background: linear-gradient(90deg, #059669, #047857);
+            border-right: 4px solid #10b981;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .payment-card {
+            transition: all 0.3s ease;
+        }
+        
+        .payment-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .status-pending {
+            background-color: #fef3c7;
+            color: #d97706;
+        }
+        
+        .status-collected {
+            background-color: #d1fae5;
+            color: #059669;
+        }
+        
+        .status-verified {
+            background-color: #dbeafe;
+            color: #2563eb;
+        }
+        
+        .status-deposited {
+            background-color: #e0e7ff;
+            color: #7c3aed;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                z-index: 50;
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding-bottom: var(--mobile-footer-height);
+            }
+            
+            .mobile-footer {
+                display: flex;
+            }
+            
+            .desktop-only {
+                display: none;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .mobile-footer {
+                display: none;
+            }
+        }
+        
+        .loading-shimmer {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+    </style>
+</head>
+<body class="font-sans">
+    <!-- Mobile Header -->
+    <div class="md:hidden bg-slate-800 text-white p-4 flex justify-between items-center">
+        <button id="mobileMenuBtn" class="text-2xl">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h1 class="text-xl font-bold">COD Management</h1>
+        <div id="mobileTime" class="text-sm"></div>
+    </div>
+
+  <!-- Sidebar Navigation -->
+<nav id="sidebar" class="sidebar fixed left-0 top-0 h-full text-white z-40">
+    <div class="p-4 border-b border-slate-600">
+        <div class="flex items-center space-x-2">
+            <div class="w-9 h-9 bg-green-500 rounded-lg flex items-center justify-center">
+                <i class="fas fa-money-bill-wave text-lg"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-bold">COD Manager</h2>
+                <p class="text-xs text-slate-300">Payment Control</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="p-3">
+        <!-- Navigation Menu -->
+        <ul class="space-y-1">
+            <li>
+                <a href="dashboard.html" class="nav-item flex items-center space-x-2 py-2 px-3 rounded-lg text-sm">
+                    <i class="fas fa-tachometer-alt w-5"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="#cod-overview" class="nav-item active flex items-center space-x-2 py-2 px-3 rounded-lg text-sm">
+                    <i class="fas fa-money-bill-wave w-5"></i>
+                    <span>COD Overview</span>
+                </a>
+            </li>
+            <li>
+                <a href="#collections" id="collections" class="nav-item flex items-center space-x-2 py-2 px-3 rounded-lg text-sm">
+                    <i class="fas fa-hand-holding-usd w-5"></i>
+                    <span>Collections</span>
+                    <span id="pendingCollections" class="ml-auto bg-red-500 text-[10px] px-2 py-0.5 rounded-full">0</span>
+                </a>
+            </li>
+            <li>
+                <a href="#reconciliation" class="nav-item flex items-center space-x-2 py-2 px-3 rounded-lg text-sm">
+                    <i class="fas fa-balance-scale w-5"></i>
+                    <span>Reconciliation</span>
+                </a>
+            </li>
+            <li>
+                <a href="#driver-settlements" class="nav-item flex items-center space-x-2 py-2 px-3 rounded-lg text-sm">
+                    <i class="fas fa-users-cog w-5"></i>
+                    <span>Driver Settlements</span>
+                </a>
+            </li>
+            <li>
+                <a href="#payment-reports" class="nav-item flex items-center space-x-2 py-2 px-3 rounded-lg text-sm">
+                    <i class="fas fa-file-invoice-dollar w-5"></i>
+                    <span>Payment Reports</span>
+                </a>
+            </li>
+            <li>
+                <a href="#failed-collections" class="nav-item flex items-center space-x-2 py-2 px-3 rounded-lg text-sm">
+                    <i class="fas fa-exclamation-triangle w-5"></i>
+                    <span>Failed Collections</span>
+                    <span id="failedCount" class="ml-auto bg-red-500 text-[10px] px-2 py-0.5 rounded-full">0</span>
+                </a>
+            </li>
+            <li>
+                <a href="#cash-deposits" class="nav-item flex items-center space-x-2 py-2 px-3 rounded-lg text-sm">
+                    <i class="fas fa-university w-5"></i>
+                    <span>Bank Deposits</span>
+                </a>
+            </li>
+        </ul>
+
+        <!-- Quick Actions -->
+        <div class="mt-6 pt-4 border-t border-slate-600">
+            <h4 class="text-xs font-semibold text-slate-300 mb-2">Quick Actions</h4>
+            <ul class="space-y-1">
+                <li>
+                    <button onclick="openCollectionModal()" class="nav-item flex items-center space-x-2 py-2 px-3 rounded-lg w-full text-left text-sm">
+                        <i class="fas fa-plus w-5"></i>
+                        <span>Record Collection</span>
+                    </button>
+                </li>
+                <li>
+                    <button onclick="generateDailyReport()" class="nav-item flex items-center space-x-2 py-2 px-3 rounded-lg w-full text-left text-sm">
+                        <i class="fas fa-chart-bar w-5"></i>
+                        <span>Daily Report</span>
+                    </button>
+                </li>
+                <li>
+                    <button onclick="bulkUpdateStatus()" class="nav-item flex items-center space-x-2 py-2 px-3 rounded-lg w-full text-left text-sm">
+                        <i class="fas fa-edit w-5"></i>
+                        <span>Bulk Update</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <div class="container mx-auto px-4 py-6">
+            <!-- Header -->
+            <div class="glass-effect rounded-xl shadow-xl p-6 mb-8">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center">
+                    <div class="mb-4 lg:mb-0">
+                        <h1 class="text-3xl font-bold text-gray-800 mb-2">COD Payment Management</h1>
+                        <p class="text-gray-600">Monitor and manage cash on delivery collections</p>
+                        <div id="connectionStatus" class="mt-2 flex items-center space-x-2">
+                            <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                            <span class="text-sm text-gray-500">Connecting to Firebase...</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button onclick="refreshData()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-refresh mr-2"></i>Refresh
+                        </button>
+                        <button onclick="exportCODReport()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-download mr-2"></i>Export Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COD Metrics Dashboard -->
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+                <div class="payment-card glass-effect rounded-xl p-6 text-center">
+                    <div id="totalCODAmount" class="text-3xl font-bold text-green-600 mb-1">₹--</div>
+                    <div class="text-sm text-gray-600">Total COD Today</div>
+                    <div class="text-xs text-green-500 mt-1">Collected amount</div>
+                </div>
+                
+                <div class="payment-card glass-effect rounded-xl p-6 text-center">
+                    <div id="pendingCODAmount" class="text-3xl font-bold text-red-600 mb-1">₹--</div>
+                    <div class="text-sm text-gray-600">Pending Collection</div>
+                    <div class="text-xs text-red-500 mt-1">Outstanding</div>
+                </div>
+                
+                <div class="payment-card glass-effect rounded-xl p-6 text-center">
+                    <div id="collectedCODAmount" class="text-3xl font-bold text-blue-600 mb-1">₹--</div>
+                    <div class="text-sm text-gray-600">Collected</div>
+                    <div class="text-xs text-blue-500 mt-1">With drivers</div>
+                </div>
+                
+                <div class="payment-card glass-effect rounded-xl p-6 text-center">
+                    <div id="depositedAmount" class="text-3xl font-bold text-purple-600 mb-1">₹--</div>
+                    <div class="text-sm text-gray-600">Deposited</div>
+                    <div class="text-xs text-purple-500 mt-1">To bank</div>
+                </div>
+                
+                <div class="payment-card glass-effect rounded-xl p-6 text-center">
+                    <div id="codOrdersCount" class="text-3xl font-bold text-orange-600 mb-1">--</div>
+                    <div class="text-sm text-gray-600">COD Orders</div>
+                    <div class="text-xs text-orange-500 mt-1">Total count</div>
+                </div>
+                
+                <div class="payment-card glass-effect rounded-xl p-6 text-center">
+                    <div id="collectionRate" class="text-3xl font-bold text-teal-600 mb-1">--%</div>
+                    <div class="text-sm text-gray-600">Collection Rate</div>
+                    <div class="text-xs text-teal-500 mt-1">Success rate</div>
+                </div>
+            </div>
+
+            <!-- Main Content Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- COD Orders List -->
+                <div class="lg:col-span-2">
+                    <div class="glass-effect rounded-xl shadow-xl p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-gray-800">COD Orders Management</h3>
+                            <div class="flex space-x-3">
+                                <select id="statusFilter" onchange="filterCODOrders()" class="border rounded-lg px-3 py-2 text-sm">
+                                    <option value="all">All COD Orders</option>
+                                    <option value="pending">Pending Collection</option>
+                                    <option value="collected">Collected</option>
+                                    <option value="verified">Verified</option>
+                                    <option value="deposited">Deposited</option>
+                                </select>
+                                <input type="date" id="dateFilter" onchange="filterCODOrders()" class="border rounded-lg px-3 py-2 text-sm">
+                            </div>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Order ID</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Customer</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Amount</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Status</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Driver</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="codOrdersTable">
+                                    <tr>
+                                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-3"></div>
+                                            Loading COD orders...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column - Quick Stats & Actions -->
+                <div class="space-y-6">
+                    
+                    <!-- Driver Cash Holdings -->
+                    <div class="glass-effect rounded-xl shadow-xl p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Driver Cash Holdings</h3>
+                        <div class="space-y-3" id="driverCashStatus">
+                            <div class="text-center text-gray-500 py-4">
+                                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600 mx-auto mb-2"></div>
+                                Loading driver data...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Daily Collection Summary -->
+                    <div class="glass-effect rounded-xl shadow-xl p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Today's Collection Summary</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Target Collection</span>
+                                <span id="targetCollection" class="font-semibold text-blue-600">₹--</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Actual Collection</span>
+                                <span id="actualCollection" class="font-semibold text-green-600">₹--</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Collection Rate</span>
+                                <span id="collectionPercentage" class="font-semibold text-purple-600">--%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-3 mt-2">
+                                <div id="collectionProgress" class="bg-green-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="glass-effect rounded-xl shadow-xl p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Quick Actions</h3>
+                        <div class="space-y-3">
+                            <button onclick="openCollectionModal()" class="w-full bg-green-100 hover:bg-green-200 text-green-800 font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                                <i class="fas fa-plus mr-2"></i>
+                                Record Collection
+                            </button>
+                            
+                            <button onclick="openDepositModal()" class="w-full bg-blue-100 hover:bg-blue-200 text-blue-800 font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                                <i class="fas fa-university mr-2"></i>
+                                Bank Deposit
+                            </button>
+                            
+                            <button onclick="reconcileDriver()" class="w-full bg-purple-100 hover:bg-purple-200 text-purple-800 font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                                <i class="fas fa-calculator mr-2"></i>
+                                Reconcile Driver
+                            </button>
+                            
+                            <button onclick="sendPaymentReminder()" class="w-full bg-orange-100 hover:bg-orange-200 text-orange-800 font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                                <i class="fas fa-bell mr-2"></i>
+                                Payment Reminder
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Collection Alerts -->
+                    <div class="glass-effect rounded-xl shadow-xl p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Payment Alerts</h3>
+                        <div class="space-y-3" id="paymentAlerts">
+                            <div class="text-center text-gray-500 py-4">
+                                <i class="fas fa-shield-alt text-2xl mb-2"></i>
+                                <div class="text-sm">No alerts at this time</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Transactions -->
+            <div class="glass-effect rounded-xl shadow-xl p-6 mt-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Recent COD Transactions</h3>
+                    <div class="flex space-x-3">
+                        <input type="search" id="transactionSearch" placeholder="Search transactions..." class="border rounded-lg px-3 py-2 text-sm">
+                        <button onclick="refreshTransactions()" class="text-green-600 hover:text-green-800 p-2 rounded-lg hover:bg-green-50">
+                            <i class="fas fa-refresh"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="space-y-3 max-h-64 overflow-y-auto" id="recentTransactions">
+                    <div class="flex items-center justify-center p-8">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                        <span class="ml-3 text-gray-600">Loading recent transactions...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Mobile Footer Navigation -->
+    <nav class="mobile-footer fixed bottom-0 left-0 right-0 bg-slate-800 text-white">
+        <div class="flex justify-around items-center h-full px-2">
+            <a href="#cod-overview" class="flex flex-col items-center py-2 px-3 text-green-400">
+                <i class="fas fa-money-bill-wave text-lg mb-1"></i>
+                <span class="text-xs">COD</span>
+            </a>
+            
+            <a href="#collections" class="flex flex-col items-center py-2 px-3 text-white relative">
+                <i class="fas fa-hand-holding-usd text-lg mb-1"></i>
+                <span class="text-xs">Collections</span>
+                <span id="mobileCollectionCount" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
+            </a>
+            
+            <a href="#reconciliation" class="flex flex-col items-center py-2 px-3 text-white">
+                <i class="fas fa-balance-scale text-lg mb-1"></i>
+                <span class="text-xs">Reconcile</span>
+            </a>
+            
+            <a href="#reports" class="flex flex-col items-center py-2 px-3 text-white">
+                <i class="fas fa-chart-bar text-lg mb-1"></i>
+                <span class="text-xs">Reports</span>
+            </a>
+            
+            <a href="#deposits" class="flex flex-col items-center py-2 px-3 text-white">
+                <i class="fas fa-university text-lg mb-1"></i>
+                <span class="text-xs">Deposits</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Collection Modal -->
+    <div id="collectionModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-xl p-6 m-4 max-w-md w-full">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">Record COD Collection</h3>
+                <button onclick="closeCollectionModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="collectionForm" onsubmit="recordCollection(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Order ID</label>
+                        <select id="orderSelect" class="w-full border rounded-lg px-3 py-2" required>
+                            <option value="">Select an order...</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Amount Collected</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2 text-gray-500">₹</span>
+                            <input type="number" id="collectedAmount" class="w-full border rounded-lg pl-8 pr-3 py-2" placeholder="0.00" step="0.01" required>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Driver</label>
+                        <input type="text" id="driverName" class="w-full border rounded-lg px-3 py-2" placeholder="Driver name" required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Collection Notes</label>
+                        <textarea id="collectionNotes" class="w-full border rounded-lg px-3 py-2" rows="3" placeholder="Any additional notes..."></textarea>
+                    </div>
+                    
+                    <div class="flex space-x-3 pt-4">
+                        <button type="button" onclick="closeCollectionModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                            <i class="fas fa-check mr-2"></i>Record Collection
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobileOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
+
+    <script >
+        // Global variables
+        let orders = [];
+        let codOrders = [];
+        let filteredCODOrders = [];
+        let realTimeListener = null;
+
+        // Time display functions
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('en-IN', {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            
+            const mobileTimeString = now.toLocaleTimeString('en-IN', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            const desktopTimeElement = document.getElementById('desktopTime');
+            const mobileTimeElement = document.getElementById('mobileTime');
+            
+            if (desktopTimeElement) desktopTimeElement.textContent = timeString;
+            if (mobileTimeElement) mobileTimeElement.textContent = mobileTimeString;
+        }
+
+        // Firebase connection and data loading
+        async function loadCODOrdersFromFirebase() {
+            try {
+                const { collection, getDocs, query, orderBy, where } = window.firestoreFunctions;
+                const ordersRef = collection(window.db, 'orders');
+                
+                // Query for COD orders
+               // const codQuery = query(ordersRef, where('paymentMethod', '==', 'COD'),orderBy('createdAt', 'desc'));
+// Query for COD orders
+                const codQuery = query(
+                    ordersRef, 
+                    where('paymentMethod', '==', 'COD')
+                );
+                
+                const querySnapshot = await getDocs(codQuery);
+                orders = [];
+                codOrders = [];
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const orderData = {
+                        id: doc.id,
+                        ...data,
+                        // Convert timestamps to Date objects
+                        createdAt: data.createdAt ? new Date(data.createdAt) : null,
+                        packedAt: data.packedAt ? data.packedAt.toDate() : null,
+                        assignedAt: data.assignedAt ? data.assignedAt.toDate() : null,
+                        pickedAt: data.pickedAt ? data.pickedAt.toDate() : null,
+                        deliveredAt: data.deliveredAt ? data.deliveredAt.toDate() : null,
+                        paidAt: data.paidAt ? data.paidAt.toDate() : null
+                    };
+                    
+                    orders.push(orderData);
+                    if (data.paymentMethod === 'COD') {
+                        codOrders.push(orderData);
+                    }
+                });
+                
+                updateConnectionStatus(true);
+                updateCODMetrics();
+                updateCODOrdersTable();
+                updateDriverCashStatus();
+                updateRecentTransactions();
+                populateOrderSelect();
+                
+                console.log('Loaded', codOrders.length, 'COD orders from Firebase');
+                
+            } catch (error) {
+                console.error('Error loading COD orders:', error);
+                updateConnectionStatus(false);
+                showError('Failed to load COD orders from Firebase');
+            }
+        }
+
+        // Setup real-time listener for COD orders
+        function setupRealTimeListener() {
+            try {
+                const { collection, onSnapshot, query, where, orderBy } = window.firestoreFunctions;
+                const ordersRef = collection(window.db, 'orders');
+                const codQuery = query(
+                    ordersRef,
+                    where('paymentMethod', '==', 'COD'),
+                    orderBy('createdAt', 'desc')
+                );
+                
+                realTimeListener = onSnapshot(codQuery, (snapshot) => {
+                    console.log('Real-time update received');
+                    codOrders = [];
+                    
+                    snapshot.forEach((doc) => {
+                        const data = doc.data();
+                        codOrders.push({
+                            id: doc.id,
+                            ...data,
+                            createdAt: data.createdAt ? new Date(data.createdAt) : null,
+                            packedAt: data.packedAt ? data.packedAt.toDate() : null,
+                            assignedAt: data.assignedAt ? data.assignedAt.toDate() : null,
+                            pickedAt: data.pickedAt ? data.pickedAt.toDate() : null,
+                            deliveredAt: data.deliveredAt ? data.deliveredAt.toDate() : null,
+                            paidAt: data.paidAt ? data.paidAt.toDate() : null
+                        });
+                    });
+                    
+                    updateCODMetrics();
+                    updateCODOrdersTable();
+                    updateDriverCashStatus();
+                    updateRecentTransactions();
+                });
+                
+            } catch (error) {
+                console.error('Error setting up real-time listener:', error);
+            }
+        }
+
+        // Update connection status
+        function updateConnectionStatus(connected) {
+            const statusElement = document.getElementById('connectionStatus');
+            if (connected) {
+                statusElement.innerHTML = `
+                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span class="text-sm text-green-600">Connected to Database</span>
+                `;
+            } else {
+                statusElement.innerHTML = `
+                    <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                    <span class="text-sm text-red-600">Connection failed</span>
+                `;
+            }
+        }
+
+        // Update COD metrics
+        function updateCODMetrics() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const todaysCODOrders = codOrders.filter(order => {
+                const orderDate = order.deliveredAt || order.createdAt;
+                return orderDate && orderDate >= today;
+            });
+            
+            const totalCODAmount = todaysCODOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+            const collectedOrders = todaysCODOrders.filter(order => order.paymentStatus === 'paid');
+            const collectedAmount = collectedOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+            const pendingAmount = totalCODAmount - collectedAmount;
+            
+            const collectionRate = totalCODAmount > 0 ? Math.round((collectedAmount / totalCODAmount) * 100) : 0;
+            
+            // Update metric displays
+            document.getElementById('totalCODAmount').textContent = `₹${totalCODAmount.toLocaleString('en-IN')}`;
+            document.getElementById('pendingCODAmount').textContent = `₹${pendingAmount.toLocaleString('en-IN')}`;
+            document.getElementById('collectedCODAmount').textContent = `₹${collectedAmount.toLocaleString('en-IN')}`;
+            document.getElementById('codOrdersCount').textContent = todaysCODOrders.length;
+            document.getElementById('collectionRate').textContent = `${collectionRate}%`;
+            
+            // Update summary section
+            document.getElementById('targetCollection').textContent = `₹${totalCODAmount.toLocaleString('en-IN')}`;
+            document.getElementById('actualCollection').textContent = `₹${collectedAmount.toLocaleString('en-IN')}`;
+            document.getElementById('collectionPercentage').textContent = `${collectionRate}%`;
+            document.getElementById('collectionProgress').style.width = `${collectionRate}%`;
+            
+            // Update navigation counts
+            const pendingCount = todaysCODOrders.filter(order => order.paymentStatus !== 'paid').length;
+            document.getElementById('pendingCollections').textContent = pendingCount;
+            document.getElementById('mobileCollectionCount').textContent = pendingCount;
+            
+            // Remove loading shimmer
+            document.querySelectorAll('.loading-shimmer').forEach(el => {
+                el.classList.remove('loading-shimmer');
+            });
+        }
+
+        // Update COD orders table
+        function updateCODOrdersTable() {
+            const tableBody = document.getElementById('codOrdersTable');
+            
+            if (codOrders.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                            <i class="fas fa-inbox text-4xl mb-3"></i>
+                            <div>No COD orders found</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            const filteredOrders = getFilteredOrders();
+            
+            tableBody.innerHTML = filteredOrders.map(order => `
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                        <div class="font-medium text-gray-800">${order.id}</div>
+                        <div class="text-xs text-gray-500">${formatDate(order.createdAt)}</div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="font-medium">Customer ${order.customerId}</div>
+                        <div class="text-xs text-gray-500">${order.shippingDetails?.pincode || 'N/A'}</div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="font-bold text-lg">₹${order.totalAmount?.toLocaleString('en-IN') || '0'}</div>
+                    </td>
+                    <td class="px-4 py-3">
+                        ${getPaymentStatusBadge(order)}
+                        <div class="text-xs text-gray-500 mt-1">${getOrderStatusText(order)}</div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="text-sm">${order.assignedDriver || 'Not assigned'}</div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex space-x-2">
+                            ${getActionButtons(order)}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Get filtered orders based on current filters
+        function getFilteredOrders() {
+            const statusFilter = document.getElementById('statusFilter')?.value || 'all';
+            const dateFilter = document.getElementById('dateFilter')?.value;
+            
+            let filtered = [...codOrders];
+            
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(order => {
+                    switch (statusFilter) {
+                        case 'pending': return order.paymentStatus !== 'paid' && order.status === 'delivered';
+                        case 'collected': return order.paymentStatus === 'paid' && !order.verified;
+                        case 'verified': return order.paymentStatus === 'paid' && order.verified && !order.deposited;
+                        case 'deposited': return order.paymentStatus === 'paid' && order.deposited;
+                        default: return true;
+                    }
+                });
+            }
+            
+            if (dateFilter) {
+                const filterDate = new Date(dateFilter);
+                filtered = filtered.filter(order => {
+                    const orderDate = order.deliveredAt || order.createdAt;
+                    return orderDate && orderDate.toDateString() === filterDate.toDateString();
+                });
+            }
+            
+            return filtered;
+        }
+
+        // Helper functions for order display
+        function getPaymentStatusBadge(order) {
+            if (order.paymentStatus === 'paid') {
+                if (order.deposited) {
+                    return '<span class="status-badge status-deposited"><i class="fas fa-university mr-1"></i>Deposited</span>';
+                } else if (order.verified) {
+                    return '<span class="status-badge status-verified"><i class="fas fa-check-circle mr-1"></i>Verified</span>';
+                } else {
+                    return '<span class="status-badge status-collected"><i class="fas fa-hand-holding-usd mr-1"></i>Collected</span>';
+                }
+            } else {
+                return '<span class="status-badge status-pending"><i class="fas fa-clock mr-1"></i>Pending</span>';
+            }
+        }
+
+        function getOrderStatusText(order) {
+            if (order.status === 'delivered' && order.paymentStatus !== 'paid') {
+                return 'Awaiting COD collection';
+            } else if (order.status === 'picked') {
+                return 'Out for delivery';
+            } else if (order.status === 'assigned') {
+                return 'Assigned to driver';
+            } else if (order.status === 'packed') {
+                return 'Ready for pickup';
+            }
+            return order.status || 'Unknown';
+        }
+
+        function getActionButtons(order) {
+            let buttons = '';
+            
+            if (order.paymentStatus !== 'paid' && order.status === 'delivered') {
+                buttons += `<button onclick="markAsCollected('${order.id}')" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs">
+                    <i class="fas fa-money-bill-wave mr-1"></i>Collect
+                </button>`;
+            }
+            
+            if (order.paymentStatus === 'paid' && !order.verified) {
+                buttons += `<button onclick="verifyPayment('${order.id}')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs">
+                    <i class="fas fa-check mr-1"></i>Verify
+                </button>`;
+            }
+            
+            if (order.paymentStatus === 'paid' && order.verified && !order.deposited) {
+                buttons += `<button onclick="markAsDeposited('${order.id}')" class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded text-xs">
+                    <i class="fas fa-university mr-1"></i>Deposit
+                </button>`;
+            }
+            
+            buttons += `<button onclick="viewOrderDetails('${order.id}')" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-xs">
+                <i class="fas fa-eye mr-1"></i>View
+            </button>`;
+            
+            return buttons;
+        }
+
+        function formatDate(date) {
+            if (!date) return 'N/A';
+            return date.toLocaleDateString('en-IN') + ' ' + date.toLocaleTimeString('en-IN', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Update driver cash status
+        function updateDriverCashStatus() {
+            const driverCash = {};
+            
+            // Calculate cash holdings per driver
+            codOrders.forEach(order => {
+                if (order.paymentStatus === 'paid' && !order.deposited && order.assignedDriver) {
+                    if (!driverCash[order.assignedDriver]) {
+                        driverCash[order.assignedDriver] = {
+                            collected: 0,
+                            verified: 0,
+                            orders: 0
+                        };
+                    }
+                    driverCash[order.assignedDriver].collected += order.totalAmount || 0;
+                    if (order.verified) {
+                        driverCash[order.assignedDriver].verified += order.totalAmount || 0;
+                    }
+                    driverCash[order.assignedDriver].orders++;
+                }
+            });
+            
+            const statusContainer = document.getElementById('driverCashStatus');
+            
+            if (Object.keys(driverCash).length === 0) {
+                statusContainer.innerHTML = `
+                    <div class="text-center text-gray-500 py-4">
+                        <i class="fas fa-wallet text-2xl mb-2"></i>
+                        <div class="text-sm">No cash holdings</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            statusContainer.innerHTML = Object.entries(driverCash).map(([driver, cash]) => `
+                <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                    <div>
+                        <div class="font-medium text-gray-800">${driver}</div>
+                        <div class="text-xs text-gray-500">${cash.orders} orders</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-bold text-yellow-600">₹${cash.collected.toLocaleString('en-IN')}</div>
+                        <div class="text-xs ${cash.verified === cash.collected ? 'text-green-600' : 'text-orange-600'}">
+                            ${cash.verified === cash.collected ? 'Verified' : 'Pending verification'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update recent transactions
+        function updateRecentTransactions() {
+            const recentOrders = codOrders
+                .filter(order => order.paidAt)
+                .sort((a, b) => (b.paidAt || 0) - (a.paidAt || 0))
+                .slice(0, 10);
+            
+            const transactionsContainer = document.getElementById('recentTransactions');
+            
+            if (recentOrders.length === 0) {
+                transactionsContainer.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <i class="fas fa-receipt text-3xl mb-3"></i>
+                        <div>No recent COD transactions</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            transactionsContainer.innerHTML = recentOrders.map(order => `
+                <div class="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-money-bill-wave text-green-600"></i>
+                        </div>
+                        <div>
+                            <div class="font-semibold text-gray-800">Order #${order.id}</div>
+                            <div class="text-sm text-gray-600">Customer ${order.customerId} • ${order.assignedDriver || 'Unknown driver'}</div>
+                            <div class="text-xs text-gray-500">${formatDate(order.paidAt)}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-bold text-lg text-green-600">₹${order.totalAmount?.toLocaleString('en-IN') || '0'}</div>
+                        ${getPaymentStatusBadge(order)}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Populate order select dropdown
+        function populateOrderSelect() {
+            const orderSelect = document.getElementById('orderSelect');
+            const deliveredCODOrders = codOrders.filter(order => 
+                order.status === 'delivered' && order.paymentStatus !== 'paid'
+            );
+            
+            orderSelect.innerHTML = '<option value="">Select an order...</option>' +
+                deliveredCODOrders.map(order => `
+                    <option value="${order.id}" data-amount="${order.totalAmount}">
+                        Order #${order.id} - Customer ${order.customerId} - ₹${order.totalAmount?.toLocaleString('en-IN')}
+                    </option>
+                `).join('');
+        }
+
+        // Modal functions
+        function openCollectionModal() {
+            document.getElementById('collectionModal').classList.remove('hidden');
+            populateOrderSelect();
+        }
+
+        function closeCollectionModal() {
+            document.getElementById('collectionModal').classList.add('hidden');
+            document.getElementById('collectionForm').reset();
+        }
+
+        // Record COD collection
+        async function recordCollection(event) {
+            event.preventDefault();
+            
+            const orderId = document.getElementById('orderSelect').value;
+            const amount = parseFloat(document.getElementById('collectedAmount').value);
+            const driver = document.getElementById('driverName').value;
+            const notes = document.getElementById('collectionNotes').value;
+            
+            if (!orderId || !amount || !driver) {
+                showError('Please fill in all required fields');
+                return;
+            }
+            
+            try {
+                const { doc, updateDoc, Timestamp, addDoc, collection } = window.firestoreFunctions;
+                
+                // Update order payment status
+                const orderRef = doc(window.db, 'orders', orderId);
+                await updateDoc(orderRef, {
+                    paymentStatus: 'paid',
+                    paidAt: Timestamp.now(),
+                    assignedDriver: driver,
+                    collectionNotes: notes,
+                    collectedAmount: amount
+                });
+                
+                // Record in payment transactions collection
+                await addDoc(collection(window.db, 'cod_transactions'), {
+                    orderId: orderId,
+                    amount: amount,
+                    driver: driver,
+                    collectedAt: Timestamp.now(),
+                    notes: notes,
+                    status: 'collected',
+                    type: 'cod_collection'
+                });
+                
+                showSuccess(`COD collection of ₹${amount.toLocaleString('en-IN')} recorded successfully`);
+                closeCollectionModal();
+                
+            } catch (error) {
+                console.error('Error recording collection:', error);
+                showError('Failed to record COD collection');
+            }
+        }
+
+        // Payment status update functions
+        async function markAsCollected(orderId) {
+            const order = codOrders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            const driver = prompt(`Enter driver name for Order #${orderId}:`);
+            if (!driver) return;
+            
+            try {
+                const { doc, updateDoc, Timestamp } = window.firestoreFunctions;
+                const orderRef = doc(window.db, 'orders', orderId);
+                
+                await updateDoc(orderRef, {
+                    paymentStatus: 'paid',
+                    paidAt: Timestamp.now(),
+                    assignedDriver: driver,
+                    collectedAmount: order.totalAmount
+                });
+                
+                showSuccess(`Order #${orderId} marked as collected`);
+                
+            } catch (error) {
+                console.error('Error updating payment status:', error);
+                showError('Failed to update payment status');
+            }
+        }
+
+        async function verifyPayment(orderId) {
+            if (!confirm(`Verify COD collection for Order #${orderId}?`)) return;
+            
+            try {
+                const { doc, updateDoc, Timestamp } = window.firestoreFunctions;
+                const orderRef = doc(window.db, 'orders', orderId);
+                
+                await updateDoc(orderRef, {
+                    verified: true,
+                    verifiedAt: Timestamp.now(),
+                    verifiedBy: 'Admin' // You can get this from user auth
+                });
+                
+                showSuccess(`Payment verified for Order #${orderId}`);
+                
+            } catch (error) {
+                console.error('Error verifying payment:', error);
+                showError('Failed to verify payment');
+            }
+        }
+
+        async function markAsDeposited(orderId) {
+            const bankDetails = prompt('Enter bank deposit reference number:');
+            if (!bankDetails) return;
+            
+            try {
+                const { doc, updateDoc, Timestamp } = window.firestoreFunctions;
+                const orderRef = doc(window.db, 'orders', orderId);
+                
+                await updateDoc(orderRef, {
+                    deposited: true,
+                    depositedAt: Timestamp.now(),
+                    bankReference: bankDetails,
+                    depositedBy: 'Admin'
+                });
+                
+                showSuccess(`Order #${orderId} marked as deposited`);
+                
+            } catch (error) {
+                console.error('Error marking as deposited:', error);
+                showError('Failed to mark as deposited');
+            }
+        }
+
+        // Filter functions
+        function filterCODOrders() {
+            updateCODOrdersTable();
+        }
+
+        // Quick action functions
+        function openDepositModal() {
+            const verifiedOrders = codOrders.filter(order => 
+                order.paymentStatus === 'paid' && order.verified && !order.deposited
+            );
+            
+            if (verifiedOrders.length === 0) {
+                showError('No verified COD collections available for deposit');
+                return;
+            }
+            
+            const totalAmount = verifiedOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+            
+            if (confirm(`Deposit ${verifiedOrders.length} COD collections totaling ₹${totalAmount.toLocaleString('en-IN')} to bank?`)) {
+                processeBankDeposit(verifiedOrders, totalAmount);
+            }
+        }
+
+        async function processeBankDeposit(orders, totalAmount) {
+            const bankRef = prompt('Enter bank deposit reference number:');
+            if (!bankRef) return;
+            
+            try {
+                const { doc, updateDoc, Timestamp, addDoc, collection } = window.firestoreFunctions;
+                
+                // Update all orders as deposited
+                const updatePromises = orders.map(order => {
+                    const orderRef = doc(window.db, 'orders', order.id);
+                    return updateDoc(orderRef, {
+                        deposited: true,
+                        depositedAt: Timestamp.now(),
+                        bankReference: bankRef,
+                        depositedBy: 'Admin'
+                    });
+                });
+                
+                await Promise.all(updatePromises);
+                
+                // Record deposit transaction
+                await addDoc(collection(window.db, 'bank_deposits'), {
+                    orderIds: orders.map(o => o.id),
+                    totalAmount: totalAmount,
+                    bankReference: bankRef,
+                    depositedAt: Timestamp.now(),
+                    depositedBy: 'Admin',
+                    orderCount: orders.length
+                });
+                
+                showSuccess(`₹${totalAmount.toLocaleString('en-IN')} deposited successfully. Ref: ${bankRef}`);
+                
+            } catch (error) {
+                console.error('Error processing bank deposit:', error);
+                showError('Failed to process bank deposit');
+            }
+        }
+
+        function reconcileDriver() {
+            const driverName = prompt('Enter driver name for reconciliation:');
+            if (!driverName) return;
+            
+            const driverOrders = codOrders.filter(order => 
+                order.assignedDriver === driverName && 
+                order.paymentStatus === 'paid' && 
+                !order.deposited
+            );
+            
+            if (driverOrders.length === 0) {
+                showError(`No pending COD collections found for driver ${driverName}`);
+                return;
+            }
+            
+            const totalAmount = driverOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+            
+            if (confirm(`Reconcile ${driverOrders.length} orders totaling ₹${totalAmount.toLocaleString('en-IN')} for ${driverName}?`)) {
+                // Open detailed reconciliation view
+                showDriverReconciliation(driverName, driverOrders, totalAmount);
+            }
+        }
+
+        function showDriverReconciliation(driver, orders, total) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+            modal.innerHTML = `
+                <div class="bg-white rounded-xl p-6 m-4 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-800">Driver Reconciliation - ${driver}</h3>
+                        <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="mb-6 p-4 bg-blue-50 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="font-medium">Total Amount to Reconcile:</span>
+                            <span class="text-2xl font-bold text-blue-600">₹${total.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div class="text-sm text-gray-600 mt-1">${orders.length} orders</div>
+                    </div>
+                    
+                    <div class="space-y-3 mb-6">
+                        ${orders.map(order => `
+                            <div class="flex justify-between items-center p-3 border rounded-lg">
+                                <div>
+                                    <div class="font-medium">Order #${order.id}</div>
+                                    <div class="text-sm text-gray-500">Customer ${order.customerId}</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-bold">₹${order.totalAmount?.toLocaleString('en-IN')}</div>
+                                    <div class="text-xs ${order.verified ? 'text-green-600' : 'text-orange-600'}">
+                                        ${order.verified ? 'Verified' : 'Pending'}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button onclick="this.closest('.fixed').remove()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg">
+                            Cancel
+                        </button>
+                        <button onclick="completeReconciliation('${driver}', ${JSON.stringify(orders.map(o => o.id))}, ${total})" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg">
+                            Complete Reconciliation
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function completeReconciliation(driver, orderIds, total) {
+            try {
+                const { doc, updateDoc, Timestamp, addDoc, collection } = window.firestoreFunctions;
+                
+                // Mark all orders as verified and reconciled
+                const updatePromises = orderIds.map(orderId => {
+                    const orderRef = doc(window.db, 'orders', orderId);
+                    return updateDoc(orderRef, {
+                        verified: true,
+                        verifiedAt: Timestamp.now(),
+                        reconciledAt: Timestamp.now(),
+                        reconciledBy: 'Admin'
+                    });
+                });
+                
+                await Promise.all(updatePromises);
+                
+                // Record reconciliation transaction
+                await addDoc(collection(window.db, 'driver_reconciliations'), {
+                    driver: driver,
+                    orderIds: orderIds,
+                    totalAmount: total,
+                    reconciledAt: Timestamp.now(),
+                    reconciledBy: 'Admin',
+                    orderCount: orderIds.length
+                });
+                
+                showSuccess(`Reconciliation completed for ${driver} - ₹${total.toLocaleString('en-IN')}`);
+                document.querySelector('.fixed').remove();
+                
+            } catch (error) {
+                console.error('Error completing reconciliation:', error);
+                showError('Failed to complete reconciliation');
+            }
+        }
+
+        function sendPaymentReminder() {
+            const pendingOrders = codOrders.filter(order => 
+                order.status === 'delivered' && order.paymentStatus !== 'paid'
+            );
+            
+            if (pendingOrders.length === 0) {
+                showError('No pending COD collections to remind about');
+                return;
+            }
+            
+            if (confirm(`Send payment reminders for ${pendingOrders.length} pending COD orders?`)) {
+                // Simulate sending reminders
+                showSuccess(`Payment reminders sent for ${pendingOrders.length} orders`);
+            }
+        }
+
+        function generateDailyReport() {
+            const today = new Date();
+            const todayString = today.toLocaleDateString('en-IN');
+            
+            const todaysOrders = codOrders.filter(order => {
+                const orderDate = order.deliveredAt || order.createdAt;
+                return orderDate && orderDate.toDateString() === today.toDateString();
+            });
+            
+            const totalAmount = todaysOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+            const collectedAmount = todaysOrders.filter(order => order.paymentStatus === 'paid')
+                .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+            
+            const report = `
+COD DAILY REPORT - ${todayString}
+================================
+
+Total COD Orders: ${todaysOrders.length}
+Total COD Amount: ₹${totalAmount.toLocaleString('en-IN')}
+Collected Amount: ₹${collectedAmount.toLocaleString('en-IN')}
+Pending Amount: ₹${(totalAmount - collectedAmount).toLocaleString('en-IN')}
+Collection Rate: ${totalAmount > 0 ? Math.round((collectedAmount / totalAmount) * 100) : 0}%
+
+Order Details:
+${todaysOrders.map(order => 
+    `- Order #${order.id}: ₹${order.totalAmount?.toLocaleString('en-IN')} - ${order.paymentStatus === 'paid' ? 'COLLECTED' : 'PENDING'}`
+).join('\n')}
+            `;
+            
+            // Create downloadable report
+            const blob = new Blob([report], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `COD_Report_${todayString.replace(/\//g, '-')}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showSuccess('Daily COD report generated and downloaded');
+        }
+
+        function exportCODReport() {
+            const csvData = [
+                ['Order ID', 'Customer ID', 'Amount', 'Payment Status', 'Driver', 'Delivered At', 'Paid At', 'Address', 'Pincode']
+            ];
+            
+            codOrders.forEach(order => {
+                csvData.push([
+                    order.id,
+                    order.customerId,
+                    order.totalAmount || 0,
+                    order.paymentStatus || 'pending',
+                    order.assignedDriver || '',
+                    order.deliveredAt ? order.deliveredAt.toISOString() : '',
+                    order.paidAt ? order.paidAt.toISOString() : '',
+                    order.shippingDetails?.address || '',
+                    order.shippingDetails?.pincode || ''
+                ]);
+            });
+            
+            const csvContent = csvData.map(row => row.join(',')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `COD_Orders_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showSuccess('COD orders exported successfully');
+        }
+
+        function viewOrderDetails(orderId) {
+            const order = codOrders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+            modal.innerHTML = `
+                <div class="bg-white rounded-xl p-6 m-4 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-800">Order Details</h3>
+                        <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-sm font-medium text-gray-500">Order ID</label>
+                                <div class="font-semibold">#${order.id}</div>
+                            </div>
+                            <div>
+                                <label class="text-sm font-medium text-gray-500">Customer</label>
+                                <div class="font-semibold">Customer ${order.customerId}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-sm font-medium text-gray-500">Total Amount</label>
+                                <div class="text-2xl font-bold text-green-600">₹${order.totalAmount?.toLocaleString('en-IN') || '0'}</div>
+                            </div>
+                            <div>
+                                <label class="text-sm font-medium text-gray-500">Payment Status</label>
+                                <div>${getPaymentStatusBadge(order)}</div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Delivery Address</label>
+                            <div class="font-medium">${order.shippingDetails?.address || 'N/A'}</div>
+                            <div class="text-sm text-gray-500">PIN: ${order.shippingDetails?.pincode || 'N/A'}</div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-sm font-medium text-gray-500">Created</label>
+                                <div class="text-sm">${formatDate(order.createdAt)}</div>
+                            </div>
+                            <div>
+                                <label class="text-sm font-medium text-gray-500">Delivered</label>
+                                <div class="text-sm">${formatDate(order.deliveredAt)}</div>
+                            </div>
+                        </div>
+                        
+                        ${order.assignedDriver ? `
+                            <div>
+                                <label class="text-sm font-medium text-gray-500">Assigned Driver</label>
+                                <div class="font-medium">${order.assignedDriver}</div>
+                            </div>
+                        ` : ''}
+                        
+                        ${order.paidAt ? `
+                            <div>
+                                <label class="text-sm font-medium text-gray-500">Payment Collected</label>
+                                <div class="text-sm">${formatDate(order.paidAt)}</div>
+                            </div>
+                        ` : ''}
+                        
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Items</label>
+                            <div class="bg-gray-50 rounded-lg p-3 mt-1">
+                                ${order.items ? order.items.map(item => `
+                                    <div class="flex justify-between items-center py-1">
+                                        <span>Product ${item.productId} (x${item.quantity})</span>
+                                        <span class="font-medium">₹${item.price?.toLocaleString('en-IN')}</span>
+                                    </div>
+                                `).join('') : '<div class="text-gray-500">No items data</div>'}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 pt-4 border-t">
+                        <button onclick="this.closest('.fixed').remove()" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Utility functions
+        function showSuccess(message) {
+            showNotification(message, 'success');
+        }
+
+        function showError(message) {
+            showNotification(message, 'error');
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+            
+            notification.className = `fixed top-4 right-4 ${bgColor} text-white p-4 rounded-lg shadow-lg z-50 max-w-sm`;
+            notification.innerHTML = `
+                <div class="flex items-start space-x-3">
+                    <i class="fas ${icon} text-xl"></i>
+                    <div class="flex-1">
+                        <div class="font-medium">${type === 'success' ? 'Success' : 'Error'}</div>
+                        <div class="text-sm">${message}</div>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-white hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // Mobile menu functionality
+        function toggleMobileMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('hidden');
+        }
+
+        function closeMobileMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            
+            sidebar.classList.remove('open');
+            overlay.classList.add('hidden');
+        }
+
+        // Data refresh
+        async function refreshData() {
+            showNotification('Refreshing COD data...', 'success');
+            await loadCODOrdersFromFirebase();
+        }
+
+        function refreshTransactions() {
+            updateRecentTransactions();
+            showNotification('Transaction list refreshed', 'success');
+        }
+
+        // Navigation functionality
+        function setActiveNav(element) {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            element.classList.add('active');
+        }
+
+        // Auto-update selected order amount
+        function updateSelectedOrderAmount() {
+            const orderSelect = document.getElementById('orderSelect');
+            const amountInput = document.getElementById('collectedAmount');
+            
+            if (orderSelect && amountInput) {
+                const selectedOption = orderSelect.options[orderSelect.selectedIndex];
+                if (selectedOption && selectedOption.dataset.amount) {
+                    amountInput.value = selectedOption.dataset.amount;
+                }
+            }
+        }
+
+        // Bulk update status
+        function bulkUpdateStatus() {
+            const pendingOrders = codOrders.filter(order => 
+                order.status === 'delivered' && order.paymentStatus !== 'paid'
+            );
+            
+            if (pendingOrders.length === 0) {
+                showError('No pending COD orders available for bulk update');
+                return;
+            }
+            
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+            modal.innerHTML = `
+                <div class="bg-white rounded-xl p-6 m-4 max-w-md w-full">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-800">Bulk Status Update</h3>
+                        <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <p class="text-gray-600 mb-3">${pendingOrders.length} pending COD orders selected</p>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Update Status To:</label>
+                        <select id="bulkStatus" class="w-full border rounded-lg px-3 py-2">
+                            <option value="collected">Mark as Collected</option>
+                            <option value="failed">Mark as Failed Collection</option>
+                            <option value="rescheduled">Reschedule Collection</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Driver Name</label>
+                        <input type="text" id="bulkDriver" class="w-full border rounded-lg px-3 py-2" placeholder="Enter driver name">
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button onclick="this.closest('.fixed').remove()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg">
+                            Cancel
+                        </button>
+                        <button onclick="processBulkUpdate()" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg">
+                            Update All
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function processBulkUpdate() {
+            const status = document.getElementById('bulkStatus').value;
+            const driver = document.getElementById('bulkDriver').value;
+            
+            if (!driver) {
+                showError('Please enter driver name');
+                return;
+            }
+            
+            try {
+                const { doc, updateDoc, Timestamp } = window.firestoreFunctions;
+                const pendingOrders = codOrders.filter(order => 
+                    order.status === 'delivered' && order.paymentStatus !== 'paid'
+                );
+                
+                const updatePromises = pendingOrders.map(order => {
+                    const orderRef = doc(window.db, 'orders', order.id);
+                    const updateData = {
+                        assignedDriver: driver,
+                        updatedAt: Timestamp.now()
+                    };
+                    
+                    if (status === 'collected') {
+                        updateData.paymentStatus = 'paid';
+                        updateData.paidAt = Timestamp.now();
+                        updateData.collectedAmount = order.totalAmount;
+                    } else if (status === 'failed') {
+                        updateData.collectionFailed = true;
+                        updateData.failedAt = Timestamp.now();
+                    }
+                    
+                    return updateDoc(orderRef, updateData);
+                });
+                
+                await Promise.all(updatePromises);
+                
+                showSuccess(`Bulk update completed for ${pendingOrders.length} orders`);
+                document.querySelector('.fixed').remove();
+                
+            } catch (error) {
+                console.error('Error processing bulk update:', error);
+                showError('Failed to process bulk update');
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTime();
+            setInterval(updateTime, 1000);
+            
+            // Load Firebase data
+            setTimeout(() => {
+                loadCODOrdersFromFirebase();
+                setupRealTimeListener();
+            }, 1000);
+            
+            // Mobile menu setup
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const mobileOverlay = document.getElementById('mobileOverlay');
+            const orderSelect = document.getElementById('orderSelect');
+            
+            if (mobileMenuBtn) {
+                mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+            }
+            
+            if (mobileOverlay) {
+                mobileOverlay.addEventListener('click', closeMobileMenu);
+            }
+            
+            if (orderSelect) {
+                orderSelect.addEventListener('change', updateSelectedOrderAmount);
+            }
+            
+            // Navigation handlers
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    if (!this.onclick && this.href && this.href.includes('#')) {
+                        e.preventDefault();
+                        setActiveNav(this);
+                        if (window.innerWidth <= 768) {
+                            closeMobileMenu();
+                        }
+                    }
+                });
+            });
+            
+            // Set today's date as default filter
+            const dateFilter = document.getElementById('dateFilter');
+            if (dateFilter) {
+                dateFilter.value = new Date().toISOString().split('T')[0];
+            }
+        });
+
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                refreshData();
+            }
+        }, 30000);
+
+        // Handle page visibility for efficient updates
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                refreshData();
+            }
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (realTimeListener) {
+                realTimeListener();
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'r':
+                        e.preventDefault();
+                        refreshData();
+                        break;
+                    case 'n':
+                        e.preventDefault();
+                        openCollectionModal();
+                        break;
+                    case 'd':
+                        e.preventDefault();
+                        openDepositModal();
+                        break;
+                }
+            }
+        });
+
+        // Search functionality for transactions
+        document.getElementById('transactionSearch')?.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const transactions = document.querySelectorAll('#recentTransactions > div');
+            
+            transactions.forEach(transaction => {
+                const text = transaction.textContent.toLowerCase();
+                transaction.style.display = text.includes(searchTerm) ? 'flex' : 'none';
+            });
+        });
+
+
+
+
+
+//collections routines
+
+// 1. Routing handler: always use SPA approach
+function initializeCollectionsRouting() {
+    // Desktop navigation
+    const collectionsLink = document.getElementById('collections');
+    if (collectionsLink) {
+        collectionsLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            showCollectionsSection();
+        });
+    }
+    // Mobile navigation
+    const mobileCollectionsLink = document.querySelector('a[href="#collections"]');
+    if (mobileCollectionsLink) {
+        mobileCollectionsLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            showCollectionsSection();
+        });
+    }
+}
+
+// 2. SPA: Show "Collections" section in the same page
+function navigateToCollections() {
+    // Instead of navigating away, show the section
+    showCollectionsSection();
+}
+
+// 3. Show the collections section (SPA approach)
+window.showCollectionsSection = function showCollectionsSection() {
+    // Hide all other sections
+    hideAllSections();
+
+    // Show existing or create collections section
+    const collectionsSection = document.getElementById('collectionsSection');
+    if (collectionsSection) {
+        collectionsSection.classList.remove('hidden');
+    } else {
+        createCollectionsSection();
+    }
+
+    // Update active navigation
+    updateActiveNavigation('collections');
+
+    // Load collections data
+    loadCollectionsData();
+}
+
+// 4. Hide all main sections
+function hideAllSections() {
+    const sections = [
+        'dashboardSection',
+        'codOverviewSection',
+        'collectionsSection',
+        'reconciliationSection',
+        'driverSettlementsSection',
+        'paymentReportsSection',
+        'failedCollectionsSection',
+        'cashDepositsSection'
+    ];
+    sections.forEach(sectionId => {
+        const section = document.getElementById(sectionId);
+        if (section) {
+            section.classList.add('hidden');
+        }
+    });
+}
+
+// 5. Update active classes for navigation items
+function updateActiveNavigation(activeSection) {
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    // corrected querySelector string
+    const activeLink = document.querySelector(`a[href="#${activeSection}"]`);
+    if (activeLink) {
+        activeLink.classList.add('active');
+    }
+}
+
+// 6. Dynamically create collections section if not present
+function createCollectionsSection() {
+    const mainContent = document.querySelector('.main-content .container');
+    if (!mainContent) return;
+
+    const collectionsHTML = `
+        <!-- (same HTML as before for collectionsSection) -->
+    `;
+    mainContent.insertAdjacentHTML('beforeend', collectionsHTML);
+}
+
+// 7. Update badge numbers
+function updatePendingCollectionsCount(count) {
+    const pendingBadge = document.getElementById('pendingCollections');
+    const mobilePendingBadge = document.getElementById('mobileCollectionCount');
+    if (pendingBadge) pendingBadge.textContent = count;
+    if (mobilePendingBadge) mobilePendingBadge.textContent = count;
+}
+
+// 8. Real-time collections count updater (Firebase)
+function setupCollectionsCountUpdater() {
+    if (window.firestoreFunctions && window.db) {
+        const { collection, query, where, onSnapshot } = window.firestoreFunctions;
+        const ordersRef = collection(window.db, 'orders');
+        const pendingQuery = query(
+            ordersRef,
+            where('paymentMethod', '==', 'COD'),
+            where('status', '==', 'delivered'),
+            where('paymentStatus', '!=', 'paid')
+        );
+        onSnapshot(pendingQuery, (snapshot) => {
+            const pendingCount = snapshot.size;
+            updatePendingCollectionsCount(pendingCount);
+        });
+    }
+}
+
+// 9. Main collections initialization
+function initializeCollections() {
+    initializeCollectionsRouting();
+    setupCollectionsCountUpdater();
+    addCollectionsStyles();
+}
+
+// 10. Add styles for collections SPA
+function addCollectionsStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+        /* ...styles as you already have them... */
+    `;
+    document.head.appendChild(style);
+}
+
+// 11. Load collections data (Firebase)
+async function loadCollectionsData() {
+    try {
+        if (!window.firestoreFunctions || !window.db) {
+            console.log('Firebase not initialized yet');
+            return;
+        }
+        const { collection, getDocs, query, where } = window.firestoreFunctions;
+        const ordersRef = collection(window.db, 'orders');
+        const pendingQuery = query(
+            ordersRef,
+            where('paymentMethod', '==', 'COD'),
+            where('status', '==', 'delivered'),
+            where('paymentStatus', '!=', 'paid')
+        );
+        const querySnapshot = await getDocs(pendingQuery);
+        let pendingCollections = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            pendingCollections.push({
+                id: doc.id,
+                ...data,
+                createdAt: data.createdAt ? new Date(data.createdAt) : null,
+                deliveredAt: data.deliveredAt ? data.deliveredAt.toDate() : null
+            });
+        });
+        updatePendingCollectionsCount(pendingCollections.length);
+        console.log('Loaded', pendingCollections.length, 'pending collections');
+    } catch (error) {
+        console.error('Error loading collections data:', error);
+    }
+}
+
+// 12. Initialize all when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        initializeCollections();
+        loadCollectionsData();
+    }, 2000);
+});
+
+// Expose for global access if needed
+window.collectionsModule = {
+    initializeCollections,
+    loadCollectionsData,
+    navigateToCollections,      // Still exposed for programmatic switching
+    updatePendingCollectionsCount,
+    showCollectionsSection
+};
+
+
+
+    </script>
+</body>
+</html>

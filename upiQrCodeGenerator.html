@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UPI Payment</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'spin-slow': 'spin 1s linear infinite',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">
+        <!-- Loading State -->
+        <div id="loading" class="text-center">
+            <div class="w-12 h-12 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+            <p class="text-gray-600 text-lg">Loading payment details...</p>
+        </div>
+        
+        <!-- Main Content -->
+        <div id="content" class="hidden">
+            <!-- Payment Info -->
+            <div class="text-center mb-6">
+                <div class="text-4xl font-bold text-gray-800 mb-2">₹<span id="amount"></span></div>
+                <div class="text-lg text-gray-600">Pay to: <span id="payeeName" class="font-semibold"></span></div>
+            </div>
+            
+            <!-- Order Note -->
+            <div id="orderNote" class="bg-gray-50 border-l-4 border-blue-500 p-4 rounded-lg text-sm text-gray-700 mb-6"></div>
+            
+            <!-- QR Code Container -->
+            <div class="bg-white border-2 border-gray-100 rounded-2xl p-6 shadow-lg mb-6">
+                <div id="qrcode" class="flex justify-center items-center min-h-[200px]">
+                    <div class="text-gray-400">Generating QR code...</div>
+                </div>
+                <button onclick="downloadQR()" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-xl font-semibold hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200 mt-4">
+                    Download QR Code
+                </button>
+            </div>
+            
+            <!-- UPI Apps -->
+            <div class="text-center">
+                <p class="text-sm text-gray-500 mb-3">Or pay directly with:</p>
+                <div class="flex justify-center space-x-4">
+                    <button onclick="openUPI('phonepe')" class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 transition-colors">PhonePe</button>
+                    <button onclick="openUPI('paytm')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors">Paytm</button>
+                    <button onclick="openUPI('gpay')" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 transition-colors">GPay</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Error State -->
+        <div id="error" class="hidden bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg text-center"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+            authDomain: "sjpss-f504b.firebaseapp.com",
+            projectId: "sjpss-f504b",
+            storageBucket: "sjpss-f504b.firebasestorage.app",
+            messagingSenderId: "227402980311",
+            appId: "1:227402980311:web:56b580456ab6b9c6758992",
+            measurementId: "G-LZ4YP9YPN6"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let currentUpiUrl = '';
+        let qrCanvas = null;
+        
+        async function loadPaymentData() {
+            try {
+                // Get order ID from URL parameter
+                const urlParams = new URLSearchParams(window.location.search);
+                const orderId = urlParams.get('id');
+                
+                if (!orderId) {
+                    throw new Error('Order ID not provided in URL. Please add ?id=ORDER_ID to the URL');
+                }
+
+                console.log('Loading order:', orderId);
+
+                // Fetch metadata
+                const metaDoc = await db.collection('meta').doc('metadata').get();
+                if (!metaDoc.exists) {
+                    throw new Error('Payment metadata not found');
+                }
+                const metaData = metaDoc.data();
+                console.log('Meta data:', metaData);
+
+                // Fetch order details
+                const orderDoc = await db.collection('orders').doc(orderId).get();
+                if (!orderDoc.exists) {
+                    throw new Error('Order not found');
+                }
+                const orderData = orderDoc.data();
+                console.log('Order data:', orderData);
+
+                // Update UI
+                document.getElementById('amount').textContent = orderData.totalAmount;
+                document.getElementById('payeeName').textContent = metaData.payeeName;
+                
+                const orderNote = `Payment from '${orderData.customerId}' for order No. '${orderData.orderId}'`;
+                document.getElementById('orderNote').textContent = orderNote;
+
+                // Generate UPI URL
+                currentUpiUrl = `upi://pay?pa=${metaData.upiId}&pn=${encodeURIComponent(metaData.payeeName)}&am=${orderData.totalAmount}&cu=INR&tn=${encodeURIComponent(orderNote)}`;
+                console.log('UPI URL:', currentUpiUrl);
+
+                // Generate QR Code
+                await generateQRCode(currentUpiUrl);
+
+                // Show content, hide loading
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('content').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error loading payment data:', error);
+                showError(error.message);
+            }
+        }
+
+        async function generateQRCode(upiUrl) {
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = ''; // Clear existing content
+            
+            try {
+                // Create QR code using qrcode-generator library
+                const qr = qrcode(0, 'M');
+                qr.addData(upiUrl);
+                qr.make();
+                
+                // Create canvas and draw QR code
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const size = 200;
+                const moduleCount = qr.getModuleCount();
+                const cellSize = size / moduleCount;
+                
+                canvas.width = size;
+                canvas.height = size;
+                
+                // Fill white background
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, size, size);
+                
+                // Draw QR modules
+                ctx.fillStyle = '#1f2937';
+                for (let row = 0; row < moduleCount; row++) {
+                    for (let col = 0; col < moduleCount; col++) {
+                        if (qr.isDark(row, col)) {
+                            ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+                        }
+                    }
+                }
+                
+                qrCanvas = canvas;
+                qrContainer.appendChild(canvas);
+                console.log('QR code generated successfully');
+                
+            } catch (error) {
+                console.error('QR Code generation error:', error);
+                qrContainer.innerHTML = '<div class="text-red-500 text-sm">Failed to generate QR code</div>';
+            }
+        }
+
+        function downloadQR() {
+            if (!qrCanvas) {
+                alert('QR code not available for download');
+                return;
+            }
+            
+            try {
+                const link = document.createElement('a');
+                link.download = `payment-qr-${new Date().getTime()}.png`;
+                link.href = qrCanvas.toDataURL('image/png');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (error) {
+                console.error('Download error:', error);
+                alert('Failed to download QR code');
+            }
+        }
+
+        function openUPI(app) {
+            if (!currentUpiUrl) {
+                alert('Payment details not loaded');
+                return;
+            }
+
+            // Different app schemes
+            let appUrl = currentUpiUrl;
+            switch(app) {
+                case 'phonepe':
+                    appUrl = currentUpiUrl.replace('upi://', 'phonepe://');
+                    break;
+                case 'paytm':
+                    appUrl = currentUpiUrl.replace('upi://', 'paytmmp://');
+                    break;
+                case 'gpay':
+                    appUrl = currentUpiUrl.replace('upi://', 'tez://');
+                    break;
+            }
+
+            // Try to open the app
+            window.location.href = appUrl;
+            
+            // Fallback to generic UPI after a delay
+            setTimeout(() => {
+                window.location.href = currentUpiUrl;
+            }, 1000);
+        }
+
+        function showError(message) {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('content').classList.add('hidden');
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+
+        // For testing without Firebase
+        function loadTestData() {
+            console.log('Loading test data...');
+            
+            // Test data
+            const testOrderData = {
+                totalAmount: 1299,
+                customerId: 'CUST123',
+                orderId: 'ORD789'
+            };
+            
+            const testMetaData = {
+                payeeName: 'Test Merchant',
+                upiId: 'merchant@upi'
+            };
+
+            // Update UI
+            document.getElementById('amount').textContent = testOrderData.totalAmount;
+            document.getElementById('payeeName').textContent = testMetaData.payeeName;
+            
+            const orderNote = `Payment from '${testOrderData.customerId}' for order No. '${testOrderData.orderId}'`;
+            document.getElementById('orderNote').textContent = orderNote;
+
+            // Generate UPI URL
+            currentUpiUrl = `upi://pay?pa=${testMetaData.upiId}&pn=${encodeURIComponent(testMetaData.payeeName)}&am=${testOrderData.totalAmount}&cu=INR&tn=${encodeURIComponent(orderNote)}`;
+            
+            // Generate QR Code
+            generateQRCode(currentUpiUrl);
+
+            // Show content
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('content').classList.remove('hidden');
+        }
+
+        // Load payment data when page loads
+        window.addEventListener('load', () => {
+            // Check if Firebase is configured
+            if (firebaseConfig.apiKey === 'your-api-key') {
+                console.warn('Firebase not configured, using test data');
+                loadTestData();
+            } else {
+                loadPaymentData();
+            }
+        });
+    </script>
+</body>
+</html>

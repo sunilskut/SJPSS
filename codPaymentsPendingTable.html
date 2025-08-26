@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COD Order Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDK -->
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .table-container {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        .theme-cod { background: linear-gradient(135deg, #fd79a8, #fdcb6e); }
+        .loading {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="font-sans">
+    <div class="container mx-auto px-4 py-8">
+        <div id="tableContainer" class="table-container p-6 mx-auto max-w-7xl theme-cod">
+            <div id="loadingIndicator" class="text-center py-12 loading">
+                <div class="text-gray-600 text-lg">Loading COD orders...</div>
+                <div class="text-gray-500 text-sm mt-2">Please wait while we fetch your data</div>
+            </div>
+            <div id="tableContent" style="display: none;">
+                <!-- Table will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+        import { getFirestore, collection, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+            authDomain: "sjpss-f504b.firebaseapp.com",
+            projectId: "sjpss-f504b",
+            storageBucket: "sjpss-f504b.firebasestorage.app",
+            messagingSenderId: "227402980311",
+            appId: "1:227402980311:web:56b580456ab6b9c6758992",
+            measurementId: "G-LZ4YP9YPN6"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let allOrders = [];
+
+        function filterCODOrders(orders) {
+            console.log('Filtering for COD orders only:', orders.length);
+            
+            const filtered = orders.filter(order => {
+                return order.paymentMethod === 'COD' && order.status === 'delivered';
+            });
+            
+            console.log('COD orders found:', filtered.length);
+            return filtered;
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-IN', { 
+                day: '2-digit', 
+                month: 'short', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function truncateText(text, maxLength = 30) {
+            if (!text || text.length <= maxLength) return text || '';
+            return text.substring(0, maxLength) + '...';
+        }
+
+        function formatItems(items) {
+            if (!items || !Array.isArray(items)) return 'N/A';
+            return items.map(item => `P${item.productId || 'N/A'} (${item.quantity || 0})`).join(', ');
+        }
+
+        function showError(message) {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            loadingIndicator.innerHTML = `
+                <div class="text-center py-12">
+                    <div class="text-red-600 text-lg">Error Loading Orders</div>
+                    <div class="text-red-500 text-sm mt-2">${message}</div>
+                    <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-red-100 text-red-800 rounded hover:bg-red-200 transition-colors">
+                        Retry
+                    </button>
+                </div>
+            `;
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingIndicator').style.display = 'none';
+            document.getElementById('tableContent').style.display = 'block';
+        }
+
+        function renderTable(codOrders) {
+            // Calculate total amount
+            const totalAmount = codOrders.reduce((sum, order) => {
+                return sum + (parseFloat(order.totalAmount) || 0);
+            }, 0);
+
+           let html = `
+<div class="mb-6">
+    <div class="flex justify-between items-center flex-wrap gap-4">
+        <div class="flex items-center gap-8">
+            <h1 class="text-2xl font-bold text-gray-800">COD Orders Management</h1>
+            <p class="text-sm text-gray-600">
+                ${codOrders.length} COD order(s) found
+            </p>
+            <p class="text-lg font-semibold text-gray-800">
+                Total Amount: ₹${totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+        </div>
+
+        <button onclick="window.location.href='adminPanel.html#payments'" 
+            class="group inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg transition-all duration-200 shadow-sm">
+            <svg class="w-4 h-4 mr-2 transition-transform duration-200 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+            <span>Back to Payments Management</span>
+        </button>
+    </div>
+</div>
+`;
+
+
+            if (codOrders.length === 0) {
+                html += `
+                    <div class="text-center py-12">
+                        <div class="text-gray-400 text-lg">No COD orders found</div>
+                        <div class="text-gray-500 text-sm mt-2">All orders are using other payment methods</div>
+                    </div>
+                `;
+            } else { 
+                html += `
+<div class="overflow-x-auto">
+    <table class="w-full text-xs">
+        <thead>
+            <tr class="bg-black bg-opacity-10 text-gray-700">
+                <th class="px-2 py-2 text-left font-semibold">Order ID</th>
+                <th class="px-2 py-2 text-left font-semibold">Date</th>
+                <th class="px-2 py-2 text-left font-semibold">Customer</th>
+                <th class="px-2 py-2 text-left font-semibold">Items</th>
+                <th class="px-2 py-2 text-left font-semibold">Amount</th>
+                <th class="px-2 py-2 text-left font-semibold">Payment Status</th>
+                <th class="px-2 py-2 text-left font-semibold">Order Status</th>
+                <th class="px-2 py-2 text-left font-semibold">Address</th>
+                <th class="px-2 py-2 text-left font-semibold">Action</th>
+            </tr>
+        </thead>
+        <tbody class="bg-white bg-opacity-50">
+`;
+
+                codOrders.forEach((order, index) => {
+                    const rowClass = index % 2 === 0 ? 'bg-white bg-opacity-30' : 'bg-black bg-opacity-5';
+                    const address = order.shippingDetails?.address || 'N/A';
+                    const deliveryStaff = order.deliveryStaff || 'Unassigned';
+                    
+                   html += `
+<tr class="${rowClass} hover:bg-white hover:bg-opacity-60 transition-colors">
+    <td class="px-2 py-2 font-medium text-gray-800">${order.id || 'N/A'}</td>
+    <td class="px-2 py-2 text-gray-700">${order.createdAt ? formatDate(order.createdAt) : 'N/A'}</td>
+    <td class="px-2 py-2 text-gray-700">${order.customerId || 'N/A'}</td>
+    <td class="px-2 py-2 text-gray-700" title="${formatItems(order.items)}">${truncateText(formatItems(order.items), 15)}</td>
+    <td class="px-2 py-2 font-semibold text-gray-800">₹${order.totalAmount || 0}</td>
+    <td class="px-2 py-2">
+        <div class="text-xs ${
+            order.paymentStatus === 'paid' ? 'text-green-600 font-semibold' : 
+            order.paymentStatus === 'pending' ? 'text-red-600' : 
+            'text-gray-600'
+        }">${order.paymentStatus || 'unpaid'}</div>
+    </td>
+    <td class="px-2 py-2">
+        <span class="px-2 py-1 text-xs rounded font-medium ${
+            order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+            order.status === 'completed' ? 'bg-green-100 text-green-800' :
+            order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+            order.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+            'bg-gray-100 text-gray-800'
+        }">${order.status || 'N/A'}</span>
+    </td>
+    <td class="px-2 py-2 text-gray-600" title="${address}">${truncateText(address, 25)}</td>
+    <td class="px-2 py-2 text-gray-600">
+        ${
+            order.paymentStatus === 'paid'
+            ? `<a href="paymentVerification.html?orderId=${order.id}" class="text-blue-600 hover:underline font-medium">Verify</a>`
+            :  `Cash`
+        
+        }
+    </td>
+</tr>
+`;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            document.getElementById('tableContent').innerHTML = html;
+            hideLoading();
+        }
+
+        // Fetch orders from Firebase
+        async function fetchOrders() {
+            try {
+                console.log('Fetching orders from Firestore...');
+                const ordersRef = collection(db, 'orders');
+                const snapshot = await getDocs(ordersRef);
+                
+                allOrders = [];
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    console.log('Order data:', { id: doc.id, ...data });
+                    allOrders.push({
+                        id: doc.id,
+                        ...data
+                    });
+                });
+
+                console.log(`Fetched ${allOrders.length} total orders from Firestore`);
+                
+                // Filter for COD orders only
+                const codOrders = filterCODOrders(allOrders);
+                renderTable(codOrders);
+
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+                showError(error.message || 'Failed to fetch orders from database');
+            }
+        }
+
+        // Initialize the page
+        async function init() {
+            console.log('Initializing COD order table viewer...');
+            await fetchOrders();
+        }
+
+        // Run on page load
+        init();
+
+        // Make functions available globally for debugging
+        window.fetchOrders = fetchOrders;
+        window.allOrders = allOrders;
+    </script>
+</body>
+</html>

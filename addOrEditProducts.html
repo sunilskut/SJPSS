@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .animate-slideIn { animation: slideIn 0.3s ease-out; }
+        .animate-pulse-custom { animation: pulse 2s ease-in-out infinite; }
+        
+        .glass-morphism {
+            backdrop-filter: blur(16px);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .field-group {
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            background: #fafafa;
+        }
+
+        .required-asterisk {
+            color: #ef4444;
+            font-weight: bold;
+        }
+
+        .search-result-item {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .search-result-item:hover {
+            background-color: #f0fdf4;
+        }
+
+        .tag {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.875rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        .tag-remove {
+            background: rgba(255,255,255,0.3);
+            border: none;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+
+        .tag-remove:hover {
+            background: rgba(255,255,255,0.5);
+        }
+
+        body {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-box text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 id="shopHeading" class="text-xl font-bold text-gray-800 animate-pulse-custom">
+                            Loading Shop Name...
+                        </h1>
+                        <p class="text-sm text-gray-600">Product Management System</p>
+                    </div>
+                </div>
+                
+                <!-- Mode Toggle -->
+                <div id="modeToggleContainer" class="flex space-x-3">
+                    <button id="btnAddProduct" class="mode-btn flex items-center space-x-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium transition-all duration-200 hover:bg-blue-700 shadow-sm" onclick="switchMode('add')">
+                        <i class="fas fa-plus"></i>
+                        <span>Add Product</span>
+                    </button>
+                    <button id="btnEditProduct" class="mode-btn flex items-center space-x-2 px-6 py-2.5 border border-blue-600 text-blue-600 rounded-lg font-medium transition-all duration-200 hover:bg-blue-600 hover:text-white" onclick="switchMode('edit')">
+                        <i class="fas fa-edit"></i>
+                        <span>Edit Product</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Search Section (Edit Mode Only) -->
+        <div id="searchSection" class="hidden glass-morphism rounded-xl p-6 mb-8 animate-slideIn">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                <i class="fas fa-search text-blue-600"></i>
+                <span>Search Product to Edit</span>
+            </h3>
+            <input type="text" id="productSearch" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="Start typing product name...">
+            <div id="searchResults" class="mt-4 max-h-64 overflow-y-auto border border-gray-200 rounded-lg bg-white hidden shadow-sm"></div>
+        </div>
+
+        <!-- Edit Info Banner -->
+        <div id="editInfo" class="hidden bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 animate-slideIn">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-info-circle text-amber-600"></i>
+                <strong class="text-amber-800">Editing Product:</strong>
+                <span id="editingname" class="font-medium"></span>
+                <span class="text-sm text-amber-600">(ID: <span id="editingProductId"></span>)</span>
+            </div>
+        </div>
+
+        <!-- Main Form -->
+        <form id="itemForm" class="glass-morphism rounded-xl p-8 space-y-8">
+            <!-- Page Title -->
+            <div class="text-center pb-6 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">
+                    <i id="modeIcon" class="fas fa-plus text-blue-600 mr-3"></i>
+                    <span id="modeTitle">Add New Product</span>
+                </h2>
+                <p class="text-gray-600">Fill in the details below to manage your product inventory</p>
+            </div>
+
+            <!-- 1. Basic Product Information -->
+            <div class="field-group p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                    <i class="fas fa-tag text-blue-600"></i>
+                    <span>Basic Product Information</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div>
+                        <label for="productId" class="block text-sm font-medium text-gray-700 mb-2">Product ID</label>
+                        <input type="text" id="productId" readonly class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" placeholder="Auto-generated">
+                    </div>
+                    <div>
+                        <label for="sku" class="block text-sm font-medium text-gray-700 mb-2">SKU</label>
+                        <input type="text" id="sku" readonly class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="auto generated">
+                    </div>
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                            Product Name <span class="required-asterisk">*</span>
+                        </label>
+                        <input type="text" id="name" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="e.g., Organic Apples">
+                    </div>
+                    <div>
+                        <label for="brand" class="block text-sm font-medium text-gray-700 mb-2">
+                            Brand <span class="required-asterisk">*</span>
+                        </label>
+                        <input type="text" id="brand" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="e.g., Nature's Best">
+                    </div>
+                    <div>
+                        <label for="category" class="block text-sm font-medium text-gray-700 mb-2">
+                            Category <span class="required-asterisk">*</span>
+                        </label>
+                        <select id="category" required onchange="toggleGroceryFields()" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="subCategory" class="block text-sm font-medium text-gray-700 mb-2">
+                            Sub Category <span class="required-asterisk">*</span>
+                        </label>
+                        <select id="subCategory" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                            <option value="">Select Sub Category</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="hsnCode" class="block text-sm font-medium text-gray-700 mb-2">
+                            HSN Code <span class="required-asterisk">*</span>
+                        </label>
+                        <input type="text" id="hsnCode" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="e.g., 0808">
+                    </div>
+                    <div>
+                        <label for="countryOfOrigin" class="block text-sm font-medium text-gray-700 mb-2">
+                            Country of Origin
+                        </label>
+                        <select id="countryOfOrigin" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                            <option value="">Select Country</option>
+                            <option value="India" selected>India</option>
+                            <option value="China">China</option>
+                            <option value="USA">USA</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Description & Presentation -->
+            <div class="field-group p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                    <i class="fas fa-file-alt text-blue-600"></i>
+                    <span>Description & Presentation</span>
+                </h3>
+                <div class="space-y-6">
+                    <div>
+                        <label for="shortDescription" class="block text-sm font-medium text-gray-700 mb-2">
+                            Short Description <span class="required-asterisk">*</span>
+                        </label>
+                        <input type="text" id="shortDescription" required maxlength="150" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="Brief product overview (50-150 characters)">
+                    </div>
+                    <div>
+                        <label for="longDescription" class="block text-sm font-medium text-gray-700 mb-2">
+                            Long Description <span class="required-asterisk">*</span>
+                        </label>
+                        <textarea id="longDescription" required rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-y" placeholder="Detailed product description..."></textarea>
+                    </div>
+                    <div>
+                        <label for="highlights" class="block text-sm font-medium text-gray-700 mb-2">Highlights</label>
+                        <textarea id="highlights" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-y" placeholder="• Feature 1&#10;• Feature 2&#10;• Feature 3"></textarea>
+                    </div>
+                    <div>
+                        <label for="images" class="block text-sm font-medium text-gray-700 mb-2">
+                            Image URLs <span class="required-asterisk">*</span>
+                        </label>
+                        <input type="url" id="images" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="https://example.com/image.jpg">
+                    </div>
+                    <div>
+                        <label for="videos" class="block text-sm font-medium text-gray-700 mb-2">Video URLs</label>
+                        <input type="url" id="videos" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="https://youtube.com/watch?v=...">
+                    </div>
+                    <div>
+                        <label for="specifications" class="block text-sm font-medium text-gray-700 mb-2">Specifications</label>
+                        <textarea id="specifications" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-y" placeholder="Weight: 500g&#10;Color: Red"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Pricing & Offers -->
+            <div class="field-group p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                    <i class="fas fa-rupee-sign text-blue-600"></i>
+                    <span>Pricing & Offers</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div>
+                        <label for="mrp" class="block text-sm font-medium text-gray-700 mb-2">
+                            MRP (₹) <span class="required-asterisk">*</span>
+                        </label>
+                        <input type="number" id="mrp" step="0.01" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="999">
+                    </div>
+                    <div>
+                        <label for="sellingPrice" class="block text-sm font-medium text-gray-700 mb-2">
+                            Selling Price (₹) <span class="required-asterisk">*</span>
+                        </label>
+                        <input type="number" id="sellingPrice" step="0.01" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="849">
+                    </div>
+                    <div>
+                        <label for="discountPercent" class="block text-sm font-medium text-gray-700 mb-2">Discount (%)</label>
+                        <input type="number" id="discountPercent" step="0.01" max="100" readonly class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" placeholder="15">
+                    </div>
+                    <div>
+                        <label for="gstRate" class="block text-sm font-medium text-gray-700 mb-2">GST Rate (%)</label>
+                        <select id="gstRate" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                            <option value="">Select GST Rate</option>
+                            <option value="0">0%</option>
+                            <option value="5">5%</option>
+                            <option value="12">12%</option>
+                            <option value="18">18%</option>
+                            <option value="28">28%</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="offers" class="block text-sm font-medium text-gray-700 mb-2">Offers</label>
+                        <input type="text" id="offers" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="e.g., Buy 1 Get 1 Free">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Stock & Inventory -->
+            <div class="field-group p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                    <i class="fas fa-warehouse text-blue-600"></i>
+                    <span>Stock & Inventory</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div>
+                        <label for="stockQuantity" class="block text-sm font-medium text-gray-700 mb-2">
+                            Stock Quantity <span class="required-asterisk">*</span>
+                        </label>
+                        <input type="number" id="stockQuantity" required min="0" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="100">
+                    </div>
+                    <div>
+                        <label for="stockStatus" class="block text-sm font-medium text-gray-700 mb-2">
+                            Stock Status <span class="required-asterisk">*</span>
+                        </label>
+                        <select id="stockStatus" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                            <option value="in_stock">In Stock</option>
+                            <option value="out_of_stock">Out of Stock</option>
+                            <option value="preorder">Preorder</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="minOrderQty" class="block text-sm font-medium text-gray-700 mb-2">Min Order Quantity</label>
+                        <input type="number" id="minOrderQty" min="1" value="1" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="1">
+                    </div>
+                    <div>
+                        <label for="maxOrderQty" class="block text-sm font-medium text-gray-700 mb-2">Max Order Quantity</label>
+                        <input type="number" id="maxOrderQty" min="1" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="10">
+                    </div>
+                    <div>
+                        <label for="reorderLevel" class="block text-sm font-medium text-gray-700 mb-2">Reorder Level</label>
+                        <input type="number" id="reorderLevel" min="0" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="20">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. Compliance & Certifications -->
+            <div class="field-group p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                    <i class="fas fa-certificate text-blue-600"></i>
+                    <span>Compliance & Certifications</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div>
+                        <label for="fssaiNumber" class="block text-sm font-medium text-gray-700 mb-2">FSSAI Number</label>
+                        <input type="text" id="fssaiNumber" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="e.g., 12345678901234">
+                    </div>
+                    <div>
+                        <label for="bisCertification" class="block text-sm font-medium text-gray-700 mb-2">BIS Certification</label>
+                        <input type="text" id="bisCertification" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="e.g., CRS123456">
+                    </div>
+                    <div>
+                        <label for="drugLicenseNumber" class="block text-sm font-medium text-gray-700 mb-2">Drug License Number</label>
+                        <input type="text" id="drugLicenseNumber" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="e.g., DL123456">
+                    </div>
+                    <div>
+                        <label for="manufacturerDetails" class="block text-sm font-medium text-gray-700 mb-2">Manufacturer Details</label>
+                        <textarea id="manufacturerDetails" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-y" placeholder="Name, Address"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Grocery Details (Conditional) -->
+            <div id="grocerySection" class="hidden field-group p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                    <i class="fas fa-apple-alt text-green-600"></i>
+                    <span>Grocery Details</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="quantity" class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                        <input type="number" id="quantity" step="0.01" min="0" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="500">
+                    </div>
+                    <div>
+                        <label for="unit" class="block text-sm font-medium text-gray-700 mb-2">Unit</label>
+                        <select id="unit" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                            <option value="">Select unit</option>
+                            <option value="kg">Kilograms (kg)</option>
+                            <option value="g">Grams (g)</option>
+                            <option value="l">Liters (l)</option>
+                            <option value="ml">Milliliters (ml)</option>
+                            <option value="pcs">Pieces (pcs)</option>
+                            <option value="pack">Pack</option>
+                            <option value="bottle">Bottle</option>
+                            <option value="can">Can</option>
+                            <option value="box">Box</option>
+                            <option value="bunch">Bunch</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="expiryDate" class="block text-sm font-medium text-gray-700 mb-2">Expiry Date</label>
+                        <input type="date" id="expiryDate" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. Logistics & Delivery -->
+            <div class="field-group p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                    <i class="fas fa-truck text-blue-600"></i>
+                    <span>Logistics & Delivery</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div>
+                        <label for="weight" class="block text-sm font-medium text-gray-700 mb-2">Weight (kg)</label>
+                        <input type="number" id="weight" step="0.01" min="0" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="0.5">
+                    </div>
+                    <div>
+                        <label for="dimensions" class="block text-sm font-medium text-gray-700 mb-2">Dimensions (L×W×H cm)</label>
+                        <input type="text" id="dimensions" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="20×15×5">
+                    </div>
+                    <div>
+                        <label for="packageContents" class="block text-sm font-medium text-gray-700 mb-2">Package Contents</label>
+                        <input type="text" id="packageContents" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="e.g., 1x Product, Manual">
+                    </div>
+                    <div>
+                        <label for="deliveryCharges" class="block text-sm font-medium text-gray-700 mb-2">Delivery Charges (₹)</label>
+                        <input type="number" id="deliveryCharges" step="0.01" min="0" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="50">
+                    </div>
+                    <div>
+                        <label for="codAvailable" class="block text-sm font-medium text-gray-700 mb-2">Cash on Delivery</label>
+                        <select id="codAvailable" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="returnPolicy" class="block text-sm font-medium text-gray-700 mb-2">Return Policy (Days)</label>
+                        <select id="returnPolicy" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                            <option value="">No Returns</option>
+                            <option value="7">7 Days</option>
+                            <option value="15">15 Days</option>
+                            <option value="30">30 Days</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="warranty" class="block text-sm font-medium text-gray-700 mb-2">Warranty</label>
+                        <input type="text" id="warranty" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="e.g., 1 Year">
+                    </div>
+                    <div>
+                        <label for="deliveryDate" class="block text-sm font-medium text-gray-700 mb-2">Expected Delivery</label>
+                        <input type="text" id="deliveryDate" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="e.g., 2-3 days">
+                    </div>
+                    <div>
+                        <label for="vendors" class="block text-sm font-medium text-gray-700 mb-2">
+                            Vendor/Supplier <span class="required-asterisk">*</span>
+                        </label>
+                        <select id="vendors" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                            <option value="">Select Vendor</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8. SEO & Online Marketing -->
+            <div class="field-group p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                    <i class="fas fa-globe text-blue-600"></i>
+                    <span>SEO & Online Marketing</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="metaTitle" class="block text-sm font-medium text-gray-700 mb-2">Meta Title</label>
+                        <input type="text" id="metaTitle" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="e.g., Organic Apples - Fresh & Healthy">
+                    </div>
+                    <div>
+                        <label for="metaDescription" class="block text-sm font-medium text-gray-700 mb-2">Meta Description</label>
+                        <textarea id="metaDescription" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-y" placeholder="Describe your product for search engines..."></textarea>
+                    </div>
+                    <div>
+                        <label for="keywords" class="block text-sm font-medium text-gray-700 mb-2">Keywords (Press Enter to add)</label>
+                        <input type="text" id="keywords" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="e.g., organic, apples, fresh">
+                        <div id="keywordsList" class="mt-2"></div>
+                    </div>
+                    <div>
+                        <label for="slug" class="block text-sm font-medium text-gray-700 mb-2">Slug</label>
+                        <input type="text" id="slug" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="e.g., organic-apples">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 9. Status & Admin Controls -->
+            <div class="field-group p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                    <i class="fas fa-cog text-blue-600"></i>
+                    <span>Status & Admin Controls</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div>
+                        <label for="status" class="block text-sm font-medium text-gray-700 mb-2">
+                            Status <span class="required-asterisk">*</span>
+                        </label>
+                        <select id="status" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="draft">Draft</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="createdBy" class="block text-sm font-medium text-gray-700 mb-2">Created By</label>
+                        <input type="text" id="createdBy" readonly class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" placeholder="Auto-filled">
+                    </div>
+                    <div>
+                        <label for="approvedBy" class="block text-sm font-medium text-gray-700 mb-2">Approved By</label>
+                        <input type="text" id="approvedBy" readonly class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" placeholder="Auto-filled">
+                    </div>
+                    <div>
+                        <label for="rating" class="block text-sm font-medium text-gray-700 mb-2">
+                            Rating (1-5) <span class="required-asterisk">*</span>
+                        </label>
+                        <input type="number" id="rating" min="1" max="5" step="0.1" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="4.5">
+                    </div>
+                    <div>
+                        <label for="reviewCount" class="block text-sm font-medium text-gray-700 mb-2">
+                            Review Count <span class="required-asterisk">*</span>
+                        </label>
+                        <input type="number" id="reviewCount" min="0" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="1247">
+                    </div>
+                    <div>
+                        <label for="badge" class="block text-sm font-medium text-gray-700 mb-2">Badge</label>
+                        <select id="badge" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                            <option value="">No Badge</option>
+                            <option value="Best Seller">Best Seller</option>
+                            <option value="New">New</option>
+                            <option value="Sale">Sale</option>
+                            <option value="Limited Edition">Limited Edition</option>
+                            <option value="Top Rated">Top Rated</option>
+                            <option value="Fresh">Fresh</option>
+                            <option value="Organic">Organic</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="text-center">
+                <button type="submit" id="submitBtn" class="px-8 py-3 bg-blue-600 text-white rounded-lg font-medium transition-all duration-200 hover:bg-blue-700 shadow-md">
+                    <i class="fas fa-check mr-2"></i>
+                    <span id="submitBtnText">Add Item to Database</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+<script type="module">
+/*
+        // Mode switching logic based on URL parameter
+        function getUrlParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        function switchMode(mode) {
+            const addBtn = document.getElementById('btnAddProduct');
+            const editBtn = document.getElementById('btnEditProduct');
+            const searchSection = document.getElementById('searchSection');
+            const editInfo = document.getElementById('editInfo');
+            const modeTitle = document.getElementById('modeTitle');
+            const modeIcon = document.getElementById('modeIcon');
+            const submitBtnText = document.getElementById('submitBtnText');
+
+            if (mode === 'add') {
+                addBtn.classList.add('bg-blue-600', 'text-white');
+                addBtn.classList.remove('border', 'border-blue-600', 'text-blue-600');
+                editBtn.classList.add('border', 'border-blue-600', 'text-blue-600');
+                editBtn.classList.remove('bg-blue-600', 'text-white');
+                searchSection.classList.add('hidden');
+                editInfo.classList.add('hidden');
+                modeTitle.textContent = 'Add New Product';
+                modeIcon.className = 'fas fa-plus text-blue-600 mr-3';
+                submitBtnText.textContent = 'Add Item to Database';
+            } else if (mode === 'edit') {
+                editBtn.classList.add('bg-blue-600', 'text-white');
+                editBtn.classList.remove('border', 'border-blue-600', 'text-blue-600');
+                addBtn.classList.add('border', 'border-blue-600', 'text-blue-600');
+                addBtn.classList.remove('bg-blue-600', 'text-white');
+                searchSection.classList.remove('hidden');
+                editInfo.classList.remove('hidden');
+                modeTitle.textContent = 'Edit Product';
+                modeIcon.className = 'fas fa-edit text-blue-600 mr-3';
+                submitBtnText.textContent = 'Update Product';
+            }
+        }
+
+        // Initialize mode based on URL parameter
+        const mode = getUrlParam('mode');
+        if (mode === 'add') {
+            document.getElementById('modeToggleContainer').classList.add('hidden');
+            switchMode('add');
+        } else if (mode === 'edit') {
+            document.getElementById('modeToggleContainer').classList.add('hidden');
+            switchMode('edit');
+        } else {
+            switchMode('add'); // Default to add mode
+        }
+
+        // Toggle grocery fields based on category
+        function toggleGroceryFields() {
+            const category = document.getElementById('category').value;
+            const grocerySection = document.getElementById('grocerySection');
+            grocerySection.classList.toggle('hidden', category !== 'Grocery');
+        }
+
+        // Calculate discount percentage
+        document.getElementById('mrp').addEventListener('input', updateDiscount);
+        document.getElementById('sellingPrice').addEventListener('input', updateDiscount);
+
+        function updateDiscount() {
+            const mrp = parseFloat(document.getElementById('mrp').value) || 0;
+            const sellingPrice = parseFloat(document.getElementById('sellingPrice').value) || 0;
+            const discountPercent = mrp > 0 ? ((mrp - sellingPrice) / mrp * 100).toFixed(2) : 0;
+            document.getElementById('discountPercent').value = discountPercent;
+        }
+
+        // Keyword tag management
+        const keywordsInput = document.getElementById('keywords');
+        const keywordsList = document.getElementById('keywordsList');
+        let keywords = [];
+
+        keywordsInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && keywordsInput.value.trim()) {
+                e.preventDefault();
+                const keyword = keywordsInput.value.trim();
+                if (!keywords.includes(keyword)) {
+                    keywords.push(keyword);
+                    renderKeywords();
+                    keywordsInput.value = '';
+                }
+            }
+        });
+
+        function renderKeywords() {
+            keywordsList.innerHTML = '';
+            keywords.forEach((keyword, index) => {
+                const tag = document.createElement('div');
+                tag.className = 'tag mt-2 mr-2';
+                tag.innerHTML = `
+                    ${keyword}
+                    <button type="button" class="tag-remove" onclick="removeKeyword(${index})">&times;</button>
+                `;
+                keywordsList.appendChild(tag);
+            });
+        }
+
+        function removeKeyword(index) {
+            keywords.splice(index, 1);
+            renderKeywords();
+        }
+
+
+*/
+
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import {
+        getFirestore,
+        collection,
+        query,
+        orderBy,
+        limit,
+        getDocs,
+        doc,
+        setDoc,
+        getDoc,
+        updateDoc,
+        where,
+        Timestamp
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+        authDomain: "sjpss-f504b.firebaseapp.com",
+        projectId: "sjpss-f504b",
+        storageBucket: "sjpss-f504b.firebasestorage.app",
+        messagingSenderId: "227402980311",
+        appId: "1:227402980311:web:56b580456ab6b9c6758992",
+        measurementId: "G-LZ4YP9YPN6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+
+
+
+
+/*
+
+ // Mode switching logic based on URL parameter
+        function getUrlParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        
+        // Initialize mode based on URL parameter
+        const mode = getUrlParam('mode');
+        if (mode === 'add') {
+            document.getElementById('modeToggleContainer').classList.add('hidden');
+            switchMode('add');
+        } else if (mode === 'edit') {
+            document.getElementById('modeToggleContainer').classList.add('hidden');
+            switchMode('edit');
+        } else {
+            switchMode('add'); // Default to add mode
+        }
+
+
+
+*/
+
+
+
+
+    let keywordTags = [];
+    let currentMode = 'add';
+    let editingProductId = null;
+
+    // Mode switching functionality
+    window.switchMode = function(mode) {
+        currentMode = mode;
+        const addBtn = document.getElementById('btnAddProduct');
+        const editBtn = document.getElementById('btnEditProduct');
+        const searchSection = document.getElementById('searchSection');
+        const editInfo = document.getElementById('editInfo');
+        const submitBtnText = document.getElementById('submitBtnText');
+        const modeIcon = document.getElementById('modeIcon');
+        const modeTitle = document.getElementById('modeTitle');
+
+        if (mode === 'add') {
+            addBtn.classList.add('bg-blue-600', 'text-white');
+            addBtn.classList.remove('border', 'border-blue-600', 'text-blue-600');
+            editBtn.classList.add('border', 'border-blue-600', 'text-blue-600');
+            editBtn.classList.remove('bg-blue-600', 'text-white');
+            searchSection.classList.add('hidden');
+            editInfo.classList.add('hidden');
+            submitBtnText.textContent = 'Add Item to Database';
+            modeIcon.className = 'fas fa-plus text-blue-600 mr-3';
+            modeTitle.textContent = 'Add New Product';
+            clearAll();
+            editingProductId = null;
+            showNewProductId();
+        } else if (mode === 'edit') {
+            editBtn.classList.add('bg-blue-600', 'text-white');
+            editBtn.classList.remove('border', 'border-blue-600', 'text-blue-600');
+            addBtn.classList.add('border', 'border-blue-600', 'text-blue-600');
+            addBtn.classList.remove('bg-blue-600', 'text-white');
+            searchSection.classList.remove('hidden');
+            editInfo.classList.remove('hidden');
+            submitBtnText.textContent = 'Update Product';
+            modeIcon.className = 'fas fa-edit text-blue-600 mr-3';
+            modeTitle.textContent = 'Edit Product';
+            clearAll();
+            editingProductId = null;
+        }
+    };
+
+    // Product search functionality
+    let searchTimeout;
+    document.getElementById('productSearch').addEventListener('input', function(e) {
+        clearTimeout(searchTimeout);
+        const searchTerm = e.target.value.trim();
+        
+        if (searchTerm.length < 2) {
+            document.getElementById('searchResults').classList.add('hidden');
+            return;
+        }
+
+        searchTimeout = setTimeout(() => searchProducts(searchTerm), 300);
+    });
+
+/*
+    async function searchProducts(searchTerm) {
+        const searchResults = document.getElementById('searchResults');
+        searchResults.innerHTML = '<div class="p-4 text-center">Searching...</div>';
+        searchResults.classList.remove('hidden');
+
+        try {
+            const q = query(collection(db, "products"));
+            const snapshot = await getDocs(q);
+            
+            const results = [];
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                if (data.name && data.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+                    results.push({ id: doc.id, ...data });
+                }
+            });
+
+            if (results.length === 0) {
+                searchResults.innerHTML = '<div class="p-4 text-center text-gray-600">No products found</div>';
+                return;
+            }
+
+            searchResults.innerHTML = '';
+            results.slice(0, 10).forEach(product => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'search-result-item';
+                resultItem.innerHTML = `
+                    <div class="font-medium">${product.name}</div>
+                    <div class="text-sm text-gray-600">${product.brand} • ₹${product.sellingPrice} • ID: ${product.id}</div>
+                `;
+                resultItem.addEventListener('click', () => loadProductForEdit(product));
+                searchResults.appendChild(resultItem);
+            });
+        } catch (error) {
+            console.error('Search error:', error);
+            searchResults.innerHTML = '<div class="p-4 text-center text-red-600">Search failed</div>';
+        }
+    }
+*/
+
+ async function searchProducts(searchTerm) {
+        const searchResults = document.getElementById('searchResults');
+        searchResults.innerHTML = '<div style="padding: 15px; text-align: center;">Searching...</div>';
+        searchResults.style.display = 'block';
+
+        try {
+            const q = query(collection(db, "products"));
+            const snapshot = await getDocs(q);
+            
+            const results = [];
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                if (data.name && data.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+                    results.push({ id: doc.id, ...data });
+                }
+            });
+
+            if (results.length === 0) {
+                searchResults.innerHTML = '<div style="padding: 15px; text-align: center; color: #666;">No products found</div>';
+                return;
+            }
+
+            searchResults.innerHTML = '';
+            results.slice(0, 10).forEach(product => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'search-result-item';
+                resultItem.innerHTML = `
+                    <div class="product-info">
+                        <div class="product-name">${product.name}</div>
+                        <div class="product-details">${product.brand} • ₹${product.price} • ID: ${product.id}</div>
+                    </div>
+                `;
+                resultItem.addEventListener('click', () => loadProductForEdit(product));
+                searchResults.appendChild(resultItem);
+            });
+        } catch (error) {
+            console.error('Search error:', error);
+            searchResults.innerHTML = '<div style="padding: 15px; text-align: center; color: #e74c3c;">Search failed</div>';
+        }
+    }
+
+
+
+    async function loadProductForEdit(product) {
+        editingProductId = product.id;
+        
+        // Hide search results
+        document.getElementById('searchResults').classList.add('hidden');
+        document.getElementById('productSearch').value = product.name;
+        
+        // Show edit info
+        document.getElementById('editInfo').classList.remove('hidden');
+        document.getElementById('editingname').textContent = product.name;
+        document.getElementById('editingProductId').textContent = product.id;
+
+        // Populate form fields - mapping to new field names
+        document.getElementById('productId').value = product.productId || product.id || '';
+        document.getElementById('sku').value = product.sku || '';
+        document.getElementById('name').value = product.name || '';
+        document.getElementById('brand').value = product.brand || '';
+        document.getElementById('category').value = product.category || '';
+        document.getElementById('subCategory').value = product.subCategory || '';
+        document.getElementById('hsnCode').value = product.hsnCode || '';
+        document.getElementById('countryOfOrigin').value = product.countryOfOrigin || '';
+        document.getElementById('shortDescription').value = product.shortDescription || '';
+        document.getElementById('longDescription').value = product.longDescription || '';
+        document.getElementById('highlights').value = product.highlights || '';
+        document.getElementById('images').value = product.images || product.imageUrl;
+        document.getElementById('videos').value = product.videos || '';
+        document.getElementById('specifications').value = product.specifications || '';
+        document.getElementById('mrp').value = product.mrp || '';
+        document.getElementById('sellingPrice').value = product.sellingPrice || '';
+        document.getElementById('gstRate').value = product.gstRate || '';
+        document.getElementById('offers').value = product.offers || '';
+        document.getElementById('stockQuantity').value = product.stockQuantity || '';
+        document.getElementById('stockStatus').value = product.stockStatus || 'in_stock';
+        document.getElementById('minOrderQty').value = product.minOrderQty || '1';
+        document.getElementById('maxOrderQty').value = product.maxOrderQty || '';
+        document.getElementById('reorderLevel').value = product.reorderLevel || '';
+        document.getElementById('fssaiNumber').value = product.fssaiNumber || '';
+        document.getElementById('bisCertification').value = product.bisCertification || '';
+        document.getElementById('drugLicenseNumber').value = product.drugLicenseNumber || '';
+        document.getElementById('manufacturerDetails').value = product.manufacturerDetails || '';
+        document.getElementById('weight').value = product.weight || '';
+        document.getElementById('dimensions').value = product.dimensions || '';
+        document.getElementById('packageContents').value = product.packageContents || '';
+        document.getElementById('deliveryCharges').value = product.deliveryCharges || '';
+        document.getElementById('codAvailable').value = product.codAvailable || 'true';
+        document.getElementById('returnPolicy').value = product.returnPolicy || '';
+        document.getElementById('warranty').value = product.warranty || '';
+        document.getElementById('deliveryDate').value = product.deliveryDate || '';
+        document.getElementById('vendors').value = product.vendors || '';
+        document.getElementById('metaTitle').value = product.metaTitle || '';
+        document.getElementById('metaDescription').value = product.metaDescription || '';
+        document.getElementById('slug').value = product.slug || '';
+        document.getElementById('status').value = product.status || 'active';
+        document.getElementById('createdBy').value = product.createdBy || '';
+        document.getElementById('approvedBy').value = product.approvedBy || '';
+        document.getElementById('rating').value = product.rating || '';
+        document.getElementById('reviewCount').value = product.reviewCount || '';
+        document.getElementById('badge').value = product.badge || '';
+
+        // Load subcategories if category is selected
+        if (product.category) {
+            await loadSubcategories(product.category);
+            setTimeout(() => {
+                document.getElementById('subCategory').value = product.subCategory || '';
+            }, 100);
+        }
+
+        // Handle grocery-specific fields
+        if (product.category === 'Grocery') {
+            document.getElementById('quantity').value = product.quantity || '';
+            document.getElementById('unit').value = product.unit || '';
+            document.getElementById('expiryDate').value = product.expiryDate || '';
+        }
+
+        // Handle keywords
+        keywordTags = Array.isArray(product.keywords) ? [...product.keywords] : [];
+        renderKeywords();
+
+        // Calculate discount and toggle grocery section
+        updateDiscount();
+        toggleGroceryFields();
+    }
+
+    // Toggle grocery fields based on category
+    window.toggleGroceryFields = function() {
+        const category = document.getElementById('category').value;
+        const grocerySection = document.getElementById('grocerySection');
+        grocerySection.classList.toggle('hidden', category !== 'Grocery');
+    };
+
+    // Calculate discount percentage
+    function updateDiscount() {
+        const mrp = parseFloat(document.getElementById('mrp').value) || 0;
+        const sellingPrice = parseFloat(document.getElementById('sellingPrice').value) || 0;
+        const discountPercent = mrp > 0 ? ((mrp - sellingPrice) / mrp * 100).toFixed(2) : 0;
+        document.getElementById('discountPercent').value = discountPercent;
+    }
+
+    // Keyword tag management
+    function renderKeywords() {
+        const keywordsList = document.getElementById('keywordsList');
+        keywordsList.innerHTML = '';
+        keywordTags.forEach((keyword, index) => {
+            const tag = document.createElement('div');
+            tag.className = 'tag';
+            tag.innerHTML = `
+                ${keyword}
+                <button type="button" class="tag-remove" onclick="removeKeyword(${index})">×</button>
+            `;
+            keywordsList.appendChild(tag);
+        });
+    }
+
+    window.removeKeyword = function(index) {
+        keywordTags.splice(index, 1);
+        renderKeywords();
+    };
+
+    async function loadShopName() {
+        try {
+            const metaDoc = doc(db, 'meta', 'metadata');
+            const docSnap = await getDoc(metaDoc);
+
+            const shopHeading = document.getElementById('shopHeading');
+            shopHeading.classList.remove('animate-pulse-custom');
+
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                shopHeading.textContent = data.shopName ? data.shopName : 'Product Management System';
+            } else {
+                shopHeading.textContent = 'Product Management System';
+            }
+        } catch (error) {
+            console.error('Error fetching shop name:', error);
+            document.getElementById('shopHeading').textContent = 'Product Management System';
+        }
+    }
+
+    // Load shop name on page load
+    loadShopName();
+
+    // Form submission
+    document.getElementById('itemForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const submitBtn = document.getElementById('submitBtn');
+        const submitBtnText = document.getElementById('submitBtnText');
+        const originalText = submitBtnText.textContent;
+
+        submitBtn.disabled = true;
+        submitBtnText.textContent = currentMode === 'add' ? 'Adding Item...' : 'Updating Item...';
+
+        try {
+            // Build comprehensive item data
+            const itemData = {
+                productId: document.getElementById('productId').value,
+                sku: document.getElementById('sku').value,
+                name: document.getElementById('name').value,
+                brand: document.getElementById('brand').value,
+                category: document.getElementById('category').value,
+                subCategory: document.getElementById('subCategory').value,
+                hsnCode: document.getElementById('hsnCode').value,
+                countryOfOrigin: document.getElementById('countryOfOrigin').value,
+                shortDescription: document.getElementById('shortDescription').value,
+                longDescription: document.getElementById('longDescription').value,
+                highlights: document.getElementById('highlights').value,
+                images: document.getElementById('images').value,
+                videos: document.getElementById('videos').value,
+                specifications: document.getElementById('specifications').value,
+                mrp: parseFloat(document.getElementById('mrp').value),
+                sellingPrice: parseFloat(document.getElementById('sellingPrice').value),
+                discountPercent: parseFloat(document.getElementById('discountPercent').value) || 0,
+                gstRate: document.getElementById('gstRate').value,
+                offers: document.getElementById('offers').value,
+                stockQuantity: parseInt(document.getElementById('stockQuantity').value),
+                stockStatus: document.getElementById('stockStatus').value,
+                minOrderQty: parseInt(document.getElementById('minOrderQty').value) || 1,
+                maxOrderQty: document.getElementById('maxOrderQty').value ? parseInt(document.getElementById('maxOrderQty').value) : null,
+                reorderLevel: document.getElementById('reorderLevel').value ? parseInt(document.getElementById('reorderLevel').value) : null,
+                fssaiNumber: document.getElementById('fssaiNumber').value,
+                bisCertification: document.getElementById('bisCertification').value,
+                drugLicenseNumber: document.getElementById('drugLicenseNumber').value,
+                manufacturerDetails: document.getElementById('manufacturerDetails').value,
+                weight: document.getElementById('weight').value ? parseFloat(document.getElementById('weight').value) : null,
+                dimensions: document.getElementById('dimensions').value,
+                packageContents: document.getElementById('packageContents').value,
+                deliveryCharges: document.getElementById('deliveryCharges').value ? parseFloat(document.getElementById('deliveryCharges').value) : null,
+                codAvailable: document.getElementById('codAvailable').value === 'true',
+                returnPolicy: document.getElementById('returnPolicy').value,
+                warranty: document.getElementById('warranty').value,
+                deliveryDate: document.getElementById('deliveryDate').value,
+                vendors: document.getElementById('vendors').value,
+                metaTitle: document.getElementById('metaTitle').value,
+                metaDescription: document.getElementById('metaDescription').value,
+                keywords: keywordTags,
+                slug: document.getElementById('slug').value,
+                status: document.getElementById('status').value,
+                createdBy: document.getElementById('createdBy').value,
+                approvedBy: document.getElementById('approvedBy').value,
+                rating: parseFloat(document.getElementById('rating').value),
+                reviewCount: parseInt(document.getElementById('reviewCount').value),
+                badge: document.getElementById('badge').value
+            };
+
+            // Add grocery-specific fields if category is Grocery
+            if (document.getElementById('category').value === 'Grocery') {
+                itemData.quantity = document.getElementById('quantity').value ? parseFloat(document.getElementById('quantity').value) : null;
+                itemData.unit = document.getElementById('unit').value;
+                itemData.expiryDate = document.getElementById('expiryDate').value || null;
+            }
+
+            if (currentMode === 'add') {
+                // Get the highest current ID for new products
+                const q = query(collection(db, "products"), orderBy("id", "desc"), limit(1));
+                const snapshot = await getDocs(q);
+
+                let newId = 1;
+                if (!snapshot.empty) {
+                    const lastItem = snapshot.docs[0].data();
+                    newId = parseInt(lastItem.id) + 1;
+                }
+
+                const newIdStr = newId.toString();
+                itemData.id = newIdStr;
+                itemData.productId = newIdStr; // Set productId to match id
+                itemData.dateAdded = Timestamp.now();
+                itemData.createdBy = 'Admin'; // Set default creator
+
+                // Create new document
+                const docRef = doc(db, 'products', newIdStr);
+                await setDoc(docRef, itemData);
+
+                // Show success message
+                showMessage('Item added successfully!', 'success');
+                
+                // Reset form
+                document.getElementById('itemForm').reset();
+                keywordTags = [];
+                renderKeywords();
+                document.getElementById('grocerySection').classList.add('hidden');
+                showNewProductId(); // Update the next product ID
+
+            } else {
+                // Edit mode - update existing product
+                if (!editingProductId) {
+                    throw new Error('No product selected for editing');
+                }
+
+                itemData.dateModified = Timestamp.now();
+                
+                // Update existing document
+                const docRef = doc(db, 'products', editingProductId);
+                await updateDoc(docRef, itemData);
+
+                showMessage('Product updated successfully!', 'success');
+            }
+
+        } catch (error) {
+            console.error('Error saving item:', error);
+            showMessage(`Error: ${error.message}`, 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtnText.textContent = originalText;
+        }
+    });
+
+    // Show message function
+    function showMessage(message, type) {
+        // Create or update a status message element
+        let statusDiv = document.getElementById('statusMessage');
+        if (!statusDiv) {
+            statusDiv = document.createElement('div');
+            statusDiv.id = 'statusMessage';
+            statusDiv.className = 'fixed top-4 right-4 px-6 py-3 rounded-lg font-medium z-50 transition-all duration-300';
+            document.body.appendChild(statusDiv);
+        }
+
+        statusDiv.textContent = message;
+        statusDiv.className = `fixed top-4 right-4 px-6 py-3 rounded-lg font-medium z-50 transition-all duration-300 ${
+            type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+        }`;
+
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            statusDiv.remove();
+        }, 5000);
+    }
+
+    // Clear All fields
+    window.clearAll = function() {
+        document.getElementById('itemForm').reset();
+        keywordTags = [];
+        renderKeywords();
+        document.getElementById('grocerySection').classList.add('hidden');
+        document.getElementById('productSearch').value = '';
+        document.getElementById('searchResults').classList.add('hidden');
+        document.getElementById('editInfo').classList.add('hidden');
+        editingProductId = null;
+        
+        // Reset discount calculation
+        document.getElementById('discountPercent').value = '';
+        
+        // Clear subcategory dropdown
+        const subCategorySelect = document.getElementById('subCategory');
+        subCategorySelect.innerHTML = '<option value="">Select Sub Category</option>';
+    };
+
+/*    // Load categories for dropdown
+    async function loadCategoriesForDropdown() {
+        try {
+            const dropdown = document.getElementById('category');
+            const querySnapshot = await getDocs(collection(db, 'categories'));
+
+            dropdown.innerHTML = '<option value="">Select Category</option>';
+
+            querySnapshot.forEach(doc => {
+                const data = doc.data();
+                const option = document.createElement('option');
+                option.value = data.name || doc.id;
+                option.textContent = data.name || 'Unnamed Category';
+                dropdown.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading categories:', error);
+        }
+    }
+
+    // Load subcategories
+    async function loadSubcategories(selectedCategory) {
+        const subCategorySelect = document.getElementById('subCategory');
+        subCategorySelect.innerHTML = '<option value="">Loading...</option>';
+
+        if (!selectedCategory) {
+            subCategorySelect.innerHTML = '<option value="">Select Sub Category</option>';
+            return;
+        }
+
+        try {
+            // This is a simplified version - adjust based on your actual category structure
+            const categories = {
+                'Grocery': ['Fruits', 'Vegetables', 'Dairy', 'Bakery', 'Beverages'],
+                'Electronics': ['Mobile', 'Laptop', 'Accessories', 'Audio', 'Gaming'],
+                'Clothing': ['Men', 'Women', 'Kids', 'Footwear', 'Accessories']
+            };
+
+            subCategorySelect.innerHTML = '<option value="">Select Sub Category</option>';
+            
+            if (categories[selectedCategory]) {
+                categories[selectedCategory].forEach(sub => {
+                    const option = document.createElement('option');
+                    option.value = sub;
+                    option.textContent = sub;
+                    subCategorySelect.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error('Error loading subcategories:', error);
+            subCategorySelect.innerHTML = '<option value="">Error loading subcategories</option>';
+        }
+    }
+*/
+ async function loadCategoriesForDropdown() {
+        try {
+            const dropdown = document.getElementById('category');
+            const querySnapshot = await getDocs(collection(db, 'categories'));
+
+            dropdown.innerHTML = `<option value="">Select a category</option>`;
+
+            querySnapshot.forEach(doc => {
+                const data = doc.data();
+                const option = document.createElement('option');
+                option.value = doc.id;
+                option.textContent = data.name;
+                dropdown.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading categories:', error);
+        }
+    }
+
+    if (typeof db !== 'undefined') {
+        loadCategoriesForDropdown();
+    }
+
+    const categorySelect = document.getElementById('category');
+    const subCategorySelect = document.getElementById('subCategory');
+
+    categorySelect.addEventListener('change', async () => {
+        const selectedCategoryId = categorySelect.value;
+        await loadSubcategories(selectedCategoryId);
+        toggleGroceryFields();
+    });
+
+    async function loadSubcategories(selectedCategoryId) {
+        subCategorySelect.innerHTML = `<option value="">Loading...</option>`;
+
+        if (!selectedCategoryId) {
+            subCategorySelect.innerHTML = `<option value="">Select a Sub Category</option>`;
+            return;
+        }
+
+        try {
+            const docRef = doc(db, 'categories', selectedCategoryId);
+            const docSnap = await getDoc(docRef);
+
+            subCategorySelect.innerHTML = `<option value="">Select a Sub Category</option>`;
+
+            if (!docSnap.exists()) {
+                console.warn("Category document not found for ID:", selectedCategoryId);
+                subCategorySelect.innerHTML += `<option value="">No subcategories found</option>`;
+                return;
+            }
+
+            const data = docSnap.data();
+            console.log("Loaded category:", data.name);
+
+            if (Array.isArray(data.subcategories)) {
+                data.subcategories.forEach(sub => {
+                    if (sub.name) {
+                        const option = document.createElement('option');
+                        option.value = sub.name;
+                        option.textContent = sub.name;
+                        subCategorySelect.appendChild(option);
+                    }
+                });
+            } else {
+                console.warn("No subcategories array found.");
+                subCategorySelect.innerHTML += `<option value="">No subcategories available</option>`;
+            }
+        } catch (error) {
+            console.error('Error loading subcategories:', error.message, error);
+            subCategorySelect.innerHTML = `<option value="">Error loading subcategories</option>`;
+        }
+    }
+
+
+
+
+
+    // Populate vendors
+    async function populateVendorField() {
+        const vendorSelect = document.getElementById("vendors");
+        vendorSelect.innerHTML = '<option value="">Select Vendor</option>';
+
+        try {
+            const querySnapshot = await getDocs(collection(db, "vendors"));
+            querySnapshot.forEach((doc) => {
+                const vendor = doc.data();
+                const option = document.createElement("option");
+                option.value = doc.id;
+                option.textContent = vendor.companyName || vendor.vendorName || "Unnamed Vendor";
+                vendorSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error("Error loading vendors:", error);
+        }
+    }
+
+    // Show new product ID for add mode
+    async function showNewProductId() {
+        if (currentMode !== 'add') return;
+        
+        try {
+            const q = query(collection(db, "products"), orderBy("id", "desc"), limit(1));
+            const snapshot = await getDocs(q);
+
+            let newId = 1;
+            if (!snapshot.empty) {
+                const lastItem = snapshot.docs[0].data();
+                newId = parseInt(lastItem.id) + 1;
+            }
+
+            document.getElementById('productId').value = newId.toString();
+        } catch (error) {
+            console.error("Error fetching product ID:", error);
+        }
+    }
+
+    // Handle URL parameters for mode
+    function handleProductModeButtons() {
+        const params = new URLSearchParams(window.location.search);
+        if ([...params].length === 0) return;
+
+        const mode = params.get('mode');
+        
+        if (mode === 'Add') {
+            const editBtn = document.getElementById('btnEditProduct');
+            if (editBtn) editBtn.style.display = 'none';
+            switchMode('add');
+        } else if (mode === 'Edit') {
+            const addBtn = document.getElementById('btnAddProduct');
+            if (addBtn) addBtn.style.display = 'none';
+            switchMode('edit');
+        }
+    }
+
+    // Initialize everything when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        loadCategoriesForDropdown();
+        populateVendorField();
+        handleProductModeButtons();
+        
+        // Add event listeners
+        document.getElementById('category').addEventListener('change', function() {
+            loadSubcategories(this.value);
+            toggleGroceryFields();
+        });
+
+        document.getElementById('mrp').addEventListener('input', updateDiscount);
+        document.getElementById('sellingPrice').addEventListener('input', updateDiscount);
+
+        // Keywords input handling
+        document.getElementById('keywords').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && this.value.trim()) {
+                e.preventDefault();
+                const keyword = this.value.trim();
+                if (!keywordTags.includes(keyword)) {
+                    keywordTags.push(keyword);
+                    renderKeywords();
+                    this.value = '';
+                }
+            }
+        });
+
+        // Hide search results when clicking outside
+        document.addEventListener('click', function(e) {
+            const searchResults = document.getElementById('searchResults');
+            const productSearch = document.getElementById('productSearch');
+            
+            if (!searchResults.contains(e.target) && e.target !== productSearch) {
+                searchResults.classList.add('hidden');
+            }
+        });
+
+        // Initialize with add mode
+        switchMode('add');
+    });
+
+
+
+
+//to generate and auto fill sku
+function autoFillSKU() {
+  // Helper function: clean and shorten strings
+  const short = (str, len = 3) => {
+    if (!str) return "";
+    return str.replace(/[^a-zA-Z0-9]/g, "") // remove spaces & special chars
+              .substring(0, len)
+              .toUpperCase();
+  };
+
+  // Get field values
+  const category = document.getElementById("category")?.value.trim();
+  const subCategory = document.getElementById("subCategory")?.value.trim();
+  const brand = document.getElementById("brand")?.value.trim();
+  const name = document.getElementById("name")?.value.trim();
+  const shortDesc = document.getElementById("shortDescription")?.value.trim();
+
+  // Check if all required fields are filled
+  if (!category || !subCategory || !brand || !name || !shortDesc) {
+    alert("Please fill Category, Sub Category, Brand, Product Name, and Short Description before generating SKU.");
+    document.getElementById("sku").value = ""; // clear SKU if incomplete
+    return;
+  }
+
+  // Build SKU
+  const parts = [
+    short(category, 3),
+    short(subCategory, 3),
+    short(brand, 3),
+    short(name, 3),
+    short(shortDesc, 3)
+  ];
+
+  const sku = parts.join("-");
+
+  // Set SKU field
+  document.getElementById("sku").value = sku;
+}
+
+// Attach event to shortDescription blur
+document.getElementById("shortDescription").addEventListener("blur", autoFillSKU);
+
+
+    </script>
+</body>
+</html>

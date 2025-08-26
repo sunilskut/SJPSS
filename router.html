@@ -1,0 +1,36 @@
+<html>
+<head>
+<titile></titile>
+</head>
+<body>
+<script>
+
+  const validToken = "vr123"; // your shared secret
+
+  // Helper: get token from URL
+  function getTokenFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("token");
+  }
+
+  const sessionToken = sessionStorage.getItem("accessToken");
+  const urlToken = getTokenFromURL();
+
+  if (sessionToken === validToken) {
+    // Already validated in this session, allow access
+    console.log("Access granted from session.");
+ window.location.href = "vendorRegistration.html?token=vr124";
+  } else if (urlToken === validToken) {
+    // Token in URL is valid, store in sessionStorage
+    sessionStorage.setItem("accessToken", urlToken);
+    history.replaceState({}, document.title, window.location.pathname);
+    console.log("Access granted via URL token.");
+ window.location.href = "vendorRegistration.html?token=vr124";
+  } else {
+    // Invalid or no token — redirect
+    alert("Access denied. Please use a valid link.");
+    window.location.href = "loginPage.html";
+  }
+</script>
+</body>
+</html>

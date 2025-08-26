@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Management Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <i class="fas fa-users text-blue-600 text-2xl mr-3"></i>
+                    <h1 class="text-2xl font-bold text-gray-900">Customer Management</h1>
+                </div>
+               <div class="text-sm text-gray-500 cursor-pointer hover:text-gray-700"
+     onclick="window.location.href='adminPanel.html#settings'">
+    <i class="fas fa-user-shield mr-2"></i>
+    Admin Dashboard
+</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Search Section -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Search Customers</h2>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-1">
+                    <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-2">Search by ID, Name, Email, or Phone</label>
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            placeholder="Enter customer ID, name, email, or phone..."
+                            class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        >
+                        <i class="fas fa-search absolute left-3 top-3.5 text-gray-400"></i>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button 
+                        onclick="searchCustomers()" 
+                        class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    >
+                        <i class="fas fa-search mr-2"></i>Search
+                    </button>
+                    <button 
+                        onclick="loadAllCustomers()" 
+                        class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                    >
+                        <i class="fas fa-list mr-2"></i>All Customers
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="hidden">
+            <div class="bg-white rounded-lg shadow-sm p-8 text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p class="text-gray-600">Loading customers...</p>
+            </div>
+        </div>
+
+        <!-- No Results -->
+        <div id="noResults" class="hidden">
+            <div class="bg-white rounded-lg shadow-sm p-8 text-center">
+                <i class="fas fa-search text-gray-300 text-4xl mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No Customers Found</h3>
+                <p class="text-gray-600">Try searching with different keywords or check all customers.</p>
+            </div>
+        </div>
+
+        <!-- Customers Grid -->
+        <div id="customersGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Customers will be populated here -->
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmationModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md mx-4">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-exclamation-triangle text-yellow-500 text-xl mr-3"></i>
+                <h3 class="text-lg font-semibold text-gray-900">Confirm Action</h3>
+            </div>
+            <p id="confirmationMessage" class="text-gray-600 mb-6"></p>
+            <div class="flex gap-3 justify-end">
+                <button 
+                    onclick="closeModal()" 
+                    class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                    Cancel
+                </button>
+                <button 
+                    id="confirmButton" 
+                    onclick="confirmAction()" 
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+            authDomain: "sjpss-f504b.firebaseapp.com",
+            projectId: "sjpss-f504b",
+            storageBucket: "sjpss-f504b.firebasestorage.app",
+            messagingSenderId: "227402980311",
+            appId: "1:227402980311:web:56b580456ab6b9c6758992",
+            measurementId: "G-LZ4YP9YPN6"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let currentCustomers = [];
+        let pendingAction = null;
+
+        // Search functionality
+        async function searchCustomers() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            if (!searchTerm) {
+                alert('Please enter a search term');
+                return;
+            }
+
+            showLoading();
+            
+            try {
+                // Search by ID first
+                const idQuery = await db.collection('customers').where('id', '==', searchTerm).get();
+                
+                if (!idQuery.empty) {
+                    const customers = idQuery.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
+                    displayCustomers(customers);
+                    return;
+                }
+
+                // Search by multiple fields (case-insensitive partial match)
+                const allQuery = await db.collection('customers').get();
+                const filteredCustomers = allQuery.docs
+                    .map(doc => ({ docId: doc.id, ...doc.data() }))
+                    .filter(customer => {
+                        const searchLower = searchTerm.toLowerCase();
+                        return (
+                            (customer.fullName && customer.fullName.toLowerCase().includes(searchLower)) ||
+                            (customer.email && customer.email.toLowerCase().includes(searchLower)) ||
+                            (customer.phone && customer.phone.includes(searchTerm)) ||
+                            (customer.id && customer.id.toLowerCase().includes(searchLower))
+                        );
+                    });
+
+                displayCustomers(filteredCustomers);
+            } catch (error) {
+                console.error('Error searching customers:', error);
+                showError('Error searching customers. Please try again.');
+            }
+        }
+
+        // Load all customers
+        async function loadAllCustomers() {
+            showLoading();
+            
+            try {
+                const snapshot = await db.collection('customers').get();
+                const customers = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
+                displayCustomers(customers);
+            } catch (error) {
+                console.error('Error loading customers:', error);
+                showError('Error loading customers. Please try again.');
+            }
+        }
+
+        // Display customers in grid
+        function displayCustomers(customers) {
+            hideLoading();
+            currentCustomers = customers;
+            const grid = document.getElementById('customersGrid');
+            const noResults = document.getElementById('noResults');
+
+            if (customers.length === 0) {
+                grid.innerHTML = '';
+                noResults.classList.remove('hidden');
+                return;
+            }
+
+            noResults.classList.add('hidden');
+            grid.innerHTML = customers.map(customer => createCustomerCard(customer)).join('');
+        }
+
+        // Create customer card HTML
+        function createCustomerCard(customer) {
+            const isActive = customer.accountStatus === 'active';
+            const buttonText = isActive ? 'Suspend' : 'Activate';
+            const buttonClass = isActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700';
+            const statusClass = isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+            const statusText = isActive ? 'Active' : 'Suspended';
+            
+            const createdDate = customer.createdAt ? new Date(customer.createdAt.toDate()).toLocaleDateString() : 'N/A';
+            const verificationStatus = customer.emailVerified || customer.phoneVerified;
+
+            return `
+                <div class="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow">
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                                    <i class="fas fa-user text-blue-600 text-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-gray-900 text-lg">${customer.fullName || 'N/A'}</h3>
+                                    <span class="text-xs text-gray-500">ID: ${customer.id}</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-col items-end gap-2">
+                                <span class="px-2 py-1 rounded-full text-xs font-medium ${statusClass}">
+                                    ${statusText}
+                                </span>
+                                ${verificationStatus ? `
+                                    <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                                        <i class="fas fa-check-circle mr-1"></i>Verified
+                                    </span>
+                                ` : ''}
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-3 mb-4">
+                            <div class="flex items-center text-sm">
+                                <i class="fas fa-envelope text-gray-400 w-4 mr-2"></i>
+                                <span class="text-gray-600">${customer.email || 'N/A'}</span>
+                                ${customer.emailVerified ? '<i class="fas fa-check text-green-500 ml-2"></i>' : ''}
+                            </div>
+                            
+                            <div class="flex items-center text-sm">
+                                <i class="fas fa-phone text-gray-400 w-4 mr-2"></i>
+                                <span class="text-gray-600">${customer.phone || 'N/A'}</span>
+                                ${customer.phoneVerified ? '<i class="fas fa-check text-green-500 ml-2"></i>' : ''}
+                            </div>
+                            
+                            ${customer.shippingAddress && customer.shippingAddress.city ? `
+                                <div class="flex items-center text-sm">
+                                    <i class="fas fa-map-marker-alt text-gray-400 w-4 mr-2"></i>
+                                    <span class="text-gray-600">${customer.shippingAddress.city}, ${customer.shippingAddress.state}</span>
+                                </div>
+                            ` : ''}
+                            
+                            <div class="flex items-center text-sm">
+                                <i class="fas fa-calendar text-gray-400 w-4 mr-2"></i>
+                                <span class="text-gray-600">Joined: ${createdDate}</span>
+                            </div>
+                            
+                            ${customer.preferredLanguage ? `
+                                <div class="flex items-center text-sm">
+                                    <i class="fas fa-language text-gray-400 w-4 mr-2"></i>
+                                    <span class="text-gray-600">Language: ${customer.preferredLanguage.toUpperCase()}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        ${customer.interests && customer.interests.trim() ? `
+                            <div class="mb-4">
+                                <span class="text-xs text-gray-500 font-medium">Interests:</span>
+                                <p class="text-sm text-gray-600 mt-1">${customer.interests}</p>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="flex items-center justify-between pt-4 border-t">
+                            <div class="text-xs text-gray-500">
+                                ${customer.shippingAddress && customer.shippingAddress.pinCode ? `PIN: ${customer.shippingAddress.pinCode}` : 'No shipping address'}
+                            </div>
+                            <button 
+                                onclick="showConfirmation('${customer.docId}', '${customer.fullName}', '${customer.accountStatus}')"
+                                class="px-4 py-2 ${buttonClass} text-white text-sm font-medium rounded-lg transition-colors"
+                            >
+                                ${buttonText}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Show confirmation modal
+        function showConfirmation(docId, customerName, currentStatus) {
+            const action = currentStatus === 'active' ? 'suspend' : 'activate';
+            const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
+            
+            document.getElementById('confirmationMessage').textContent = 
+                `Are you sure you want to ${action} "${customerName}"'s account?`;
+            
+            pendingAction = { docId, newStatus, action };
+            document.getElementById('confirmationModal').classList.remove('hidden');
+            document.getElementById('confirmationModal').classList.add('flex');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('confirmationModal').classList.add('hidden');
+            document.getElementById('confirmationModal').classList.remove('flex');
+            pendingAction = null;
+        }
+
+       // Confirm action
+async function confirmAction() {
+    if (!pendingAction) return;
+
+    try {
+        // Update Firestore document
+        await db.collection('customers').doc(pendingAction.docId).update({
+            accountStatus: pendingAction.newStatus,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Create log entry
+        const userId = sessionStorage.getItem('userId');
+        await db.collection('logs').add({
+            action: "modify",
+            changes: pendingAction.newStatus ,
+            entityId: pendingAction.docId.toString(),
+            entityType: "customer",
+            note: `Changed customer account status for Customer ID ${pendingAction.docId} to ${pendingAction.newStatus} by User ID ${userId}`,
+            sessionId: localStorage.getItem('sessionId') || null,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            url: window.location.href,
+            userAgent: navigator.userAgent
+        });
+
+        // Find and update the customer in currentCustomers array
+        const customerIndex = currentCustomers.findIndex(c => c.docId === pendingAction.docId);
+        if (customerIndex !== -1) {
+            currentCustomers[customerIndex].accountStatus = pendingAction.newStatus;
+        }
+
+        // Refresh display
+        displayCustomers(currentCustomers);
+
+        closeModal();
+        showSuccess(`Customer account ${pendingAction.action}d successfully!`);
+
+    } catch (error) {
+        console.error('Error updating customer:', error);
+        showError('Error updating customer status. Please try again.');
+        closeModal();
+    }
+}
+
+
+        // Utility functions
+        function showLoading() {
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('customersGrid').innerHTML = '';
+            document.getElementById('noResults').classList.add('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingState').classList.add('hidden');
+        }
+
+        function showError(message) {
+            hideLoading();
+            alert(message); // In a real app, you'd use a proper notification system
+        }
+
+        function showSuccess(message) {
+            alert(message); // In a real app, you'd use a proper notification system
+        }
+
+        // Search on Enter key
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchCustomers();
+            }
+        });
+
+        // Load initial data
+        document.addEventListener('DOMContentLoaded', function() {
+            // You can uncomment this to load all customers on page load
+            // loadAllCustomers();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,3302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SJPSS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Professional CSS Variables */
+        :root {
+            --primary-color: #3b82f6;
+            --primary-dark: #1d4ed8;
+            --secondary-color: #f3f4f6;
+            --accent-color: #10b981;
+            --danger-color: #ef4444;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            --border-radius: 0.5rem;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Enhanced Animations */
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out forwards;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .animate-pulse-custom {
+            animation: pulseCustom 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulseCustom {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Professional Card Styles */
+        .product-card {
+            transition: var(--transition);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-color);
+        }
+
+        /* Professional Gradients */
+        .gradient-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .gradient-accent {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .gradient-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        /* Professional Loading States */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Enhanced Mobile Responsiveness */
+        .mobile-menu {
+            transform: translateX(-100%);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .mobile-menu.active {
+            transform: translateX(0);
+        }
+
+        /* Professional Form Styles */
+        .form-input {
+            @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors;
+        }
+
+        .btn-primary {
+            @apply bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+        }
+
+        .btn-secondary {
+            @apply bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-medium transition-colors;
+        }
+
+        .btn-success {
+            @apply bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors;
+        }
+
+        /* Professional Badge Styles */
+        .badge {
+            @apply px-2 py-1 text-xs font-semibold rounded-full;
+        }
+
+        .badge-bestseller { @apply bg-orange-100 text-orange-800; }
+        .badge-new { @apply bg-blue-100 text-blue-800; }
+        .badge-sale { @apply bg-red-100 text-red-800; }
+        .badge-top-rated { @apply bg-yellow-100 text-yellow-800; }
+
+        /* Professional Star Ratings */
+        .star-rating {
+            color: #fbbf24;
+        }
+
+        /* Enhanced Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+
+        /* Professional Header */
+        .header-backdrop {
+            backdrop-filter: blur(10px);
+            background-color: rgba(255, 255, 255, 0.95);
+        }
+
+        /* Enhanced Error States */
+        .error-state {
+            @apply text-red-600 bg-red-50 border border-red-200 rounded-lg p-4;
+        }
+
+        /* Loading States */
+        .loading-overlay {
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Professional Modal Styles */
+        .modal-backdrop {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        /* Utility Classes */
+        .text-truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Professional spacing for mobile */
+        @media (max-width: 640px) {
+            .container-mobile {
+                @apply px-4;
+            }
+        }
+
+        /* Enhanced focus states */
+        .focus-ring {
+            @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+        }
+
+        /* Professional disabled states */
+        .btn-disabled {
+            @apply opacity-50 cursor-not-allowed;
+        }
+
+	
+
+
+ add-cart& buy-now button css for consistency 
+.btn-add-cart {
+    @apply bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+}
+
+.btn-buy-now {
+    @apply bg-orange-600 hover:bg-orange-700 text-white py-2 px-3 rounded-lg text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2;
+}
+
+.btn-add-cart-alt {
+    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-3 rounded-lg text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 border border-gray-300;
+}
+
+.btn-buy-now-alt {
+    @apply bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-lg text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2;
+}
+
+
+
+
+
+
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Mobile Menu Overlay -->
+    <div id="mobileMenuOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden transition-opacity duration-300"></div>
+    
+    <!-- Mobile Sidebar Menu -->
+    <nav id="mobileMenu" class="mobile-menu fixed left-0 top-0 h-full w-80 bg-white z-50 shadow-xl">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-xl font-bold text-gray-800">Menu</h2>
+                <button id="closeMobileMenu" class="p-2 rounded-lg hover:bg-gray-100 transition-colors focus-ring">
+                    <i class="fas fa-times text-xl text-gray-600"></i>
+                </button>
+            </div>
+            
+            <!-- Mobile Navigation -->
+            <div class="space-y-6">
+                <div>
+                    <h3 class="font-semibold text-gray-700 border-b pb-2 mb-4">Categories</h3>
+                    <div id="mobileCategoryList" class="space-y-2 custom-scrollbar max-h-48 overflow-y-auto">
+                        <!-- Categories will be populated here -->
+                    </div>
+                </div>
+                
+                <div class="pt-6 border-t space-y-4">
+                    <a href="#" class="flex items-center space-x-3 text-gray-700 hover:text-blue-600 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                        <i class="fas fa-user w-5"></i>
+                        <span>My Account</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 text-gray-700 hover:text-blue-600 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                        <i class="fas fa-heart w-5"></i>
+                        <span>Wishlist</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 text-gray-700 hover:text-blue-600 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                        <i class="fas fa-box w-5"></i>
+                        <span>Orders</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+  <!-- Professional Header -->
+<header class="header-backdrop sticky top-0 z-30 border-b border-gray-200 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-14 sm:h-16">
+            <!-- Logo Section -->
+            <div class="flex items-center space-x-2">
+                <button id="openMobileMenu" class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <i class="fas fa-bars text-lg text-gray-600"></i>
+                </button>
+                <div class="flex items-center space-x-2">
+                    <!-- Mobile: Show only SJPSS -->
+                    <div class="block sm:hidden">
+                        <h1 class="text-lg font-bold text-green-800 m-0">SJPSS</h1>
+                    </div>
+                    <!-- Tablet & Desktop: Show SJPSS + subtitle -->
+                    <div class="hidden sm:block">
+                        <h1 class="text-xl font-bold text-gray-800">SJPSS</h1>
+                        <p class="text-xs text-gray-500">Professional Shopping</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enhanced Search Bar -->
+            <div class="flex-1 max-w-xs sm:max-w-2xl mx-2 sm:mx-6">
+                <div class="relative">
+                    <input
+                        type="text"
+                        id="searchInput"
+                        placeholder="Search products..."
+                        class="w-full px-3 py-2 sm:px-4 sm:py-3 pl-10 sm:pl-12 pr-10 sm:pr-16 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all text-sm sm:text-base"
+                    >
+                    <i class="fas fa-search absolute left-3 sm:left-4 top-3 sm:top-4 text-gray-400 text-sm sm:text-base"></i>
+                    <button class="absolute right-1 sm:right-2 top-1 sm:top-1.5 bg-blue-600 text-white px-2 sm:px-4 py-1 sm:py-2 rounded-lg hover:bg-blue-700 text-xs sm:text-sm font-medium transition-colors hidden sm:block">
+                        Search
+                    </button>
+                </div>
+            </div>
+
+            <!-- Professional Header Actions -->
+            <div class="flex items-center space-x-1 sm:space-x-2 md:space-x-6">
+                <!-- Desktop: Show additional icons -->
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="#" id="profileAccount" class="flex flex-col items-center text-gray-700 hover:text-blue-600 transition-colors group relative">
+                        <i class="fas fa-user text-base group-hover:scale-110 transition-transform text-gray-600"></i>
+                        <span class="text-xs mt-1">Account</span>
+                    </a>
+                    <button id="ordersIcon" 
+                        onclick="window.location.href='myOrders.html'"
+                        class="flex flex-col items-center text-gray-700 hover:text-blue-600 transition-colors group relative focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg p-2">
+                        <i class="fas fa-box text-base group-hover:scale-110 transition-transform"></i>
+                        <span class="hidden sm:block text-xs mt-1">Orders</span>
+                        <span id="ordersNumber" 
+                            class="absolute -top-1 -right-1 bg-green-600 text-white text-xs rounded-full h-4 sm:h-5 w-4 sm:w-5 flex items-center justify-center font-semibold">
+                            0
+                        </span>
+                    </button>
+                    <a href="#" class="flex flex-col items-center text-gray-700 hover:text-blue-600 transition-colors group relative">
+                        <i class="fas fa-heart text-base group-hover:scale-110 transition-transform"></i>
+                        <span class="text-xs mt-1">Wishlist</span>
+                        <span class="absolute -top-1 sm:-top-2 -right-1 sm:-right-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span>
+                    </a>
+                </div>
+                <!-- Mobile: Show only filter and cart icons -->
+                <div class="flex md:hidden items-center space-x-1">
+                    <span id="mobileFiltersBtn" 
+                        class="inline-flex items-center justify-center p-2 text-gray-600 hover:text-blue-600 transition-colors cursor-pointer">
+                        <i class="fas fa-filter text-base"></i>
+                    </span>
+                    <button id="cartIcon" 
+                        class="flex flex-col items-center text-gray-700 hover:text-blue-600 transition-colors group relative focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg p-2">
+                        <i class="fas fa-shopping-cart text-base group-hover:scale-110 transition-transform"></i>
+                        <span id="cartItemsNumber" 
+                            class="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-semibold">0</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+    <!-- Main Content Container -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Professional Desktop Sidebar -->
+            <aside class="hidden lg:block w-80 bg-white rounded-xl shadow-sm p-6 h-fit sticky top-28">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800">Filters</h3>
+                    <button id="clearAllFilters" class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                        Clear All
+                    </button>
+                </div>
+                
+                <!-- Enhanced Categories Filter -->
+                <div class="mb-8">
+                    <h4 class="font-medium text-gray-700 mb-4 flex items-center">
+                        <i class="fas fa-tags mr-2 text-blue-600"></i>
+                        Categories
+                    </h4>
+                    <div id="categoryFilter" class="space-y-3 max-h-48 overflow-y-auto custom-scrollbar">
+                        <!-- Categories will be populated here -->
+                    </div>
+                </div>
+                
+                <!-- Enhanced Price Filter -->
+                <div class="mb-8">
+                    <h4 class="font-medium text-gray-700 mb-4 flex items-center">
+                        <i class="fas fa-inr mr-2 text-green-600"></i>
+                        Price Range
+                    </h4>
+                    <div class="space-y-3">
+                        <label class="flex items-center p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                            <input type="radio" name="price" value="all" class="mr-3 text-blue-600 focus:ring-blue-500" checked>
+                            <span class="text-sm text-gray-700">All Prices</span>
+                        </label>
+                        <label class="flex items-center p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                            <input type="radio" name="price" value="0-100" class="mr-3 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm text-gray-700">Under ₹100</span>
+                        </label>
+                        <label class="flex items-center p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                            <input type="radio" name="price" value="100-500" class="mr-3 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm text-gray-700">₹100 - ₹500</span>
+                        </label>
+                        <label class="flex items-center p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                            <input type="radio" name="price" value="500-1000" class="mr-3 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm text-gray-700">₹500 - ₹1000</span>
+                        </label>
+                        <label class="flex items-center p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                            <input type="radio" name="price" value="1000+" class="mr-3 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm text-gray-700">Above ₹1000</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Enhanced Rating Filter -->
+                <div class="mb-8">
+                    <h4 class="font-medium text-gray-700 mb-4 flex items-center">
+                        <i class="fas fa-star mr-2 text-yellow-500"></i>
+                        Customer Rating
+                    </h4>
+                    <div class="space-y-3">
+                        <label class="flex items-center p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                            <input type="radio" name="rating" value="all" class="mr-3 text-blue-600 focus:ring-blue-500" checked>
+                            <span class="text-sm text-gray-700">All Ratings</span>
+                        </label>
+                        <label class="flex items-center p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                            <input type="radio" name="rating" value="4+" class="mr-3 text-blue-600 focus:ring-blue-500">
+                            <div class="flex items-center">
+                                <span class="text-sm text-gray-700 mr-2">4★ & above</span>
+                                <div class="flex text-yellow-400 text-xs">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="flex items-center p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                            <input type="radio" name="rating" value="3+" class="mr-3 text-blue-600 focus:ring-blue-500">
+                            <div class="flex items-center">
+                                <span class="text-sm text-gray-700 mr-2">3★ & above</span>
+                                <div class="flex text-yellow-400 text-xs">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Products Section -->
+            <main class="flex-1">
+
+
+                <!-- Professional Products Header -->
+                <div class="bg-white rounded-xl shadow-sm p-6 mb-8 hidden sm:block" >
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                            <h1 class="text-3xl font-bold text-gray-800 mb-2">Our Products</h1>
+                            <p id="productCount" class="text-gray-600">Discovering amazing products...</p>
+                        </div>
+                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
+                            <select id="sortBy" class="form-input min-w-48">
+                                <option value="name">Sort by Name</option>
+                                <option value="price-low">Price: Low to High</option>
+                                <option value="price-high">Price: High to Low</option>
+                                <option value="rating">Best Rating</option>
+                                <option value="newest">Newest First</option>
+                            </select>
+                            
+                            <div class="hidden sm:flex items-center bg-gray-100 rounded-lg p-1">
+                                <button id="gridView" class="p-2 text-blue-600 bg-white rounded-md shadow-sm">
+                                    <i class="fas fa-th text-sm"></i>
+                                </button>
+                                <button id="listView" class="p-2 text-gray-600 hover:text-blue-600 transition-colors">
+                                    <i class="fas fa-list text-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enhanced Loading Skeleton -->
+                <div id="loadingSkeleton" class="hidden">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+                        <!-- Skeleton cards will be generated here -->
+                    </div>
+                </div>
+
+                <!-- Professional Products Grid -->
+                <div id="productsGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+                    <!-- Products will be populated here -->
+                </div>
+
+                <!-- Professional Load More Section -->
+                <div class="text-center">
+                    <button id="loadMoreBtn" class="hidden btn-primary px-8 py-3 text-lg">
+                        <i class="fas fa-plus mr-2"></i>
+                        Load More Products
+                    </button>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Professional Mobile Filters Modal -->
+    <div id="mobileFiltersModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden lg:hidden">
+        <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl p-6 max-h-[80vh] overflow-y-auto animate-slide-up">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-semibold text-gray-800">Filters & Sort</h3>
+                <button id="closeMobileFilters" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                    <i class="fas fa-times text-xl text-gray-600"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-8">
+                <!-- Mobile Sort -->
+                <div>
+                    <h4 class="font-medium text-gray-700 mb-4">Sort By</h4>
+                    <select id="mobileSortBy" class="form-input">
+                        <option value="name">Name A-Z</option>
+                        <option value="price-low">Price: Low to High</option>
+                        <option value="price-high">Price: High to Low</option>
+                        <option value="rating">Best Rating</option>
+                        <option value="newest">Newest First</option>
+                    </select>
+                </div>
+
+                <!-- Mobile Price Filter -->
+                <div>
+                    <h4 class="font-medium text-gray-700 mb-4">Price Range</h4>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button class="p-3 border border-gray-200 rounded-lg text-sm hover:border-blue-500 hover:bg-blue-50 transition-colors" data-price="0-100">
+                            Under ₹100
+                        </button>
+                        <button class="p-3 border border-gray-200 rounded-lg text-sm hover:border-blue-500 hover:bg-blue-50 transition-colors" data-price="100-500">
+                            ₹100-500
+                        </button>
+                        <button class="p-3 border border-gray-200 rounded-lg text-sm hover:border-blue-500 hover:bg-blue-50 transition-colors" data-price="500-1000">
+                            ₹500-1000
+                        </button>
+                        <button class="p-3 border border-gray-200 rounded-lg text-sm hover:border-blue-500 hover:bg-blue-50 transition-colors" data-price="1000+">
+                            Above ₹1000
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Mobile Rating Filter -->
+                <div>
+                    <h4 class="font-medium text-gray-700 mb-4">Customer Rating</h4>
+                    <div class="space-y-3">
+                        <button class="w-full p-3 border border-gray-200 rounded-lg text-sm text-left hover:border-blue-500 hover:bg-blue-50 transition-colors flex items-center justify-between" data-rating="4+">
+                            <span>4★ & above</span>
+                            <div class="flex text-yellow-400 text-xs">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </button>
+                        <button class="w-full p-3 border border-gray-200 rounded-lg text-sm text-left hover:border-blue-500 hover:bg-blue-50 transition-colors flex items-center justify-between" data-rating="3+">
+                            <span>3★ & above</span>
+                            <div class="flex text-yellow-400 text-xs">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Mobile Actions -->
+                <div class="flex space-x-4 pt-4 border-t">
+                    <button id="clearMobileFilters" class="flex-1 btn-secondary">
+                        Clear All
+                    </button>
+                    <button id="applyMobileFilters" class="flex-1 btn-primary">
+                        Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Professional Cart Modal -->
+    <div id="cartModal" class="fixed inset-0 modal-backdrop z-50 hidden transition-opacity duration-300">
+        <div id="cartPanel" class="absolute right-0 top-0 w-full max-w-lg bg-white h-full shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300 ease-out">
+            
+            <!-- Cart Header -->
+            <div class="flex items-center justify-between p-6 border-b bg-gray-50">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-shopping-cart text-blue-600"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800">Shopping Cart</h2>
+                        <p class="text-sm text-gray-600">Review your items</p>
+                    </div>
+                </div>
+                <button id="closeCart" class="p-2 rounded-lg hover:bg-gray-200 transition-colors focus-ring">
+                    <i class="fas fa-times text-xl text-gray-600"></i>
+                </button>
+            </div>
+
+            <!-- Cart Items -->
+            <div id="cartItems" class="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+                <!-- Cart items will be injected -->
+            </div>
+
+            <!-- Cart Footer -->
+            <div class="border-t bg-gray-50 p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-lg font-medium text-gray-700">Total Amount:</span>
+                    <span id="cartTotal" class="text-2xl font-bold text-gray-900">₹0</span>
+                </div>
+<button id="btnCheckOut" 
+    class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold text-lg py-3 rounded-lg shadow-md transition">
+    <i class="fas fa-credit-card mr-2"></i>
+    Proceed to Checkout
+</button>
+                <p class="text-xs text-gray-500 mt-2 text-center">
+                    <i class="fas fa-shield-alt mr-1"></i>
+                    Secure checkout guaranteed
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Professional Order Summary Modal -->
+    <div id="orderSummaryModal" class="fixed inset-0 modal-backdrop z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fade-in">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-green-500 to-green-700 text-white p-6 rounded-t-2xl text-center">
+    <h2 class="text-xl font-bold mb-2">Order Summary</h2>
+    <p class="text-white text-sm">Review your order details before placing</p>
+</div>
+
+
+            <div class="p-6 space-y-6">
+                <!-- Shipping Details -->
+                <div class="bg-gray-50 rounded-xl p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-gray-800 flex items-center">
+                            <i class="fas fa-shipping-fast mr-2 text-blue-600"></i>
+                            Shipping Address
+                        </h3>
+                        <button id="btnChangeAddress" class="text-blue-600 hover:text-blue-700 font-medium text-sm focus-ring rounded px-2 py-1">
+                            Change Address
+                        </button>
+                    </div>
+                    <div id="summaryShipping" class="text-sm text-gray-700"></div>
+                </div>
+
+                <!-- Change Address Form -->
+                <div id="changeAddressForm" class="hidden bg-blue-50 rounded-xl p-4 space-y-3">
+                    <h4 class="font-medium text-gray-800 mb-3">Enter New Address</h4>
+                    <input type="text" id="newAddress" placeholder="Complete Address" class="form-input">
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="text" id="newCity" placeholder="City" class="form-input">
+                        <input type="text" id="newState" placeholder="State" class="form-input">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="text" id="newCountry" placeholder="Country" class="form-input">
+                        <input type="text" id="newPincode" placeholder="Pincode" class="form-input">
+                    </div>
+                    <button id="btnSaveAddress" class="btn-success w-full">
+                        <i class="fas fa-save mr-2"></i>
+                        Save Address
+                    </button>
+                </div>
+
+                <!-- Order Items -->
+                <div class="bg-gray-50 rounded-xl p-4">
+                    <h3 class="font-semibold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-box mr-2 text-green-600"></i>
+                        Order Items
+                    </h3>
+                    <div id="summaryItems" class="space-y-3 max-h-64 overflow-y-auto custom-scrollbar"></div>
+                </div>
+
+                <!-- Payment Method -->
+                <div class="bg-gray-50 rounded-xl p-4">
+                    <h3 class="font-semibold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-credit-card mr-2 text-purple-600"></i>
+                        Payment Method
+                    </h3>
+                    <div class="space-y-3">
+                        <label class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-white cursor-pointer transition-colors">
+                            <input type="radio" name="paymentMethod" value="COD"  class="mr-3 text-blue-600 focus:ring-blue-500">
+                            <div class="flex items-center">
+                                <i class="fas fa-money-bill-wave mr-3 text-green-600"></i>
+                                <div>
+                                    <span class="font-medium text-gray-800">Cash on Delivery</span>
+                                    <p class="text-sm text-gray-600">Pay when you receive your order</p>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-white cursor-pointer transition-colors">
+                            <input type="radio" name="paymentMethod" value="UPI" checked class="mr-3 text-blue-600 focus:ring-blue-500">
+                            <div class="flex items-center">
+                                <i class="fas fa-mobile-alt mr-3 text-blue-600"></i>
+                                <div>
+                                    <span class="font-medium text-gray-800">UPI Payment</span>
+                                    <p class="text-sm text-gray-600">Pay instantly using UPI</p>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Order Total -->
+                <div class="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-4 border border-green-200">
+                    <div class="flex justify-between items-center">
+                        <span class="text-lg font-semibold text-gray-800">Total Amount:</span>
+                        <span id="summaryTotal" class="text-3xl font-bold text-green-600">₹0</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-1">
+                        <i class="fas fa-truck mr-1"></i>
+                        Free shipping on orders above ₹500
+                    </p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex space-x-4 pt-4">
+    <button id="cancelSummary" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition">
+        <i class="fas fa-times mr-2"></i>
+        Cancel
+    </button>
+    <button id="confirmOrder" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold text-lg py-3 px-4 rounded-lg transition">
+        <i class="fas fa-check mr-2"></i>
+        Place Order
+    </button>
+</div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Professional Payment Modal -->
+    <div id="paymentModal" class="fixed inset-0 modal-backdrop hidden flex items-center justify-center z-60 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-fade-in">
+            <!-- Content will be injected dynamically -->
+        </div>
+    </div>
+
+
+
+
+<!-- Mobile sticky Footer Menu -->
+<div id="mobileFooter" 
+     class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-inner sm:hidden">
+  <div id="footerMenu" class="grid grid-cols-6 text-center text-[11px] text-gray-700">
+    
+    <!-- Home -->
+    <button id="mbBtnHome" class="flex flex-col items-center py-1.5 hover:text-blue-600 relative">
+      <i class="fas fa-home text-lg"></i>
+      <span>Home</span>
+    </button>
+   
+    <!-- You -->
+    <button id="mbBtnYou" class="flex flex-col items-center py-1.5 hover:text-blue-600">
+      <i class="fas fa-user text-base text-gray-600"></i>
+      <span class="text-[11px] mt-0.5">You</span>
+    </button>
+
+    <!-- Wishlist -->
+    <button id="mbBtnWishlist" class="flex flex-col items-center py-1.5 hover:text-blue-600 relative">
+      <i class="fas fa-heart text-lg"></i>
+      <span>Wishlist</span>
+    </button>
+
+    <!-- Orders with badge -->
+    <button id="mbBtnOrders" onclick="window.location='myOrders.html'"  
+            class="flex flex-col items-center py-1.5 hover:text-blue-600 relative">
+      <i class="fas fa-box text-lg"></i>
+      <span>Orders</span>
+      <span id="ordersNumber2"
+        class="absolute top-0 right-4 bg-green-600 text-white text-[10px] rounded-full h-4 w-4 
+               flex items-center justify-center font-semibold hidden">
+        0
+      </span>
+    </button>
+
+    <!-- Menu -->
+    <button id="mbBtnMenu" class="flex flex-col items-center py-1.5 hover:text-blue-600">
+      <i class="fas fa-bars text-lg"></i>
+      <span>Menu</span>
+    </button>
+
+    <!-- Toggle -->
+    <button id="toggleFooter" class="flex flex-col items-center py-1.5 hover:text-blue-600">
+      <i class="fas fa-eye-slash text-lg" id="toggleIcon"></i>
+      <span id="toggleLabel">Hide</span>
+    </button>
+  </div>
+</div>
+
+
+
+
+    <!-- Professional JavaScript -->
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+	import { getApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { 
+    getFirestore, 
+    collection, 
+    doc,
+    getDoc,
+    getDocs, 
+    setDoc,
+    updateDoc,
+    query, 
+    orderBy,
+    onSnapshot,
+    limit,
+    where,
+    serverTimestamp,
+    writeBatch
+} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';     
+
+
+        // Professional Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+            authDomain: "sjpss-f504b.firebaseapp.com",
+            projectId: "sjpss-f504b",
+            storageBucket: "sjpss-f504b.firebasestorage.app",
+            messagingSenderId: "227402980311",
+            appId: "1:227402980311:web:56b580456ab6b9c6758992",
+            measurementId: "G-LZ4YP9YPN6"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Professional Application State Management
+        class ECommerceApp {
+            constructor() {
+                this.products = [];
+                this.filteredProducts = [];
+                this.cart = this.loadCart();
+                this.currentView = 'grid';
+                this.productsPerPage = 12;
+                this.currentPage = 1;
+                this.isLoading = false;
+                
+                this.init();
+            }
+
+            // Initialize the application
+            async init() {
+                try {
+                    this.showLoadingSkeleton();
+                    this.setupEventListeners();
+                    
+                    await Promise.all([
+                        this.fetchProducts(),
+                        this.loadCategories()
+                    ]);
+                    
+                    this.updateCartUI();
+                } catch (error) {
+                    this.handleError('Failed to initialize application', error);
+                } finally {
+                    this.hideLoadingSkeleton();
+                }
+            }
+
+            // Professional Error Handler
+            handleError(message, error) {
+                console.error(message, error);
+                this.showNotification(message, 'error');
+            }
+
+            // Professional Success Handler
+            handleSuccess(message) {
+                this.showNotification(message, 'success');
+            }
+
+            // Professional Notification System
+            showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full max-w-sm`;
+                
+                const colors = {
+                    success: 'bg-green-500 text-white',
+                    error: 'bg-red-500 text-white',
+                    info: 'bg-blue-500 text-white',
+                    warning: 'bg-yellow-500 text-black'
+                };
+                
+                const icons = {
+                    success: 'fas fa-check-circle',
+                    error: 'fas fa-exclamation-triangle',
+                    info: 'fas fa-info-circle',
+                    warning: 'fas fa-exclamation-circle'
+                };
+
+                notification.className += ` ${colors[type]}`;
+                notification.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <i class="${icons[type]}"></i>
+                        <span>${message}</span>
+                    </div>
+                `;
+
+                document.body.appendChild(notification);
+
+                // Animate in
+                setTimeout(() => {
+                    notification.classList.remove('translate-x-full');
+                }, 100);
+
+                // Auto remove
+                setTimeout(() => {
+                    notification.classList.add('translate-x-full');
+                    setTimeout(() => {
+                        document.body.removeChild(notification);
+                    }, 300);
+                }, 2000);
+            }
+
+            // Professional Loading Skeleton
+            showLoadingSkeleton() {
+                const skeleton = document.getElementById('loadingSkeleton');
+                const productsGrid = document.getElementById('productsGrid');
+                
+                skeleton.innerHTML = '';
+                skeleton.classList.remove('hidden');
+                productsGrid.innerHTML = '';
+
+                for (let i = 0; i < 8; i++) {
+                    const skeletonCard = document.createElement('div');
+                    skeletonCard.className = 'bg-white rounded-xl p-4 shadow-sm';
+                    skeletonCard.innerHTML = `
+                        <div class="skeleton h-48 rounded-lg mb-4"></div>
+                        <div class="skeleton h-4 rounded mb-2"></div>
+                        <div class="skeleton h-4 rounded w-3/4 mb-3"></div>
+                        <div class="skeleton h-6 rounded w-1/2 mb-3"></div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="skeleton h-8 rounded"></div>
+                            <div class="skeleton h-8 rounded"></div>
+                        </div>
+                    `;
+                    skeleton.appendChild(skeletonCard);
+                }
+            }
+
+            hideLoadingSkeleton() {
+                const skeleton = document.getElementById('loadingSkeleton');
+                skeleton.classList.add('hidden');
+            }
+
+            // Fetch products from Firebase
+            async fetchProducts() {
+                try {
+
+		const q = query(
+  			collection(db, "products"),
+  			where("status", "==", "active")
+		);
+
+                    const querySnapshot = await getDocs(q);
+                    this.products = [];
+
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        if (data.stockQuantity > 0) {this.products.push({
+                            id: doc.id,
+                            ...data
+                        });
+		     }
+                    });
+
+                    // Sort products by name
+                    this.products.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                    this.filteredProducts = [...this.products];
+                    
+                    this.renderProducts();
+                    this.updateProductCount();
+                } catch (error) {
+                    this.handleError('Failed to fetch products', error);
+                }
+            }
+
+            // Professional Product Card Creation
+            createProductCard(product) {
+                const discountPercent = product.discountPercent || 0;
+                const hasDiscount = discountPercent > 0;
+                const originalPrice = product.mrp || product.sellingPrice;
+                const sellingPrice = product.sellingPrice || 0;
+
+                return `
+                    <div class="product-card group cursor-pointer" onclick="ecommerceApp.viewProduct('${product.id}')">
+                        <div class="relative overflow-hidden rounded-t-xl">
+                            <img 
+                                src="${this.getProductImage(product)}" 
+                                alt="${product.name || 'Product'}"
+                                class="w-full h-48 sm:h-56 object-cover group-hover:scale-105 transition-transform duration-300"
+                                loading="lazy"
+                                onerror="this.src='https://via.placeholder.com/300x300?text=No+Image'"
+                            >
+                            
+                            ${product.badge ? `
+                                <div class="absolute top-3 left-3">
+                                    <span class="badge ${this.getBadgeClass(product.badge)} shadow-sm">
+                                        ${product.badge}
+                                    </span>
+                                </div>
+                            ` : ''}
+
+                            ${hasDiscount ? `
+                                <div class="absolute top-3 right-3">
+                                    <span class="bg-red-500 text-white px-2 py-1 text-xs font-semibold rounded-full shadow-sm">
+                                        ${Math.round(discountPercent)}% OFF
+                                    </span>
+                                </div>
+                            ` : ''}
+
+                            <div class="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button class="bg-white hover:bg-red-50 text-red-500 p-2 rounded-full shadow-lg focus-ring" 
+                                        onclick="event.stopPropagation(); ecommerceApp.toggleWishlist('${product.id}')">
+                                    <i class="far fa-heart text-sm"></i>
+                                </button>
+                            </div>
+
+                            ${product.codAvailable ? `
+                                <div class="absolute bottom-3 left-3">
+                                    <span class="bg-green-500 text-white px-2 py-1 text-xs font-medium rounded-full">
+                                        COD Available
+                                    </span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="p-4">
+                            <div class="mb-2">
+                                <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">
+                                    ${product.brand || 'Unknown Brand'}
+                                </p>
+                                <h3 class="text-sm font-semibold text-gray-800 line-clamp-2 group-hover:text-blue-600 transition-colors" 
+                                    title="${product.name || 'Unnamed Product'}">
+                                    ${this.truncateText(product.name || 'Unnamed Product', 50)}
+                                </h3>
+                            </div>
+                            
+                            <div class="flex items-center mb-3">
+                                <div class="flex items-center space-x-1 text-xs">
+                                    ${this.generateStars(product.rating || 0)}
+                                </div>
+                                <span class="ml-2 text-xs text-gray-600">(${product.reviewCount || 0})</span>
+                            </div>
+
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-lg font-bold text-gray-900">₹${sellingPrice}</span>
+                                    ${hasDiscount ? `
+                                        <span class="text-sm text-gray-500 line-through">₹${originalPrice}</span>
+                                    ` : ''}
+                                </div>
+                            </div>
+
+			<!--
+                            <div class="grid grid-cols-2 gap-2">
+                                <button class="btn-primary py-2 text-xs" 
+                                        onclick="event.stopPropagation(); ecommerceApp.addToCart('${product.id}')">
+                                    <i class="fas fa-shopping-cart mr-1"></i>
+                                    Add to Cart
+                                </button>
+                                <button class="btn-success py-2 text-xs" 
+                                        onclick="event.stopPropagation(); ecommerceApp.buyNow('${product.id}')">
+                                    <i class="fas fa-bolt mr-1"></i>
+                                    Buy Now
+                                </button>
+                            </div>
+			-->
+
+<div class="grid grid-cols-2 gap-2">
+    <button class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-3 rounded-lg text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 border border-gray-300" 
+            onclick="event.stopPropagation(); ecommerceApp.addToCart('${product.id}')">
+        <i class="fas fa-shopping-cart mr-1"></i>
+        Add to Cart
+    </button>
+    <button class="bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-lg text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2" 
+            onclick="event.stopPropagation(); ecommerceApp.buyNow('${product.id}')">
+        <i class="fas fa-bolt mr-1"></i>
+        Buy Now
+    </button>
+</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Helper methods
+            getProductImage(product) {
+                if (Array.isArray(product.images) && product.images.length > 0) {
+                    return product.images[0];
+                }
+                if (typeof product.images === 'string' && product.images) {
+                    return product.images.split(' ')[0];
+                }
+                return 'https://via.placeholder.com/300x300?text=No+Image';
+            }
+
+            getBadgeClass(badge) {
+                const badgeClasses = {
+                    'Best Seller': 'badge-bestseller',
+                    'New': 'badge-new', 
+                    'Sale': 'badge-sale',
+                    'Top Rated': 'badge-top-rated'
+                };
+                return badgeClasses[badge] || 'badge-new';
+            }
+
+            generateStars(rating) {
+                const fullStars = Math.floor(rating);
+                const hasHalfStar = rating % 1 !== 0;
+                let starsHtml = '';
+
+                for (let i = 0; i < fullStars; i++) {
+                    starsHtml += '<i class="fas fa-star star-rating"></i>';
+                }
+                
+                if (hasHalfStar) {
+                    starsHtml += '<i class="fas fa-star-half-alt star-rating"></i>';
+                }
+                
+                const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+                for (let i = 0; i < emptyStars; i++) {
+                    starsHtml += '<i class="far fa-star text-gray-300"></i>';
+                }
+
+                return starsHtml;
+            }
+
+            truncateText(text, maxLength) {
+                return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+            }
+
+            // Render products
+            renderProducts() {
+                const productsGrid = document.getElementById('productsGrid');
+                const startIndex = (this.currentPage - 1) * this.productsPerPage;
+                const endIndex = startIndex + this.productsPerPage;
+                const productsToShow = this.filteredProducts.slice(0, endIndex);
+                
+                if (productsToShow.length === 0) {
+                    productsGrid.innerHTML = `
+                        <div class="col-span-full flex flex-col items-center justify-center py-16">
+                            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                <i class="fas fa-search text-3xl text-gray-400"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold text-gray-800 mb-2">No products found</h3>
+                            <p class="text-gray-600 text-center max-w-md">
+                                We couldn't find any products matching your criteria. 
+                                Try adjusting your search or filters.
+                            </p>
+                            <button onclick="ecommerceApp.clearAllFilters()" 
+                                    class="mt-4 btn-primary">
+                                <i class="fas fa-refresh mr-2"></i>
+                                Clear All Filters
+                            </button>
+                        </div>
+                    `;
+                    this.toggleLoadMoreButton(false);
+                    return;
+                }
+                
+                productsGrid.innerHTML = productsToShow.map(product => this.createProductCard(product)).join('');
+                this.toggleLoadMoreButton(endIndex < this.filteredProducts.length);
+                
+                // Animate products
+                setTimeout(() => {
+                    document.querySelectorAll('.product-card').forEach((card, index) => {
+                        setTimeout(() => {
+                            card.classList.add('animate-fade-in');
+                        }, index * 100);
+                    });
+                }, 100);
+            }
+
+            toggleLoadMoreButton(show) {
+                const loadMoreBtn = document.getElementById('loadMoreBtn');
+                if (show) {
+                    loadMoreBtn.classList.remove('hidden');
+                } else {
+                    loadMoreBtn.classList.add('hidden');
+                }
+            }
+
+            // Update product count display
+            updateProductCount() {
+                const count = this.filteredProducts.length;
+                const productCount = document.getElementById('productCount');
+                productCount.textContent = `Found ${count} product${count !== 1 ? 's' : ''}`;
+            }
+
+            // Search functionality
+            searchProducts(searchTerm) {
+                const term = searchTerm.toLowerCase().trim();
+                
+                if (!term) {
+                    this.filteredProducts = [...this.products];
+                } else {
+                    this.filteredProducts = this.products.filter(product => 
+                        (product.name || '').toLowerCase().includes(term) ||
+                        (product.brand || '').toLowerCase().includes(term) ||
+                        (product.shortDescription || '').toLowerCase().includes(term) ||
+                        (product.category || '').toLowerCase().includes(term) ||
+                        (product.subCategory || '').toLowerCase().includes(term)
+                    );
+                }
+                
+                this.currentPage = 1;
+                this.renderProducts();
+                this.updateProductCount();
+            }
+
+            // Professional Sort System
+            sortProducts(sortType) {
+                switch(sortType) {
+                    case 'price-low':
+                        this.filteredProducts.sort((a, b) => (a.sellingPrice || 0) - (b.sellingPrice || 0));
+                        break;
+                    case 'price-high':
+                        this.filteredProducts.sort((a, b) => (b.sellingPrice || 0) - (a.sellingPrice || 0));
+                        break;
+                    case 'rating':
+                        this.filteredProducts.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                        break;
+                    case 'newest':
+                        this.filteredProducts.sort((a, b) => {
+                            const dateA = a.dateAdded?.toDate() || new Date(0);
+                            const dateB = b.dateAdded?.toDate() || new Date(0);
+                            return dateB - dateA;
+                        });
+                        break;
+                    default: // name
+                        this.filteredProducts.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                }
+                
+                this.currentPage = 1;
+                this.renderProducts();
+            }
+
+            // Professional Cart Management
+            loadCart() {
+                try {
+                    return JSON.parse(localStorage.getItem('shopmart_cart')) || [];
+                } catch {
+                    return [];
+                }
+            }
+
+            saveCart() {
+                localStorage.setItem('shopmart_cart', JSON.stringify(this.cart));
+                this.updateCartUI();
+            }
+
+            updateCartUI() {
+                const countEl = document.getElementById('cartItemsNumber');
+                if (countEl) {
+                    const totalQty = this.cart.reduce((sum, item) => sum + item.quantity, 0);
+                    countEl.textContent = totalQty;
+                    
+                    // Add animation
+                    if (totalQty > 0) {
+                        countEl.classList.add('animate-pulse-custom');
+                        setTimeout(() => {
+                            countEl.classList.remove('animate-pulse-custom');
+                        }, 1000);
+                    }
+                }
+            }
+
+            addToCart(productId) {
+                const product = this.products.find(p => p.id === productId);
+                if (!product) {
+                    this.handleError('Product not found');
+                    return;
+                }
+
+                const existingItem = this.cart.find(item => item.id === productId);
+                if (existingItem) {
+                    existingItem.quantity += 1;
+                } else {
+                    this.cart.push({
+                        id: product.id,
+                        name: product.name,
+                        price: product.sellingPrice,
+                        image: this.getProductImage(product),
+                        quantity: 1,
+                        brand: product.brand || 'Unknown'
+                    });
+                }
+
+                this.saveCart();
+                this.handleSuccess(`${product.name} added to cart!`);
+
+                // Animate cart icon
+                this.animateCartIcon();
+
+                // Button feedback
+                const button = event.target;
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check mr-1"></i> Added!';
+                button.classList.add('bg-green-600', 'hover:bg-green-700');
+
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                    button.classList.remove('bg-green-600', 'hover:bg-green-700');
+                }, 2000);
+            }
+
+            animateCartIcon() {
+                const cartIcon = document.getElementById('cartItemsNumber');
+                if (cartIcon) {
+                    cartIcon.classList.add('animate-bounce');
+                    setTimeout(() => {
+                        cartIcon.classList.remove('animate-bounce');
+                    }, 1000);
+                }
+            }
+
+            // Professional Cart Display
+            showCart() {
+                const cartItemsContainer = document.getElementById('cartItems');
+                const cartTotalEl = document.getElementById('cartTotal');
+
+                cartItemsContainer.innerHTML = '';
+                let total = 0;
+
+                if (this.cart.length === 0) {
+                    cartItemsContainer.innerHTML = `
+                        <div class="text-center py-12">
+                            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-shopping-cart text-3xl text-gray-400"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Your cart is empty</h3>
+                            <p class="text-gray-600 mb-4">Add some products to get started!</p>
+                            <button onclick="ecommerceApp.closeCart()" 
+    class="bg-blue-100 hover:bg-blue-200 text-blue-800 font-semibold px-4 py-2 rounded-lg shadow-md transition duration-200">
+    <i class="fas fa-shopping-bag mr-2"></i>
+    Continue Shopping
+</button>
+
+                        </div>
+                    `;
+                    cartTotalEl.textContent = '₹0';
+                    return;
+                }
+
+                this.cart.forEach(item => {
+                    total += item.price * item.quantity;
+                    cartItemsContainer.innerHTML += `
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <div class="flex items-center space-x-4">
+                                <img src="${item.image}" class="w-16 h-16 object-cover rounded-lg" alt="${item.name}">
+                                <div class="flex-1">
+                                    <h4 class="font-medium text-gray-800 line-clamp-2">${item.name}</h4>
+                                    <p class="text-sm text-gray-600">${item.brand}</p>
+                                    <p class="text-sm font-semibold text-green-600">₹${item.price} each</p>
+                                </div>
+                                <div class="flex flex-col items-end space-y-2">
+                                    <div class="flex items-center bg-white rounded-lg border">
+                                        <button onclick="ecommerceApp.updateCartQuantity('${item.id}', -1)" 
+                                            class="p-2 hover:bg-gray-100 rounded-l-lg focus-ring">
+                                            <i class="fas fa-minus text-sm"></i>
+                                        </button>
+                                        <span class="px-3 py-2 font-medium">${item.quantity}</span>
+                                        <button onclick="ecommerceApp.updateCartQuantity('${item.id}', 1)" 
+                                            class="p-2 hover:bg-gray-100 rounded-r-lg focus-ring">
+                                            <i class="fas fa-plus text-sm"></i>
+                                        </button>
+                                    </div>
+                                    <button onclick="ecommerceApp.removeFromCart('${item.id}')" 
+                                        class="text-red-500 hover:text-red-700 p-2 focus-ring rounded">
+                                        <i class="fas fa-trash text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                cartTotalEl.textContent = `₹${total}`;
+            }
+
+            updateCartQuantity(id, change) {
+                const item = this.cart.find(p => p.id === id);
+                if (!item) return;
+                
+                item.quantity += change;
+                if (item.quantity <= 0) {
+                    this.removeFromCart(id);
+                    return;
+                }
+                
+                this.saveCart();
+                this.showCart();
+            }
+
+            removeFromCart(id) {
+                const item = this.cart.find(p => p.id === id);
+                if (item) {
+                    this.cart = this.cart.filter(p => p.id !== id);
+                    this.saveCart();
+                    this.showCart();
+                    this.handleSuccess(`${item.name} removed from cart`);
+                }
+            }
+
+            // Professional Cart Modal Management
+            openCart() {
+                const modal = document.getElementById('cartModal');
+                const panel = document.getElementById('cartPanel');
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modal.classList.add('opacity-100');
+                    panel.classList.remove('translate-x-full');
+                }, 10);
+                this.showCart();
+            }
+
+            closeCart() {
+                const modal = document.getElementById('cartModal');
+                const panel = document.getElementById('cartPanel');
+                panel.classList.add('translate-x-full');
+                modal.classList.remove('opacity-100');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            }
+
+            // Professional Filter System
+            filterByPrice(priceRange) {
+                if (priceRange === 'all') {
+                    this.filteredProducts = [...this.products];
+                } else {
+                    this.filteredProducts = this.products.filter(product => {
+                        const price = product.sellingPrice || 0;
+                        switch(priceRange) {
+                            case '0-100': return price < 100;
+                            case '100-500': return price >= 100 && price <= 500;
+                            case '500-1000': return price >= 500 && price <= 1000;
+                            case '1000+': return price > 1000;
+                            default: return true;
+                        }
+                    });
+                }
+                
+                this.currentPage = 1;
+                this.renderProducts();
+                this.updateProductCount();
+            }
+
+            filterByRating(minRating) {
+                if (minRating === 'all') {
+                    this.filteredProducts = [...this.products];
+                } else {
+                    const rating = parseFloat(minRating.replace('+', ''));
+                    this.filteredProducts = this.products.filter(product => (product.rating || 0) >= rating);
+                }
+                
+                this.currentPage = 1;
+                this.renderProducts();
+                this.updateProductCount();
+            }
+
+            filterByCategory() {
+                const selectedCategories = Array.from(document.querySelectorAll('.category-checkbox:checked'))
+                    .map(cb => cb.value);
+                
+                if (selectedCategories.length === 0) {
+                    this.filteredProducts = [...this.products];
+                } else {
+                    this.filteredProducts = this.products.filter(product => 
+                        selectedCategories.includes(product.subCategory)
+                    );
+                }
+                
+                this.currentPage = 1;
+                this.renderProducts();
+                this.updateProductCount();
+            }
+
+            clearAllFilters() {
+                // Reset all filter inputs
+                document.querySelectorAll('input[name="price"]').forEach(radio => {
+                    radio.checked = radio.value === 'all';
+                });
+                document.querySelectorAll('input[name="rating"]').forEach(radio => {
+                    radio.checked = radio.value === 'all';
+                });
+                document.querySelectorAll('.category-checkbox').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                
+                // Reset search
+                const searchInput = document.getElementById('searchInput');
+                if (searchInput) searchInput.value = '';
+                
+                // Reset filtered products
+                this.filteredProducts = [...this.products];
+                this.currentPage = 1;
+                this.renderProducts();
+                this.updateProductCount();
+                
+                this.handleSuccess('All filters cleared');
+            }
+
+            // Load categories for filters
+            async loadCategories() {
+                try {
+                    const categoryFilter = document.getElementById('categoryFilter');
+                    const mobileCategoryList = document.getElementById('mobileCategoryList');
+                    
+                    // Get unique categories from products
+                    const categories = [...new Set(this.products.map(p => p.subCategory).filter(Boolean))];
+                    
+                    const categoryHTML = categories.map(category => `
+                        <label class="flex items-center p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                            <input type="checkbox" value="${category}" class="mr-3 category-checkbox text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm text-gray-700">${category}</span>
+                        </label>
+                    `).join('');
+                    
+                    if (categoryFilter) categoryFilter.innerHTML = categoryHTML;
+                    if (mobileCategoryList) {
+                        mobileCategoryList.innerHTML = categories.map(category => `
+                            <button class="text-left text-gray-700 hover:text-blue-600 py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors w-full">
+                                ${category}
+                            </button>
+                        `).join('');
+                    }
+                    
+                    // Add event listeners to category checkboxes
+                    document.querySelectorAll('.category-checkbox').forEach(checkbox => {
+                        checkbox.addEventListener('change', () => this.filterByCategory());
+                    });
+                    
+                } catch (error) {
+                    this.handleError('Failed to load categories', error);
+                }
+            }
+
+            // Professional Order Management
+            async buyNow(productId) {
+                const product = this.products.find(p => p.id === productId);
+                if (!product) {
+                    this.handleError('Product not found');
+                    return;
+                }
+
+                // Create temporary order items for Buy Now
+                const tempOrderItems = [{
+                    id: product.id,
+                    name: product.name,
+                    price: product.sellingPrice,
+                    image: this.getProductImage(product),
+                    quantity: 1,
+                    brand: product.brand || 'Unknown'
+                }];
+
+                await this.openOrderSummary(tempOrderItems);
+                window.tempBuyNowOrder = tempOrderItems;
+            }
+
+            async openOrderSummary(itemsOverride = null) {
+                const customerId = localStorage.getItem('customerId');
+if (!customerId) {
+    // Create and show phone number verification modal
+    const phoneVerificationHTML = `
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" id="phoneVerificationModal">
+            <div class="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-phone text-2xl text-blue-600"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-800 mb-2">Verify Phone Number</h2>
+                    <p class="text-gray-600">Enter your phone number to continue with the order</p>
+                </div>
+                
+                <div class="mb-6">
+                    <label for="phoneNumber" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-mobile-alt mr-1"></i>
+                        Phone Number
+                    </label>
+                    <div class="flex">
+                        <span class="inline-flex items-center px-3 py-3 border border-r-0 border-gray-300 bg-gray-50 text-gray-600 text-sm rounded-l-lg">
+                            +91
+                        </span>
+                        <input type="tel" id="phoneNumber" maxlength="10"
+                            class="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            placeholder="Enter 10-digit phone number">
+                    </div>
+                    <p id="phoneError" class="text-xs text-red-500 mt-2 hidden">
+                        <i class="fas fa-exclamation-circle mr-1"></i>
+                        <span id="phoneErrorText">Invalid phone number. Must be exactly 10 digits.</span>
+                    </p>
+                </div>
+                
+                <div class="flex space-x-4">
+                    <button id="btnCancelPhone" 
+                        class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-medium py-3 px-4 rounded-lg transition">
+                        <i class="fas fa-times mr-2"></i>
+                        Cancel
+                    </button>
+                    
+                    <button id="btnVerifyPhone" 
+                        class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition">
+                        <i class="fas fa-check mr-2"></i>
+                        <span id="verifyButtonText">Verify</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', phoneVerificationHTML);
+    
+    const phoneInput = document.getElementById('phoneNumber');
+    const phoneError = document.getElementById('phoneError');
+    const phoneErrorText = document.getElementById('phoneErrorText');
+    const verifyButton = document.getElementById('btnVerifyPhone');
+    const verifyButtonText = document.getElementById('verifyButtonText');
+    
+    // Phone number input validation
+    phoneInput.addEventListener('input', function(e) {
+        // Only allow digits
+        this.value = this.value.replace(/\D/g, '');
+        
+        // Auto-format with spaces (for display purposes)
+        let value = this.value;
+        if (value.length > 5) {
+            value = value.slice(0, 5) + ' ' + value.slice(5);
+        }
+        
+        // Hide error when user starts typing
+        if (phoneError.classList.contains('visible')) {
+            phoneError.classList.add('hidden');
+            phoneInput.classList.remove('border-red-500');
+        }
+    });
+    
+    // Handle cancel button
+    document.getElementById('btnCancelPhone').addEventListener('click', () => {
+        document.getElementById('phoneVerificationModal').remove();
+    });
+    
+    // Handle verify button
+    document.getElementById('btnVerifyPhone').addEventListener('click', async () => {
+        const phoneNumber = phoneInput.value.replace(/\D/g, ''); // Remove any non-digits
+        
+        // Validate phone number
+        if (!/^\d{10}$/.test(phoneNumber)) {
+            showPhoneError('Invalid phone number. Must be exactly 10 digits.');
+            return;
+        }
+        
+        // Show loading state
+        setLoadingState(true);
+        
+        try {
+            // Format phone number to match database format: "+91 80864 64362"
+            const formattedPhone = `+91 ${phoneNumber.slice(0, 5)} ${phoneNumber.slice(5)}`;
+            
+            // Check if phone number exists in Firebase
+            const customerExists = await checkPhoneInFirebase(formattedPhone);
+            
+            if (customerExists) {
+                // Phone exists, store customer ID and proceed
+                localStorage.setItem('customerId', customerExists.id);
+                document.getElementById('phoneVerificationModal').remove();
+                
+                // Optional: Show success message
+                if (typeof this.handleSuccess === 'function') {
+                    this.handleSuccess(`Welcome back! Continuing with your order.`);
+                }
+                
+
+		window.location.reload();
+
+                // Continue with the original function logic
+                // You can call the next part of your function here
+                
+            } else {
+                // Phone doesn't exist, redirect to registration
+                document.getElementById('phoneVerificationModal').remove();
+                
+                // Store the formatted phone number for registration page
+                sessionStorage.setItem('registrationPhone', formattedPhone);
+                
+                // Navigate to registration page
+                window.location.href = 'customerRegistration.html';
+            }
+            
+        } catch (error) {
+            console.error('Error checking phone number:', error);
+            showPhoneError('Error verifying phone number. Please try again.');
+        } finally {
+            setLoadingState(false);
+        }
+    });
+    
+    // Handle Enter key press
+    phoneInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            document.getElementById('btnVerifyPhone').click();
+        }
+    });
+    
+    // Focus on input when modal opens
+    setTimeout(() => phoneInput.focus(), 100);
+    
+    // Helper functions
+    function showPhoneError(message) {
+        phoneErrorText.textContent = message;
+        phoneError.classList.remove('hidden');
+        phoneInput.classList.add('border-red-500');
+    }
+    
+    function setLoadingState(isLoading) {
+        if (isLoading) {
+            verifyButton.disabled = true;
+            verifyButtonText.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Verifying...';
+            verifyButton.classList.add('opacity-75');
+        } else {
+            verifyButton.disabled = false;
+            verifyButtonText.innerHTML = 'Verify';
+            verifyButton.classList.remove('opacity-75');
+        }
+    }
+    
+    // Firebase phone verification function
+    async function checkPhoneInFirebase(formattedPhoneNumber) {
+        try {
+            // Assuming you have Firebase Firestore initialized as 'db'
+            // Query for the formatted phone number: "+91 80864 64362"
+            
+            const customersRef = collection(db, 'customers');
+            const q = query(customersRef, where('phone', '==', formattedPhoneNumber));
+            const querySnapshot = await getDocs(q);
+            
+            if (!querySnapshot.empty) {
+                // Phone number exists, return the first matching document
+                const customerDoc = querySnapshot.docs[0];
+                return {
+                    id: customerDoc.id,
+                    ...customerDoc.data()
+                };
+            }
+            
+            return null; // Phone number doesn't exist
+            
+        } catch (error) {
+            console.error('Firebase query error:', error);
+            throw error;
+        }
+    }
+    
+    return; // Exit the function
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                const itemsToShow = itemsOverride || this.cart;
+                if (!itemsToShow || itemsToShow.length === 0) {
+                    this.handleError('No items to checkout');
+                    return;
+                }
+
+                try {
+                    // Fetch customer details
+                    const customerRef = doc(db, "customers", customerId);
+                    const customerSnap = await getDoc(customerRef);
+
+                    if (!customerSnap.exists()) {
+                        this.handleError('Customer record not found. Please update your profile.');
+                        return;
+                    }
+
+                    const customerData = customerSnap.data();
+                    const shipping = customerData.shippingAddress || {
+                        address: "Address not set",
+                        city: "",
+                        state: "",
+                        country: "",
+                        pinCode: ""
+                    };
+
+                    // Fill shipping address
+                    const addressEl = document.getElementById('summaryShipping');
+                    addressEl.innerHTML = `
+                        <div class="space-y-1">
+                            <p class="font-semibold text-gray-800">${customerData.fullName || 'Name not set'}</p>
+                            <p class="text-gray-700">${shipping.address}</p>
+                            <p class="text-gray-700">${shipping.city} ${shipping.state}</p>
+                            <p class="text-gray-700">${shipping.country} - ${shipping.pinCode}</p>
+                            <p class="text-gray-600 text-sm">
+                                <i class="fas fa-phone mr-1"></i>
+                                ${customerData.phone || 'Phone not set'}
+                            </p>
+                        </div>
+                    `;
+
+                    // Reset change address form
+                    const changeAddressForm = document.getElementById('changeAddressForm');
+                    if (changeAddressForm) {
+                        changeAddressForm.classList.add('hidden');
+                        changeAddressForm.querySelectorAll('input').forEach(input => input.value = '');
+                    }
+
+                    // Fill order items
+                    const summaryItemsContainer = document.getElementById('summaryItems');
+                    const summaryTotalEl = document.getElementById('summaryTotal');
+                    summaryItemsContainer.innerHTML = '';
+                    let total = 0;
+
+                    itemsToShow.forEach(item => {
+                        total += item.price * item.quantity;
+                        summaryItemsContainer.innerHTML += `
+                            <div class="flex items-center justify-between p-3 bg-white rounded-lg border">
+                                <div class="flex items-center space-x-3">
+                                    <img src="${item.image}" class="w-12 h-12 object-cover rounded-lg" alt="${item.name}">
+                                    <div>
+                                        <p class="font-medium text-gray-800 text-sm line-clamp-1">${item.name}</p>
+                                        <p class="text-xs text-gray-600">${item.brand}</p>
+                                        <p class="text-xs text-green-600 font-semibold">₹${item.price} × ${item.quantity}</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-semibold text-gray-800">₹${item.price * item.quantity}</p>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    summaryTotalEl.textContent = `₹${total}`;
+
+                    // Show the modal
+                    document.getElementById('orderSummaryModal').classList.remove('hidden');
+
+// After showing the modal, ensure UPI is selected
+    setTimeout(() => {
+        const upiRadio = document.querySelector('input[name="paymentMethod"][value="UPI"]');
+        const codRadio = document.querySelector('input[name="paymentMethod"][value="COD"]');
+        
+        if (upiRadio && codRadio) {
+            upiRadio.checked = true;
+            codRadio.checked = false;
+            
+            // Update the confirm button text
+            const confirmBtn = document.getElementById('confirmOrder');
+            if (confirmBtn) {
+                confirmBtn.innerHTML = '<i class="fas fa-credit-card mr-2"></i>Proceed to Payment';
+            }
+        }
+    }, 100);
+
+
+
+
+                } catch (error) {
+                    this.handleError('Unable to load order summary', error);
+                }
+            }
+
+
+//start
+
+
+           async placeOrder() {
+    try {
+        const customerId = localStorage.getItem("customerId");
+        if (!customerId) {
+            this.handleError('Please register or log in before placing an order');
+            return;
+        }
+        const selectedMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || "COD";
+        const orderSource = (window.tempBuyNowOrder && window.tempBuyNowOrder.length > 0)
+            ? window.tempBuyNowOrder
+            : this.cart;
+        if (!orderSource || orderSource.length === 0) {
+            this.handleError('Your cart is empty');
+            return;
+        }
+
+        // Check stock availability before proceeding
+        for (const item of orderSource) {
+            const productRef = doc(db, "products", item.id);
+            const productSnap = await getDoc(productRef);
+            
+            if (!productSnap.exists()) {
+                this.handleError(`Product ${item.id} not found`);
+                return;
+            }
+            
+            const product = productSnap.data();
+            const currentStock = product.stockQuantity || 0;
+            
+            if (currentStock < item.quantity) {
+                this.handleError(`Insufficient stock for ${product.name || item.id}. Available: ${currentStock}, Required: ${item.quantity}`);
+                return;
+            }
+        }
+
+        // If UPI selected, redirect to payment
+        if (selectedMethod === "UPI") {
+            this.proceedToPayment(orderSource);
+            return;
+        }
+        // Get next orderId
+        let newOrderId = 1;
+        const qOrders = query(collection(db, "orders"), orderBy("orderId", "desc"), limit(1));
+        const querySnapshot = await getDocs(qOrders);
+        if (!querySnapshot.empty) {
+            const lastOrder = querySnapshot.docs[0].data();
+            newOrderId = (lastOrder.orderId || 0) + 1;
+        }
+        // Prepare order data
+        const itemsArray = orderSource.map(item => ({
+            price: item.price,
+            productId: item.id,
+            quantity: item.quantity
+        }));
+        const totalAmount = itemsArray.reduce((sum, i) => sum + i.price * i.quantity, 0);
+        // Get shipping address
+        const customerSnap = await getDoc(doc(db, "customers", customerId));
+        const customer = customerSnap.data();
+        const shipping = customer.shippingAddress || {};
+        const phone = customer.phone;
+        const orderData = {
+            orderId: newOrderId,
+            createdAt: new Date().toISOString(),
+            customerId: customerId,
+            deliveryStaff: null,
+            items: itemsArray,
+            paymentMethod: selectedMethod,
+            paymentStatus: "unpaid",
+            shippingDetails: {
+                address: shipping.address || "Not Set",
+                method: "standard",
+                phone: phone,
+                pincode: shipping.pinCode || ""
+            },
+            status: "pending",
+            totalAmount: totalAmount
+        };
+
+        // Use a batch to ensure atomic operations
+        const batch = writeBatch(db);
+
+        // Add order to batch
+        batch.set(doc(db, "orders", String(newOrderId)), orderData);
+
+        // Deduct stock quantities for each item
+        for (const item of orderSource) {
+            const productRef = doc(db, "products", item.id);
+            const productSnap = await getDoc(productRef);
+            const product = productSnap.data();
+            const newStockQuantity = (product.stockQuantity || 0) - item.quantity;
+            
+            batch.update(productRef, {
+                stockQuantity: newStockQuantity
+            });
+        }
+
+        // Commit all operations atomically
+        await batch.commit();
+
+        this.handleSuccess(`Order #${newOrderId} placed successfully! 🎉`);
+        // Clear cart only for normal checkout
+        if (!window.tempBuyNowOrder) {
+            this.cart = [];
+            this.saveCart();
+            this.showCart();
+        }
+        // Close modals
+        document.getElementById('orderSummaryModal').classList.add('hidden');
+        this.closeCart();
+        // Clear Buy Now temp data
+        window.tempBuyNowOrder = null;
+    } catch (error) {
+        this.handleError('Failed to place order', error);
+    }
+}
+
+//end
+
+
+
+// Professional Payment System with QR Code Generation
+proceedToPayment(orderSource) {
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    const total = orderSource.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    document.getElementById("orderSummaryModal").classList.add("hidden");
+
+
+
+/*
+
+let upiUrl='';
+(async () => {
+   upiUrl = await getUpiUrl(total);
+  if (upiUrl) {
+    console.log("Generated UPI URL:", upiUrl);
+    // You can now generate QR code or redirect
+  }
+})();
+
+*/
+	const now = new Date();
+	const time = now.toLocaleString();
+    	const customerId = localStorage.getItem("customerId");
+	const upiNote = `Order UpiPayment by Customer id. ${customerId} at ${time}`;
+
+    // UPI payment URL - replace with your actual merchant details
+     const merchantUpiId = "sunilskutan@oksbi"; // Replace with actual UPI ID
+    const merchantName = "SUNIL S"; // Replace with actual merchant name
+    // const upiUrl = `upi://pay?pa=${merchantUpiId}&pn=${merchantName}&am=${total}&cu=INR&tn=Order Payment`;
+  //   const upiUrl = `upi://pay?pa=${merchantUpiId}&pn=${merchantName}&am=${total}&cu=INR&tn=Order UpiPayment by ${customerId} on ${time} `;
+	const upiUrl = `upi://pay?pa=${merchantUpiId}&pn=${merchantName}&am=${total}&cu=INR&tn=${upiNote} `;
+
+
+
+
+
+
+
+    let paymentHTML = `
+        <div class="p-6">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-mobile-alt text-2xl text-blue-600"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white mb-2">UPI Payment</h2>
+                <p class="text-white">Amount to pay: <span class="font-bold text-green-300">₹${total}</span></p>
+            </div>
+    `;
+
+    if (!isMobile) {
+        // Desktop - show QR directly
+        paymentHTML += `
+            <div class="text-center mb-6">
+                <div class="inline-block p-4 bg-white rounded-xl shadow-lg border-2 border-dashed border-gray-300">
+                    <!-- Canvas for QR code -->
+                    <canvas id="upiQrCode" class="w-48 h-48 rounded-lg"></canvas>
+                </div>
+                <p class="text-sm text-green-300 mt-3">Scan with any UPI app to pay</p>
+            </div>
+        `;
+    } else {
+        // Mobile - show options
+        paymentHTML += `
+            <div class="space-y-4 mb-6" id="mobilePaymentOptions">
+                <button id="btnShowQR" class="w-full flex items-center justify-center space-x-3 bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-medium transition-colors">
+                    <i class="fas fa-qrcode"></i>
+                    <span>Pay by QR Code</span>
+                </button>
+                <button id="btnOpenUPI" class="w-full flex items-center justify-center space-x-3 bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-medium transition-colors">
+                    <i class="fas fa-mobile-alt"></i>
+                    <span>Open UPI App</span>
+                </button>
+            </div>
+            <div id="qrContainer" class="hidden text-center mb-6">
+                <div class="inline-block p-4 bg-white rounded-xl shadow-lg border-2 border-dashed border-gray-300">
+                    <canvas id="mobileUpiQrCode" class="w-48 h-48 rounded-lg"></canvas>
+                </div>
+                <p class="text-sm text-green-300 mt-3">Scan with any UPI app to pay</p>
+            </div>
+        `;
+    }
+
+    paymentHTML += `
+        <div class="bg-gray-50 rounded-xl p-4 mb-6 flex flex-col items-center text-center">
+            <label for="upiTxnId" class="block text-sm font-semibold text-gray-700 mb-2">
+                <i class="fas fa-receipt mr-1"></i>
+                Enter 12-digit Transaction ID
+            </label>
+            <input type="tel" id="upiTxnId" maxlength="12"
+                class="form-input w-64 text-center"
+                placeholder="e.g. 123456789012">
+            <p id="txnError" class="text-xs text-red-500 mt-2 hidden">
+                <i class="fas fa-exclamation-circle mr-1"></i>
+                Invalid Transaction ID. Must be exactly 12 digits.
+            </p>
+        </div>
+
+        <div class="flex space-x-4">
+            <button id="btnCancelPayment" 
+                class="flex-1 bg-red-500/90 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition">
+                <i class="fas fa-times mr-2"></i>
+                Cancel
+            </button>
+
+            <button id="btnConfirmPayment" 
+                class="flex-1 bg-green-600/90 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                <i class="fas fa-check mr-2"></i>
+                Confirm Payment
+            </button>
+        </div>
+    </div>
+    `;
+
+    const modal = document.getElementById('paymentModal');
+    modal.innerHTML = paymentHTML;
+    modal.classList.remove('hidden');
+
+    // Generate QR Code function
+    const generateQRCode = (canvasId, text) => {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        const size = 192; // 48 * 4 (w-48 h-48 in Tailwind)
+        canvas.width = size;
+        canvas.height = size;
+
+        // Try to use QRCode library if available, otherwise use a QR API
+        if (typeof QRCode !== 'undefined') {
+            // If QRCode.js library is loaded
+            new QRCode(canvas, {
+                text: text,
+                width: size,
+                height: size,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        } else {
+            // Fallback: Use QR Server API to generate QR code
+            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}`;
+            
+            const img = new Image();
+            img.onload = function() {
+                ctx.clearRect(0, 0, size, size);
+                ctx.drawImage(img, 0, 0, size, size);
+            };
+            img.onerror = function() {
+                // Fallback: Draw a simple pattern if API fails
+                ctx.fillStyle = '#f0f0f0';
+                ctx.fillRect(0, 0, size, size);
+                ctx.fillStyle = '#333';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('QR Code', size/2, size/2 - 10);
+                ctx.fillText('Generation Failed', size/2, size/2 + 10);
+            };
+            img.src = qrApiUrl;
+        }
+    };
+
+    // Generate QR code for desktop
+    if (!isMobile) {
+        setTimeout(() => generateQRCode('upiQrCode', upiUrl), 100);
+    }
+
+    // Event listeners for mobile
+    if (isMobile) {
+        document.getElementById('btnShowQR')?.addEventListener('click', () => {
+            const qrContainer = document.getElementById('qrContainer');
+            qrContainer.classList.remove('hidden');
+            document.getElementById('btnOpenUPI').style.display = 'none';
+            document.getElementById('btnShowQR').style.display = 'none';
+            
+            // Generate QR code for mobile
+            setTimeout(() => generateQRCode('mobileUpiQrCode', upiUrl), 100);
+        });
+
+        document.getElementById('btnOpenUPI')?.addEventListener('click', () => {
+            window.location.href = upiUrl;
+            setTimeout(() => {
+                this.handleSuccess('Please enter your Transaction ID below after payment');
+                document.getElementById('upiTxnId').focus();
+            }, 2000);
+        });
+    }
+
+    // Cancel payment
+    document.getElementById('btnCancelPayment')?.addEventListener('click', () => {
+        modal.classList.add('hidden');
+    });
+
+    // Confirm payment
+    document.getElementById('btnConfirmPayment')?.addEventListener('click', async () => {
+        const txnIdEl = document.getElementById('upiTxnId');
+        const txnError = document.getElementById('txnError');
+        const txnId = txnIdEl.value.trim();
+
+        if (!/^\d{12}$/.test(txnId)) {
+            txnError.classList.remove('hidden');
+            txnIdEl.classList.add('border-red-500');
+            return;
+        }
+        
+        txnError.classList.add('hidden');
+        txnIdEl.classList.remove('border-red-500');
+
+        await this.placeOrderAfterPayment(orderSource, txnId, upiNote);
+        modal.classList.add('hidden');
+    });
+}
+
+
+
+            async placeOrderAfterPayment(orderSource, txnId, upiNote) {
+                const customerId = localStorage.getItem("customerId");
+                if (!customerId) {
+                    this.handleError('Please register or log in');
+                    return;
+                }
+
+                try {
+                    // Get next orderId
+                    let newOrderId = 1;
+                    const qOrders = query(collection(db, "orders"), orderBy("orderId", "desc"), limit(1));
+                    const querySnapshot = await getDocs(qOrders);
+                    if (!querySnapshot.empty) {
+                        const lastOrder = querySnapshot.docs[0].data();
+                        newOrderId = (lastOrder.orderId || 0) + 1;
+                    }
+
+                    const itemsArray = orderSource.map(item => ({
+                        price: item.price,
+                        productId: item.id,
+                        quantity: item.quantity
+                    }));
+                    const totalAmount = itemsArray.reduce((sum, i) => sum + i.price * i.quantity, 0);
+
+                    const customerSnap = await getDoc(doc(db, "customers", customerId));
+                    const customer = customerSnap.data();
+                    const shipping = customer.shippingAddress || {};
+
+                    const orderData = {
+                        orderId: newOrderId,
+                        createdAt: new Date().toISOString(),
+                        paidAt: new Date().toISOString(),
+                        customerId,
+                        deliveryStaff: null,
+                        items: itemsArray,
+                        paymentMethod: "UPI",
+                        paymentStatus: "paid",
+			upiNote: upiNote,
+                        upiTransactionId: txnId,
+                        shippingDetails: {
+                            address: shipping.address || "Not Set",
+                            method: "standard",
+                            pincode: shipping.pinCode || ""
+                        },
+                        status: "pending",
+                        totalAmount
+                    };
+
+                    await setDoc(doc(db, "orders", String(newOrderId)), orderData);
+                    this.handleSuccess(`Order #${newOrderId} placed successfully via UPI! 🎉`);
+
+                    // Clear cart only for normal checkout
+                    if (!window.tempBuyNowOrder) {
+                        this.cart = [];
+                        this.saveCart();
+                        this.showCart();
+                    }
+
+                    window.tempBuyNowOrder = null;
+                    document.getElementById('orderSummaryModal').classList.add('hidden');
+                    this.closeCart();
+
+                } catch (error) {
+                    this.handleError('Failed to place order after payment', error);
+                }
+            }
+
+            // Professional Address Management
+            async saveNewAddress() {
+                const customerId = localStorage.getItem("customerId");
+                if (!customerId) {
+                    this.handleError('Please log in to update address');
+                    return;
+                }
+
+                const newAddressData = {
+                    address: document.getElementById('newAddress').value.trim(),
+                    city: document.getElementById('newCity').value.trim(),
+                    state: document.getElementById('newState').value.trim(),
+                    country: document.getElementById('newCountry').value.trim(),
+                    pinCode: document.getElementById('newPincode').value.trim()
+                };
+
+                if (!newAddressData.address || !newAddressData.city || !newAddressData.state || 
+                    !newAddressData.country || !newAddressData.pinCode) {
+                    this.handleError('Please fill in all address fields');
+                    return;
+                }
+
+                try {
+                    await updateDoc(doc(db, "customers", customerId), {
+                        additionalAddress: newAddressData
+                    });
+
+                    document.getElementById('summaryShipping').innerHTML = `
+                        <div class="space-y-1">
+                            <p class="font-semibold text-gray-800">New Address Saved:</p>
+                            <p class="text-gray-700">${newAddressData.address}</p>
+                            <p class="text-gray-700">${newAddressData.city} ${newAddressData.state}</p>
+                            <p class="text-gray-700">${newAddressData.country} - ${newAddressData.pinCode}</p>
+                        </div>
+                    `;
+
+                    this.handleSuccess('Address updated successfully! ✅');
+                    document.getElementById('changeAddressForm').classList.add('hidden');
+
+                } catch (error) {
+                    this.handleError('Failed to save new address', error);
+                }
+            }
+
+            // Professional Event Listeners Setup
+            setupEventListeners() {
+                // Mobile menu
+                document.getElementById('openMobileMenu')?.addEventListener('click', () => {
+                    document.getElementById('mobileMenu').classList.add('active');
+                    document.getElementById('mobileMenuOverlay').classList.remove('hidden');
+                });
+
+                document.getElementById('closeMobileMenu')?.addEventListener('click', () => {
+                    this.closeMobileMenu();
+                });
+
+                document.getElementById('mobileMenuOverlay')?.addEventListener('click', () => {
+                    this.closeMobileMenu();
+                });
+
+                // Search
+                const searchInput = document.getElementById('searchInput');
+                searchInput?.addEventListener('input', (e) => {
+                    clearTimeout(this.searchTimeout);
+                    this.searchTimeout = setTimeout(() => {
+                        this.searchProducts(e.target.value);
+                    }, 300);
+                });
+
+                // Sort
+                document.getElementById('sortBy')?.addEventListener('change', (e) => {
+                    this.sortProducts(e.target.value);
+                });
+
+                document.getElementById('mobileSortBy')?.addEventListener('change', (e) => {
+                    this.sortProducts(e.target.value);
+                    document.getElementById('sortBy').value = e.target.value;
+                });
+
+                // Load more
+                document.getElementById('loadMoreBtn')?.addEventListener('click', () => {
+                    this.currentPage++;
+                    this.renderProducts();
+                });
+
+                // View toggles
+                document.getElementById('gridView')?.addEventListener('click', () => {
+                    this.toggleView('grid');
+                });
+
+                document.getElementById('listView')?.addEventListener('click', () => {
+                    this.toggleView('list');
+                });
+
+                // Cart
+                document.getElementById('cartIcon')?.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.openCart();
+                });
+
+                document.getElementById('closeCart')?.addEventListener('click', () => {
+                    this.closeCart();
+                });
+
+                document.getElementById('cartModal')?.addEventListener('click', (e) => {
+                    if (e.target.id === 'cartModal') {
+                        this.closeCart();
+                    }
+                });
+
+                // Checkout
+                document.getElementById('btnCheckOut')?.addEventListener('click', () => {
+                    this.openOrderSummary();
+		document.getElementById('cartModal').classList.add('hidden');
+                });
+
+                // Order summary
+                document.getElementById('cancelSummary')?.addEventListener('click', () => {
+                    document.getElementById('orderSummaryModal').classList.add('hidden');
+                });
+
+                document.getElementById('confirmOrder')?.addEventListener('click', () => {
+                    this.placeOrder();
+                });
+
+                document.getElementById('btnChangeAddress')?.addEventListener('click', () => {
+                    const form = document.getElementById('changeAddressForm');
+                    form.classList.toggle('hidden');
+                });
+
+                document.getElementById('btnSaveAddress')?.addEventListener('click', () => {
+                    this.saveNewAddress();
+                });
+
+                // Payment method change
+                document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
+                    radio.addEventListener('change', () => {
+                        const selectedMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+                        const confirmBtn = document.getElementById('confirmOrder');
+                        if (selectedMethod === 'COD') {
+                            confirmBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Place Order';
+                        } else if (selectedMethod === 'UPI') {
+                            confirmBtn.innerHTML = '<i class="fas fa-credit-card mr-2"></i>Proceed to Payment';
+                        }
+                    });
+                });
+
+                // Mobile filters
+                document.getElementById('mobileFiltersBtn')?.addEventListener('click', () => {
+                    document.getElementById('mobileFiltersModal').classList.remove('hidden');
+                });
+
+                document.getElementById('closeMobileFilters')?.addEventListener('click', () => {
+                    document.getElementById('mobileFiltersModal').classList.add('hidden');
+                });
+
+                document.getElementById('clearMobileFilters')?.addEventListener('click', () => {
+                    this.clearAllFilters();
+                    document.getElementById('mobileFiltersModal').classList.add('hidden');
+                });
+
+                document.getElementById('applyMobileFilters')?.addEventListener('click', () => {
+                    document.getElementById('mobileFiltersModal').classList.add('hidden');
+                });
+
+                // Price filter event listeners
+                document.querySelectorAll('input[name="price"]').forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        if (e.target.checked) {
+                            this.filterByPrice(e.target.value);
+                        }
+                    });
+                });
+
+                // Rating filter event listeners
+                document.querySelectorAll('input[name="rating"]').forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        if (e.target.checked) {
+                            this.filterByRating(e.target.value);
+                        }
+                    });
+                });
+
+                // Clear all filters
+                document.getElementById('clearAllFilters')?.addEventListener('click', () => {
+                    this.clearAllFilters();
+                });
+
+                // Payment modal close
+                document.getElementById('paymentModal')?.addEventListener('click', (e) => {
+                    if (e.target.id === 'paymentModal') {
+                        e.currentTarget.classList.add('hidden');
+                    }
+                });
+            }
+
+            closeMobileMenu() {
+                document.getElementById('mobileMenu').classList.remove('active');
+                document.getElementById('mobileMenuOverlay').classList.add('hidden');
+            }
+
+            toggleView(view) {
+                this.currentView = view;
+                const gridBtn = document.getElementById('gridView');
+                const listBtn = document.getElementById('listView');
+                const productsGrid = document.getElementById('productsGrid');
+
+                if (view === 'grid') {
+                    gridBtn.classList.add('text-blue-600', 'bg-white', 'shadow-sm');
+                    gridBtn.classList.remove('text-gray-600');
+                    listBtn.classList.remove('text-blue-600', 'bg-white', 'shadow-sm');
+                    listBtn.classList.add('text-gray-600');
+                    productsGrid.className = 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 mb-8';
+                } else {
+                    listBtn.classList.add('text-blue-600', 'bg-white', 'shadow-sm');
+                    listBtn.classList.remove('text-gray-600');
+                    gridBtn.classList.remove('text-blue-600', 'bg-white', 'shadow-sm');
+                    gridBtn.classList.add('text-gray-600');
+                    productsGrid.className = 'grid grid-cols-1 gap-6 mb-8';
+                }
+            }
+
+/*   viewProduct details  starts here */
+// Professional Product View Function
+viewProduct(productId) {
+    const product = this.products.find(p => p.id === productId);
+    if (!product) {
+        this.handleError('Product not found');
+        return;
+    }
+
+    // Create product detail modal
+    const modalHTML = `
+        <div id="productDetailModal" class="fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto animate-fade-in">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between p-6 border-b bg-gray-50 rounded-t-2xl">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Product Details</h2>
+                        <p class="text-gray-600">View complete product information</p>
+                    </div>
+                    <button id="closeProductDetail" class="p-3 rounded-full hover:bg-gray-200 transition-colors focus-ring">
+                        <i class="fas fa-times text-xl text-gray-600"></i>
+                    </button>
+                </div>
+
+                <!-- Product Content -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 p-6">
+                    <!-- Product Images -->
+                    <div class="space-y-4">
+                        <div class="relative overflow-hidden rounded-xl bg-gray-50">
+                            <img 
+                                id="mainProductImage"
+                                src="${this.getProductImage(product)}" 
+                                alt="${product.name || 'Product'}"
+                                class="w-full h-80 lg:h-96 object-cover"
+                                onerror="this.src='https://via.placeholder.com/600x600?text=No+Image'"
+                            >
+                            
+                            ${product.badge ? `
+                                <div class="absolute top-4 left-4">
+                                    <span class="badge ${this.getBadgeClass(product.badge)} shadow-sm">
+                                        ${product.badge}
+                                    </span>
+                                </div>
+                            ` : ''}
+
+                            ${product.discountPercent > 0 ? `
+                                <div class="absolute top-4 right-4">
+                                    <span class="bg-red-500 text-white px-3 py-1 text-sm font-semibold rounded-full shadow-sm">
+                                        ${Math.round(product.discountPercent)}% OFF
+                                    </span>
+                                </div>
+                            ` : ''}
+
+                            <div class="absolute bottom-4 right-4">
+                                <button onclick="ecommerceApp.toggleWishlist('${product.id}')" 
+                                    class="bg-white hover:bg-red-50 text-red-500 p-3 rounded-full shadow-lg focus-ring">
+                                    <i class="far fa-heart text-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Image Thumbnails (if multiple images) -->
+                        ${this.createImageThumbnails(product)}
+                    </div>
+
+                    <!-- Product Information -->
+                    <div class="space-y-6">
+                        <!-- Brand and Name -->
+                        <div>
+                            <p class="text-sm text-blue-600 uppercase tracking-wide font-semibold mb-2">
+                                ${product.brand || 'Unknown Brand'}
+                            </p>
+                            <h1 class="text-3xl font-bold text-gray-900 mb-3">
+                                ${product.name || 'Unnamed Product'}
+                            </h1>
+                            
+                            <!-- Rating -->
+                            <div class="flex items-center space-x-2 mb-4">
+                                <div class="flex items-center">
+                                    ${this.generateStars(product.rating || 0)}
+                                </div>
+                                <span class="text-lg font-medium text-gray-700">${product.rating || 0}</span>
+                                <span class="text-gray-500">•</span>
+                                <span class="text-gray-600">${product.reviewCount || 0} reviews</span>
+                            </div>
+                        </div>
+
+                        <!-- Price Section -->
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <span class="text-3xl font-bold text-green-600">₹${product.sellingPrice || 0}</span>
+                                ${product.discountPercent > 0 ? `
+                                    <span class="text-xl text-gray-500 line-through">₹${product.mrp || product.sellingPrice}</span>
+                                ` : ''}
+                            </div>
+                            ${product.discountPercent > 0 ? `
+                                <p class="text-sm text-green-600 font-medium">
+                                    You save ₹${(product.mrp || product.sellingPrice) - product.sellingPrice} (${Math.round(product.discountPercent)}% off)
+                                </p>
+                            ` : ''}
+                            
+                            <!-- Delivery Info -->
+                            <div class="mt-4 space-y-2">
+                                <div class="flex items-center text-sm text-gray-600">
+                                    <i class="fas fa-truck mr-2 text-blue-600"></i>
+                                    <span>Free delivery on orders above ₹500</span>
+                                </div>
+                                ${product.codAvailable ? `
+                                    <div class="flex items-center text-sm text-gray-600">
+                                        <i class="fas fa-money-bill-wave mr-2 text-green-600"></i>
+                                        <span>Cash on Delivery available</span>
+                                    </div>
+                                ` : ''}
+                                <div class="flex items-center text-sm text-gray-600">
+                                    <i class="fas fa-shield-alt mr-2 text-purple-600"></i>
+                                    <span>1 year warranty included</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        ${product.shortDescription ? `
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800 mb-3">Description</h3>
+                                <p class="text-gray-600 leading-relaxed">
+                                    ${product.shortDescription}
+                                </p>
+                            </div>
+                        ` : ''}
+
+                        <!-- Key Features -->
+                        ${product.keyFeatures ? this.createKeyFeatures(product.keyFeatures) : ''}
+
+                        <!-- Specifications -->
+                        ${product.specifications ? this.createSpecifications(product.specifications) : ''}
+
+                        <!-- Action Buttons -->
+                        <div class="space-y-3">
+                            <!-- Quantity Selector -->
+                            <div class="flex items-center space-x-4">
+                                <span class="text-sm font-medium text-gray-700">Quantity:</span>
+                                <div class="flex items-center bg-gray-100 rounded-lg">
+                                    <button id="decreaseQty" class="p-2 hover:bg-gray-200 rounded-l-lg focus-ring">
+                                        <i class="fas fa-minus text-sm"></i>
+                                    </button>
+                                    <span id="productQty" class="px-4 py-2 font-medium bg-white border-x">1</span>
+                                    <button id="increaseQty" class="p-2 hover:bg-gray-200 rounded-r-lg focus-ring">
+                                        <i class="fas fa-plus text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Main Action Buttons -->
+<div class="grid grid-cols-2 gap-4">
+  <button id="addToCartDetail" 
+          class="bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md py-3 text-base sm:text-lg transition">
+      <i class="fas fa-shopping-cart mr-2"></i>
+      Add to Cart
+  </button>
+  <button id="buyNowDetail" 
+          class="bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-md py-3 text-base sm:text-lg transition">
+      <i class="fas fa-bolt mr-2"></i>
+      Buy Now
+  </button>
+</div>
+
+<!-- Secondary Actions -->
+<div class="grid grid-cols-2 gap-4 mt-3">
+  <button class="bg-pink-500 hover:bg-pink-600 text-white rounded-lg py-2 text-sm sm:text-base transition">
+      <i class="fas fa-heart mr-2"></i>
+      Add to Wishlist
+  </button>
+  <button class="bg-gray-600 hover:bg-gray-700 text-white rounded-lg py-2 text-sm sm:text-base transition">
+      <i class="fas fa-share-alt mr-2"></i>
+      Share Product
+  </button>
+</div>
+
+                        </div>
+
+                        <!-- Trust Indicators -->
+                        <div class="bg-blue-50 rounded-xl p-4">
+                            <div class="grid grid-cols-3 gap-4 text-center">
+                                <div>
+                                    <i class="fas fa-undo text-blue-600 text-xl mb-2"></i>
+                                    <p class="text-xs font-medium text-gray-700">Easy Returns</p>
+                                </div>
+                                <div>
+                                    <i class="fas fa-shield-check text-green-600 text-xl mb-2"></i>
+                                    <p class="text-xs font-medium text-gray-700">Secure Payment</p>
+                                </div>
+                                <div>
+                                    <i class="fas fa-headset text-purple-600 text-xl mb-2"></i>
+                                    <p class="text-xs font-medium text-gray-700">24/7 Support</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Related Products Section -->
+                <div class="border-t bg-gray-50 p-6 rounded-b-2xl">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Related Products</h3>
+                    <div id="relatedProducts" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        ${this.getRelatedProducts(product, 4).map(relatedProduct => `
+                            <div class="bg-white rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer" 
+                                 onclick="ecommerceApp.viewProduct('${relatedProduct.id}')">
+                                <img src="${this.getProductImage(relatedProduct)}" 
+                                     class="w-full h-24 object-cover rounded-md mb-2"
+                                     alt="${relatedProduct.name}">
+                                <p class="text-xs font-medium text-gray-800 line-clamp-2 mb-1">
+                                    ${relatedProduct.name}
+                                </p>
+                                <p class="text-sm font-bold text-green-600">₹${relatedProduct.sellingPrice}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Remove existing modal if any
+    const existingModal = document.getElementById('productDetailModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    // Add modal to DOM
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // Set up event listeners
+    this.setupProductDetailListeners(product);
+}
+
+// Helper function to create image thumbnails
+createImageThumbnails(product) {
+    const images = this.getAllProductImages(product);
+    if (images.length <= 1) return '';
+
+    return `
+        <div class="grid grid-cols-4 gap-2">
+            ${images.slice(0, 4).map((image, index) => `
+                <img 
+                    src="${image}" 
+                    alt="Product view ${index + 1}"
+                    class="w-full h-16 object-cover rounded-lg cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+                    onclick="ecommerceApp.changeMainImage('${image}')"
+                >
+            `).join('')}
+        </div>
+    `;
+}
+
+// Helper function to get all product images
+getAllProductImages(product) {
+    const images = [];
+    if (Array.isArray(product.images)) {
+        images.push(...product.images);
+    } else if (typeof product.images === 'string' && product.images) {
+        images.push(...product.images.split(' '));
+    }
+    return images.length > 0 ? images : ['https://via.placeholder.com/600x600?text=No+Image'];
+}
+
+// Helper function to create key features
+createKeyFeatures(features) {
+    if (!features || (Array.isArray(features) && features.length === 0)) return '';
+    
+    const featuresList = Array.isArray(features) ? features : features.split(',').map(f => f.trim());
+    
+    return `
+        <div>
+            <h3 class="text-lg font-semibold text-gray-800 mb-3">Key Features</h3>
+            <ul class="space-y-2">
+                ${featuresList.map(feature => `
+                    <li class="flex items-start space-x-2">
+                        <i class="fas fa-check-circle text-green-600 text-sm mt-1"></i>
+                        <span class="text-gray-600">${feature}</span>
+                    </li>
+                `).join('')}
+            </ul>
+        </div>
+    `;
+}
+
+// Helper function to create specifications
+createSpecifications(specs) {
+    if (!specs || typeof specs !== 'object') return '';
+    
+    return `
+        <div>
+            <h3 class="text-lg font-semibold text-gray-800 mb-3">Specifications</h3>
+            <div class="bg-gray-50 rounded-lg p-4 space-y-2">
+                ${Object.entries(specs).map(([key, value]) => `
+                    <div class="flex justify-between items-center border-b border-gray-200 pb-2">
+                        <span class="text-sm font-medium text-gray-700">${key}:</span>
+                        <span class="text-sm text-gray-600">${value}</span>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+// Helper function to get related products
+getRelatedProducts(currentProduct, limit = 4) {
+    return this.products
+        .filter(p => 
+            p.id !== currentProduct.id && 
+            (p.category === currentProduct.category || p.subCategory === currentProduct.subCategory)
+        )
+        .slice(0, limit);
+}
+
+// Function to change main image
+changeMainImage(imageUrl) {
+    const mainImage = document.getElementById('mainProductImage');
+    if (mainImage) {
+        mainImage.src = imageUrl;
+    }
+}
+
+// Set up product detail event listeners
+setupProductDetailListeners(product) {
+    let currentQty = 1;
+
+    // Close modal
+    document.getElementById('closeProductDetail')?.addEventListener('click', () => {
+        document.getElementById('productDetailModal')?.remove();
+    });
+
+    // Click outside to close
+    document.getElementById('productDetailModal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'productDetailModal') {
+            document.getElementById('productDetailModal')?.remove();
+        }
+    });
+
+    // Quantity controls
+    document.getElementById('decreaseQty')?.addEventListener('click', () => {
+        if (currentQty > 1) {
+            currentQty--;
+            document.getElementById('productQty').textContent = currentQty;
+        }
+    });
+
+    document.getElementById('increaseQty')?.addEventListener('click', () => {
+        currentQty++;
+        document.getElementById('productQty').textContent = currentQty;
+    });
+
+    // Add to cart with quantity
+    document.getElementById('addToCartDetail')?.addEventListener('click', () => {
+        for (let i = 0; i < currentQty; i++) {
+            this.addToCart(product.id);
+        }
+        document.getElementById('productDetailModal')?.remove();
+    });
+
+    // Buy now
+    document.getElementById('buyNowDetail')?.addEventListener('click', () => {
+        // Create temporary order with specified quantity
+        const tempOrderItems = [{
+            id: product.id,
+            name: product.name,
+            price: product.sellingPrice,
+            image: this.getProductImage(product),
+            quantity: currentQty,
+            brand: product.brand || 'Unknown'
+        }];
+
+        this.openOrderSummary(tempOrderItems);
+        window.tempBuyNowOrder = tempOrderItems;
+        document.getElementById('productDetailModal')?.remove();
+    });
+
+    // Escape key to close
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            document.getElementById('productDetailModal')?.remove();
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+}
+/*   viewProduct details  ends here */
+
+            toggleWishlist(productId) {
+                console.log('Toggle wishlist:', productId);
+                const heartIcon = event.target;
+                if (heartIcon.classList.contains('far')) {
+                    heartIcon.classList.remove('far');
+                    heartIcon.classList.add('fas', 'text-red-500');
+                    this.handleSuccess('Added to wishlist! ❤️');
+                } else {
+                    heartIcon.classList.remove('fas', 'text-red-500');
+                    heartIcon.classList.add('far');
+                    this.handleSuccess('Removed from wishlist');
+                }
+            }
+        }
+
+        // Initialize the application
+        const ecommerceApp = new ECommerceApp();
+
+        // Global functions for onclick handlers
+        window.ecommerceApp = ecommerceApp;
+
+
+
+//
+function speak(message) {
+  if ('speechSynthesis' in window) {
+    const utterance = new SpeechSynthesisUtterance(message);
+    utterance.lang = "en-IN";  // Indian English accent
+    utterance.rate = 1;        // 1 = normal speed
+    utterance.pitch = 1;       // normal pitch
+    window.speechSynthesis.speak(utterance);
+  } else {
+    console.warn("Speech synthesis not supported in this browser.");
+  }
+}
+
+
+/*
+//qr code
+async function generateUPIQr(amount) {
+  try {
+    // Get payee details from Firestore
+    const metaDoc = await db.collection("meta").doc("metadata").get();
+    if (!metaDoc.exists) {
+      console.error("Meta document not found");
+      return;
+    }
+
+    const { upiId, payeeName } = metaDoc.data();
+
+    // Get customerId from localStorage
+    const customerId = localStorage.getItem("customerId") || "GUEST";
+
+    // Current date & time
+    const now = new Date();
+    const dateTime = now.toLocaleString("en-IN", { 
+      dateStyle: "short", 
+      timeStyle: "medium" 
+    });
+
+    // Transaction reference = customerId
+    const tr = customerId;
+
+    // Note includes customerId + datetime
+    const note = `Payment from customer ${customerId} on ${dateTime}`;
+
+    // Build UPI Dynamic QR URL (fixed amount)
+    const upiUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&am=${encodeURIComponent(amount)}&cu=INR&tr=${encodeURIComponent(tr)}&tn=${encodeURIComponent(note)}`;
+
+    // Generate QR inside element #upiQrCode
+    QRCode.toCanvas(document.getElementById("upiQrCode"), upiUrl, {
+      width: 240,
+      margin: 2,
+      color: {
+        dark: "#000000",
+        light: "#ffffff"
+      }
+    }, function (error) {
+      if (error) console.error("QR Generation Error:", error);
+      else console.log("UPI Dynamic QR Generated:", upiUrl);
+    });
+
+    return upiUrl; // return for logging/saving
+  } catch (err) {
+    console.error("Error generating UPI QR:", err);
+  }
+}
+
+*/
+
+
+document.getElementById('btnShowQR')?.addEventListener('click', () => {
+    document.getElementById('qrContainer').classList.remove('hidden');
+    generateUPIQr(totalAmount);
+});
+
+
+
+// Account (Profile) routines starts here
+
+
+document.addEventListener("DOMContentLoaded", async () => {
+  const profileAccount = document.getElementById("profileAccount"); // desktop
+  const mbBtnYou = document.getElementById("mbBtnYou"); // mobile footer
+
+  // Replace icon with tiny profile image if available
+  async function updateProfileIcons() {
+    const customerId = localStorage.getItem("customerId");
+    if (!customerId) return;
+
+    try {
+      const customerRef = doc(db, "customers", customerId);
+      const customerSnap = await getDoc(customerRef);
+
+      if (customerSnap.exists()) {
+        const { imageUrl } = customerSnap.data();
+
+        if (imageUrl) {
+          if (profileAccount) {
+            profileAccount.querySelector("i").remove();
+            profileAccount.insertAdjacentHTML(
+              "afterbegin",
+              `<img src="${imageUrl}" alt="Profile" 
+                class="w-6 h-6 rounded-full object-cover">`
+            );
+          }
+
+          if (mbBtnYou) {
+            mbBtnYou.querySelector("i").remove();
+            mbBtnYou.insertAdjacentHTML(
+              "afterbegin",
+              `<img src="${imageUrl}" alt="Profile" 
+                class="w-5 h-5 rounded-full object-cover">`
+            );
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching profile image:", err);
+    }
+  }
+
+  // Attach click handler for showing menu
+  function attachProfileHandler(el, isMobile = false) {
+    if (!el) return;
+
+    el.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const customerId = localStorage.getItem("customerId");
+
+      if (!customerId) {
+        window.location.href = "customerRegistration.html";
+      } else {
+        const customerRef = doc(db, "customers", customerId);
+        const customerSnap = await getDoc(customerRef);
+
+        if (customerSnap.exists()) {
+          showAccountMenu(customerSnap.data(), el, isMobile);
+        } else {
+          alert("Customer record not found. Please register again.");
+          localStorage.removeItem("customerId");
+          window.location.href = "customerRegistration.html";
+        }
+      }
+    });
+  }
+
+  // Account popup menu with responsive positioning
+  function showAccountMenu(customerData, triggerEl, isMobile = false) {
+    const existing = document.querySelector("#accountMenuPopup");
+    if (existing) existing.remove();
+
+    const { imageUrl, name } = customerData;
+
+    const menu = document.createElement("div");
+    menu.id = "accountMenuPopup";
+    menu.className =
+      "fixed bg-white border rounded-xl shadow-xl w-64 z-50 text-sm overflow-hidden";
+
+    const profileImage = imageUrl
+      ? `<img src="${imageUrl}" alt="Profile" class="w-12 h-12 rounded-full object-cover">`
+      : `<div class="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 text-lg">
+           <i class="fas fa-user"></i>
+         </div>`;
+
+    menu.innerHTML = `
+      <div class="flex items-center gap-3 p-4 border-b">
+        ${profileImage}
+        <div>
+          <p class="font-semibold text-gray-800">${name || "Customer"}</p>
+          ${
+            imageUrl
+              ? ""
+              : `<a href="customerModification.html" class="text-xs text-blue-600 hover:underline">Add Profile Image</a>`
+          }
+        </div>
+      </div>
+      <ul class="divide-y divide-gray-200">
+        <li><a href="customerModification.html" class="block px-4 py-2 hover:bg-gray-100">Modify Account</a></li>
+        <li><button id="logoutBtn" class="w-full text-left px-4 py-2 hover:bg-gray-100">Logout</button></li>
+      </ul>
+    `;
+
+    document.body.appendChild(menu);
+
+    // Position menu based on device type
+    const rect = triggerEl.getBoundingClientRect();
+    
+    if (isMobile) {
+      // Mobile: Menu appears above the footer button
+      menu.style.bottom = (window.innerHeight - rect.top) + "px";
+      menu.style.left = Math.max(10, rect.left - (menu.offsetWidth / 2) + (rect.width / 2)) + "px";
+      
+      // Ensure menu doesn't go off screen horizontally
+      const menuWidth = 256; // w-64 = 16rem = 256px
+      if (rect.left - (menuWidth / 2) + (rect.width / 2) < 10) {
+        menu.style.left = "10px";
+      } else if (rect.left + (menuWidth / 2) + (rect.width / 2) > window.innerWidth - 10) {
+        menu.style.left = (window.innerWidth - menuWidth - 10) + "px";
+      }
+    } else {
+      // Desktop: Menu appears below the header button
+      menu.style.top = (rect.bottom + 5) + "px";
+      menu.style.left = rect.left + "px";
+      
+      // Ensure menu doesn't go off screen horizontally
+      const menuWidth = 256; // w-64 = 16rem = 256px
+      if (rect.left + menuWidth > window.innerWidth - 10) {
+        menu.style.left = (window.innerWidth - menuWidth - 10) + "px";
+      }
+    }
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem("customerId");
+      alert("You have been logged out.");
+      window.location.href = "customerRegistration.html";
+    });
+
+    // Close menu when clicking outside
+    document.addEventListener("click", function handler(e) {
+      if (!menu.contains(e.target) && e.target !== triggerEl) {
+        menu.remove();
+        document.removeEventListener("click", handler);
+      }
+    });
+
+    // Close menu on scroll (especially useful for mobile)
+    const scrollHandler = () => {
+      menu.remove();
+      window.removeEventListener("scroll", scrollHandler);
+    };
+    window.addEventListener("scroll", scrollHandler);
+  }
+
+  // Run initial setup
+  await updateProfileIcons();
+  attachProfileHandler(profileAccount, false); // Desktop - menu comes down
+  attachProfileHandler(mbBtnYou, true);        // Mobile - menu comes up
+});
+
+
+// Account (Profile) routines ends here
+
+
+
+
+// for mobile footer
+document.addEventListener("DOMContentLoaded", () => {
+  const toggleBtn = document.getElementById("toggleFooter");
+  const footerMenu = document.getElementById("footerMenu");
+  const toggleIcon = document.getElementById("toggleIcon");
+  const toggleLabel = document.getElementById("toggleLabel");
+
+  toggleBtn.addEventListener("click", () => {
+    // Get all menu items except toggle
+    const items = footerMenu.querySelectorAll("button:not(#toggleFooter)");
+
+    if (toggleLabel.textContent === "Hide") {
+      // Hide all items except toggle
+      items.forEach(btn => btn.classList.add("hidden"));
+      toggleLabel.textContent = "";
+      toggleIcon.classList.remove("fa-eye-slash");
+      toggleIcon.classList.add("fa-eye");
+    } else {
+      // Show all items
+      items.forEach(btn => btn.classList.remove("hidden"));
+      toggleLabel.textContent = "Hide";
+      toggleIcon.classList.remove("fa-eye");
+      toggleIcon.classList.add("fa-eye-slash");
+    }
+  });
+});
+
+
+
+// to show order numbers                          //not working correct
+function listenOrdersBadge() {
+  const customerId = localStorage.getItem("customerId");
+  console.log("CustomerId from localStorage:", customerId);
+  if (!customerId) return;
+
+  // Query all orders for this customer
+  const q = query(
+    collection(db, "orders"),
+    where("customerId", "==", customerId)
+  );
+
+  // Real-time listener
+  onSnapshot(
+    q,
+    (snapshot) => {
+      console.log("Orders snapshot received:", snapshot.size);
+      const activeOrders = snapshot.docs.filter((doc) => {
+        const data = doc.data();
+        const status = data.status?.toLowerCase();
+        return (
+          status !== "delivered" &&
+          status !== "returned" &&
+          status !== "rejected"
+        );
+      });
+      console.log("Active orders count:", activeOrders.length);
+      const ordersNumberEl = document.getElementById("ordersNumber");
+      const ordersNumberE2 = document.getElementById("ordersNumber2");
+      if (ordersNumberEl) {
+        if (activeOrders.length > 0) {
+          ordersNumberEl.textContent = activeOrders.length;
+          ordersNumberE2.textContent = activeOrders.length;
+          ordersNumberEl.classList.remove("hidden");
+          ordersNumberE2.classList.remove("hidden");
+        } else {
+          ordersNumberEl.classList.add("hidden");
+          ordersNumberE2.classList.add("hidden");
+        }
+      }
+    },
+    (error) => {
+      console.error("Error listening to orders:", error);
+    }
+  );
+}
+
+// Start listening when page loads
+document.addEventListener("DOMContentLoaded", listenOrdersBadge);
+
+
+
+
+/*
+
+/ Function to build and return UPI URL
+window.getUpiUrl = async function getUpiUrl(total) {
+  try {
+    // Get payee details from Firestore
+    const metaRef = doc(db, "meta", "metadata");
+    const metaDoc = await getDoc(metaRef);
+
+    if (!metaDoc.exists()) {
+      console.error("Meta document not found");
+      return null;
+    }
+
+    const { upiId, payeeName } = metaDoc.data();
+
+    // Get customerId from localStorage
+    const customerId = localStorage.getItem("customerId") || "GUEST";
+
+    // Current date & time
+    const now = new Date();
+    const dateTime = now.toLocaleString("en-IN", {
+      dateStyle: "short",
+      timeStyle: "medium"
+    });
+
+    // Transaction reference = customerId
+    const tr = customerId;
+
+    // Note includes customerId + datetime
+    const note = `Payment from customer ${customerId} on ${dateTime}`;
+
+    // Build UPI Dynamic QR URL (fixed amount)
+    const upiUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(
+      payeeName
+    )}&am=${encodeURIComponent(total)}&cu=INR&tr=${encodeURIComponent(
+      tr
+    )}&tn=${encodeURIComponent(note)}`;
+
+    return upiUrl;
+  } catch (error) {
+    console.error("Error building UPI URL:", error);
+    return null;
+  }
+}
+
+*/
+    </script>
+</body>
+</html>

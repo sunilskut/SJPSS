@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Management Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <i class="fas fa-boxes text-blue-600 text-2xl mr-3"></i>
+                    <h1 class="text-2xl font-bold text-gray-900">Product Management</h1>
+                </div>
+               <div class="text-sm text-gray-500 cursor-pointer hover:text-gray-700"
+     onclick="window.location.href='adminPanel.html#settings'">
+    <i class="fas fa-user-shield mr-2"></i>
+    Admin Dashboard
+</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Search Section -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Search Products</h2>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-1">
+                    <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-2">Search by ID or Name</label>
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            placeholder="Enter product ID or name..."
+                            class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        >
+                        <i class="fas fa-search absolute left-3 top-3.5 text-gray-400"></i>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button 
+                        onclick="searchProducts()" 
+                        class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    >
+                        <i class="fas fa-search mr-2"></i>Search
+                    </button>
+                    <button 
+                        onclick="loadAllProducts()" 
+                        class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                    >
+                        <i class="fas fa-list mr-2"></i>All Products
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="hidden">
+            <div class="bg-white rounded-lg shadow-sm p-8 text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p class="text-gray-600">Loading products...</p>
+            </div>
+        </div>
+
+        <!-- No Results -->
+        <div id="noResults" class="hidden">
+            <div class="bg-white rounded-lg shadow-sm p-8 text-center">
+                <i class="fas fa-search text-gray-300 text-4xl mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No Products Found</h3>
+                <p class="text-gray-600">Try searching with different keywords or check all products.</p>
+            </div>
+        </div>
+
+        <!-- Products Grid -->
+        <div id="productsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Products will be populated here -->
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmationModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md mx-4">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-exclamation-triangle text-yellow-500 text-xl mr-3"></i>
+                <h3 class="text-lg font-semibold text-gray-900">Confirm Action</h3>
+            </div>
+            <p id="confirmationMessage" class="text-gray-600 mb-6"></p>
+            <div class="flex gap-3 justify-end">
+                <button 
+                    onclick="closeModal()" 
+                    class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                    Cancel
+                </button>
+                <button 
+                    id="confirmButton" 
+                    onclick="confirmAction()" 
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+  apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+  authDomain: "sjpss-f504b.firebaseapp.com",
+  projectId: "sjpss-f504b",
+  storageBucket: "sjpss-f504b.firebasestorage.app",
+  messagingSenderId: "227402980311",
+  appId: "1:227402980311:web:56b580456ab6b9c6758992",
+  measurementId: "G-LZ4YP9YPN6"
+};
+
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let currentProducts = [];
+        let pendingAction = null;
+
+        // Search functionality
+        async function searchProducts() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            if (!searchTerm) {
+                alert('Please enter a search term');
+                return;
+            }
+
+            showLoading();
+            
+            try {
+                // Search by ID first
+                const idQuery = await db.collection('products').where('id', '==', searchTerm).get();
+                
+                if (!idQuery.empty) {
+                    const products = idQuery.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    displayProducts(products);
+                    return;
+                }
+
+                // Search by name (case-insensitive partial match)
+                const nameQuery = await db.collection('products').get();
+                const filteredProducts = nameQuery.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .filter(product => product.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+                displayProducts(filteredProducts);
+            } catch (error) {
+                console.error('Error searching products:', error);
+                showError('Error searching products. Please try again.');
+            }
+        }
+
+        // Load all products
+        async function loadAllProducts() {
+            showLoading();
+            
+            try {
+                const snapshot = await db.collection('products').get();
+                const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                displayProducts(products);
+            } catch (error) {
+                console.error('Error loading products:', error);
+                showError('Error loading products. Please try again.');
+            }
+        }
+
+        // Display products in grid
+        function displayProducts(products) {
+            hideLoading();
+            currentProducts = products;
+            const grid = document.getElementById('productsGrid');
+            const noResults = document.getElementById('noResults');
+
+            if (products.length === 0) {
+                grid.innerHTML = '';
+                noResults.classList.remove('hidden');
+                return;
+            }
+
+            noResults.classList.add('hidden');
+            grid.innerHTML = products.map(product => createProductCard(product)).join('');
+        }
+
+        // Create product card HTML
+        function createProductCard(product) {
+            const isActive = product.isActive === 'active';
+            const buttonText = isActive ? 'Suspend' : 'Revoke';
+            const buttonClass = isActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700';
+            const statusClass = isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+            const statusText = isActive ? 'Active' : 'Suspended';
+
+            return `
+                <div class="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow">
+                    <div class="relative">
+                        <img 
+                            src="${product.imageUrl || 'https://via.placeholder.com/300x200?text=No+Image'}" 
+                            alt="${product.name}"
+                            class="w-full h-48 object-cover rounded-t-lg"
+                            onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'"
+                        >
+                        <div class="absolute top-3 right-3">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium ${statusClass}">
+                                ${statusText}
+                            </span>
+                        </div>
+                        ${product.badge ? `
+                            <div class="absolute top-3 left-3">
+                                <span class="px-2 py-1 bg-blue-600 text-white rounded-full text-xs font-medium">
+                                    ${product.badge}
+                                </span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="p-4">
+                        <div class="flex items-start justify-between mb-2">
+                            <h3 class="font-semibold text-gray-900 text-lg leading-tight">${product.name}</h3>
+                            <span class="text-xs text-gray-500 ml-2">ID: ${product.id}</span>
+                        </div>
+                        
+                        <p class="text-sm text-gray-600 mb-3 line-clamp-2">${product.description || 'No description available'}</p>
+                        
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xl font-bold text-gray-900">₹${product.price}</span>
+                                ${product.originalPrice && product.originalPrice > product.price ? `
+                                    <span class="text-sm text-gray-500 line-through">₹${product.originalPrice}</span>
+                                ` : ''}
+                            </div>
+                            ${product.rating ? `
+                                <div class="flex items-center">
+                                    <i class="fas fa-star text-yellow-400 text-sm"></i>
+                                    <span class="text-sm text-gray-600 ml-1">${product.rating} (${product.reviewCount || 0})</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
+                            <span><i class="fas fa-tag mr-1"></i>${product.brand}</span>
+                            <span><i class="fas fa-layer-group mr-1"></i>${product.subCategory}</span>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center text-sm">
+                                <i class="fas fa-truck mr-1 text-gray-400"></i>
+                                <span class="text-gray-600">${product.deliveryDate || 'Standard delivery'}</span>
+                            </div>
+                            <button 
+                                onclick="showConfirmation('${product.id}', '${product.name}', '${product.isActive}')"
+                                class="px-4 py-2 ${buttonClass} text-white text-sm font-medium rounded-lg transition-colors"
+                            >
+                                ${buttonText}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Show confirmation modal
+        function showConfirmation(productId, productName, currentStatus) {
+            const action = currentStatus === 'active' ? 'suspend' : 'revoke';
+            const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
+            
+            document.getElementById('confirmationMessage').textContent = 
+                `Are you sure you want to ${action} "${productName}"?`;
+            
+            pendingAction = { productId, newStatus, action };
+            document.getElementById('confirmationModal').classList.remove('hidden');
+            document.getElementById('confirmationModal').classList.add('flex');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('confirmationModal').classList.add('hidden');
+            document.getElementById('confirmationModal').classList.remove('flex');
+            pendingAction = null;
+        }
+
+        // Confirm action
+        async function confirmAction() {
+            if (!pendingAction) return;
+            
+            try {
+                // Find the product in currentProducts array
+                const productIndex = currentProducts.findIndex(p => p.id === pendingAction.productId);
+                if (productIndex === -1) {
+                    throw new Error('Product not found');
+                }
+                
+                // Update Firestore (you'll need to use the actual document ID)
+                // For this demo, we'll simulate the update
+                await updateProductStatus(pendingAction.productId, pendingAction.newStatus);
+                
+                // Update local data
+                currentProducts[productIndex].isActive = pendingAction.newStatus;
+                
+                // Refresh display
+                displayProducts(currentProducts);
+                
+                closeModal();
+                showSuccess(`Product ${pendingAction.action}ed successfully!`);
+            } catch (error) {
+                console.error('Error updating product:', error);
+                showError('Error updating product status. Please try again.');
+                closeModal();
+            }
+        }
+
+       // Update product status in Firestore
+async function updateProductStatus(productId, newStatus) {
+    try {
+        // Find product by productId
+        const snapshot = await db.collection('products').where('id', '==', productId).get();
+        if (snapshot.empty) {
+            console.warn(`Product with ID ${productId} not found`);
+            return;
+        }
+
+        const docRef = snapshot.docs[0].ref;
+        await docRef.update({ isActive: newStatus });
+
+        // Create log entry
+        const userId = sessionStorage.getItem('userId');
+        await db.collection('logs').add({
+            action: "modify",
+            changes:  newStatus ,
+            entityId: productId.toString(),
+            entityType: "product",
+            note: `Changed product status for Product ID ${productId} to ${newStatus} by User ID ${userId}`,
+            sessionId: sessionStorage.getItem('sessionId') || null,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            url: window.location.href,
+            userAgent: navigator.userAgent
+        });
+
+    } catch (error) {
+        console.error('Error updating product status:', error);
+        alert('Error updating product status. Please try again.');
+    }
+}
+
+
+        // Utility functions
+        function showLoading() {
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('productsGrid').innerHTML = '';
+            document.getElementById('noResults').classList.add('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingState').classList.add('hidden');
+        }
+
+        function showError(message) {
+            hideLoading();
+            alert(message); // In a real app, you'd use a proper notification system
+        }
+
+        function showSuccess(message) {
+            alert(message); // In a real app, you'd use a proper notification system
+        }
+
+        // Search on Enter key
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchProducts();
+            }
+        });
+
+        // Load initial data
+        document.addEventListener('DOMContentLoaded', function() {
+            // You can uncomment this to load all products on page load
+            // loadAllProducts();
+        });
+    </script>
+</body>
+</html>

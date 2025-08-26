@@ -1,0 +1,4481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Operations Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+        import { getFirestore, collection, getDocs, onSnapshot, query, orderBy, where, limit } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+        
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+            authDomain: "sjpss-f504b.firebaseapp.com",
+            projectId: "sjpss-f504b",
+            storageBucket: "sjpss-f504b.firebasestorage.app",
+            messagingSenderId: "227402980311",
+            appId: "1:227402980311:web:56b580456ab6b9c6758992",
+            measurementId: "G-LZ4YP9YPN6"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // Make Firebase available globally
+        window.db = db;
+        window.firestoreFunctions = {
+            collection,
+            getDocs,
+            onSnapshot,
+            query,
+            orderBy,
+            where,
+            limit
+        };
+    </script>
+    
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --mobile-footer-height: 70px;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding-bottom: 2rem;
+        }
+        
+        .mobile-footer {
+            height: var(--mobile-footer-height);
+            background: linear-gradient(90deg, #1e293b 0%, #334155 100%);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .nav-item {
+            transition: all 0.3s ease;
+        }
+        
+        .nav-item:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateX(4px);
+        }
+        
+        .nav-item.active {
+            background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+            border-right: 4px solid #60a5fa;
+        }
+        
+        .metric-card {
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+        
+        .activity-item {
+            transition: all 0.2s ease;
+        }
+        
+        .activity-item:hover {
+            background: rgba(59, 130, 246, 0.05);
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                z-index: 50;
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding-bottom: var(--mobile-footer-height);
+            }
+            
+            .mobile-footer {
+                display: flex;
+            }
+            
+            .desktop-only {
+                display: none;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .mobile-footer {
+                display: none;
+            }
+        }
+        
+        .status-indicator {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .loading-shimmer {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+    </style>
+</head>
+<body class="font-sans">
+    <!-- Mobile Header -->
+    <div class="md:hidden bg-slate-800 text-white p-4 flex justify-between items-center">
+        <button id="mobileMenuBtn" class="text-2xl">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h1 class="text-xl font-bold">Delivery Hub</h1>
+        <div id="mobileTime" class="text-sm"></div>
+    </div>
+
+   <!-- Sidebar Navigation -->
+<nav id="sidebar" class="sidebar fixed left-0 top-0 h-full text-white z-40">
+    <div class="p-3 border-b border-slate-600">
+        <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                <i class="fas fa-truck text-lg"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-bold">DeliveryHub</h2>
+                <p class="text-xs text-slate-300">Operations Center</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="p-2">
+  <!-- Time Display -->
+        <div class="desktop-only bg-slate-700 rounded-lg p-2 mb-3">
+            <div class="text-center">
+                <div id="desktopTime" class="text-xs font-semibold"></div>
+            </div>
+        </div>
+
+        <!-- Navigation Menu -->
+        <ul class="space-y-1">
+            <li>
+                <a href="#dashboard" class="nav-item active flex items-center space-x-2 p-2 rounded-lg text-sm">
+                    <i class="fas fa-tachometer-alt w-4"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="#orders" class="nav-item flex items-center space-x-2 p-2 rounded-lg text-sm">
+                    <i class="fas fa-tasks w-4"></i>
+                    <span>Order Management</span>
+                    <span id="pendingOrdersCount" class="ml-auto bg-blue-500 text-[10px] px-1.5 py-0.5 rounded-full">0</span>
+                </a>
+            </li>
+            <li>
+                <a href="#tracking" class="nav-item flex items-center space-x-2 p-2 rounded-lg text-sm">
+                    <i class="fas fa-map-marker-alt w-4"></i>
+                    <span>Live Tracking</span>
+                    <span class="ml-auto status-indicator w-2 h-2 bg-green-400 rounded-full"></span>
+                </a>
+            </li>
+            <li>
+                <a href="#drivers" onclick="window.location='driverManagement.html'" class="nav-item flex items-center space-x-2 p-2 rounded-lg text-sm">
+                    <i class="fas fa-users w-4"></i>
+                    <span>Driver Management</span>
+                </a>
+            </li>
+            <li>
+                <a href="#routes" onclick="window.location='deliveryRoutePlanning.html'" class="nav-item flex items-center space-x-2 p-2 rounded-lg text-sm">
+                    <i class="fas fa-route w-4"></i>
+                    <span>Route Planning</span>
+                </a>
+            </li>
+     <!--       <li>
+                <a href="#inventory" class="nav-item flex items-center space-x-2 p-2 rounded-lg text-sm">
+                    <i class="fas fa-boxes w-4"></i>
+                    <span>Inventory Status</span>
+                </a>
+            </li>
+            <li>
+                <a href="#customer-service" class="nav-item flex items-center space-x-2 p-2 rounded-lg text-sm">
+                    <i class="fas fa-headset w-4"></i>
+                    <span>Customer Service</span>
+                    <span id="supportTicketsCount" class="ml-auto bg-red-500 text-[10px] px-1.5 py-0.5 rounded-full">0</span>
+                </a>
+            </li>
+  -->
+            <li>
+                <a href="#analytics" class="nav-item flex items-center space-x-2 p-2 rounded-lg text-sm">
+                    <i class="fas fa-chart-line w-4"></i>
+                    <span>Analytics</span>
+                </a>
+            </li>
+            <li>
+                <a href="#notifications" class="nav-item flex items-center space-x-2 p-2 rounded-lg text-sm">
+                    <i class="fas fa-bell w-4"></i>
+                    <span>Notifications</span>
+                    <span id="notificationCount" class="ml-auto bg-orange-500 text-[10px] px-1.5 py-0.5 rounded-full">0</span>
+                </a>
+            </li>
+            <li>
+                <a href="#reports" class="nav-item flex items-center space-x-2 p-2 rounded-lg text-sm">
+                    <i class="fas fa-file-alt w-4"></i>
+                    <span>Reports</span>
+                </a>
+            </li>
+        </ul>
+
+        <!-- Settings & Profile -->
+        <div class="mt-4 pt-3 border-t border-slate-600">
+            <ul class="space-y-1">
+                <li>
+                    <a href="#settings" class="nav-item flex items-center space-x-2 p-2 rounded-lg text-sm">
+                        <i class="fas fa-cog w-4"></i>
+                        <span>Settings</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#profile" class="nav-item flex items-center space-x-2 p-2 rounded-lg text-sm">
+                        <i class="fas fa-user w-4"></i>
+                        <span>Profile</span>
+                    </a>
+                </li>
+                <li>
+                    <button onclick="logout()" class="nav-item flex items-center space-x-2 p-2 rounded-lg w-full text-left text-sm">
+                        <i class="fas fa-sign-out-alt w-4"></i>
+                        <span>Logout</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <div class="container mx-auto px-4 py-6">
+            <!-- Dashboard Header -->
+            <div class="glass-effect rounded-xl shadow-xl p-6 mb-8">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center">
+                    <div class="mb-4 lg:mb-0">
+                        <h1 class="text-3xl font-bold text-gray-800 mb-2">Operations Dashboard</h1>
+                        <p class="text-gray-600">Real-time delivery management and monitoring</p>
+                        <div id="connectionStatus" class="mt-2 flex items-center space-x-2">
+                            <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                            <span class="text-sm text-gray-500">Connecting to Firebase...</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button onclick="refreshData()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-refresh mr-2"></i>Refresh Data
+                        </button>
+                        <button onclick="exportData()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-download mr-2"></i>Export
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Metrics -->
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+                <div class="metric-card rounded-xl p-6 text-center">
+                    <div id="packedCount" class="text-3xl font-bold text-blue-600 mb-1 loading-shimmer">--</div>
+                    <div class="text-sm text-gray-600">Packed Orders</div>
+                    <div class="text-xs text-blue-500 mt-1">Ready for pickup</div>
+                </div>
+                
+                <div class="metric-card rounded-xl p-6 text-center">
+                    <div id="assignedCount" class="text-3xl font-bold text-orange-600 mb-1 loading-shimmer">--</div>
+                    <div class="text-sm text-gray-600">Assigned</div>
+                    <div class="text-xs text-orange-500 mt-1">With drivers</div>
+                </div>
+                
+                <div class="metric-card rounded-xl p-6 text-center">
+                    <div id="pickedCount" class="text-3xl font-bold text-purple-600 mb-1 loading-shimmer">--</div>
+                    <div class="text-sm text-gray-600">Out for Delivery</div>
+                    <div class="text-xs text-purple-500 mt-1">In transit</div>
+                </div>
+                
+                <div class="metric-card rounded-xl p-6 text-center">
+                    <div id="deliveredCount" class="text-3xl font-bold text-green-600 mb-1 loading-shimmer">--</div>
+                    <div class="text-sm text-gray-600">Delivered Today</div>
+                    <div class="text-xs text-green-500 mt-1">Completed</div>
+                </div>
+                
+                <div class="metric-card rounded-xl p-6 text-center">
+                    <div id="codCount" class="text-3xl font-bold text-yellow-600 mb-1 loading-shimmer">--</div>
+                    <div class="text-sm text-gray-600">COD Orders</div>
+                    <div class="text-xs text-yellow-500 mt-1">Cash collection</div>
+                </div>
+                
+                <div class="metric-card rounded-xl p-6 text-center">
+                    <div id="totalRevenue" class="text-3xl font-bold text-teal-600 mb-1 loading-shimmer">--</div>
+                    <div class="text-sm text-gray-600">Today's Revenue</div>
+                    <div class="text-xs text-teal-500 mt-1">₹ Amount</div>
+                </div>
+            </div>
+
+            <!-- Main Dashboard Content -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- Live Activity Feed -->
+                <div class="lg:col-span-2">
+                    <div class="glass-effect rounded-xl shadow-xl p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-gray-800">Recent Order Activity</h3>
+                            <div class="flex space-x-2">
+                                <button onclick="refreshActivity()" class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50">
+                                    <i class="fas fa-refresh"></i>
+                                </button>
+                                <select id="statusFilter" onchange="filterActivity()" class="text-sm border rounded-lg px-3 py-1">
+                                    <option value="all">All Status</option>
+                                    <option value="packed">Packed</option>
+                                    <option value="assigned">Assigned</option>
+                                    <option value="picked">Out for Delivery</option>
+                                    <option value="delivered">Delivered</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-3 max-h-96 overflow-y-auto" id="activityFeed">
+                            <div class="flex items-center justify-center p-8">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                <span class="ml-3 text-gray-600">Loading orders from Firebase...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column - Quick Actions & Status -->
+                <div class="space-y-6">
+                    
+                    <!-- Recent Orders Summary -->
+                    <div class="glass-effect rounded-xl shadow-xl p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Order Summary</h3>
+                        <div class="space-y-3" id="orderSummary">
+                            <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                    <span class="font-medium">New Orders</span>
+                                </div>
+                                <span id="newOrdersCount" class="text-sm text-blue-600 font-semibold">--</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                                    <span class="font-medium">Pending Payment</span>
+                                </div>
+                                <span id="pendingPaymentCount" class="text-sm text-yellow-600 font-semibold">--</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                                    <span class="font-medium">Completed</span>
+                                </div>
+                                <span id="completedOrdersCount" class="text-sm text-green-600 font-semibold">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="glass-effect rounded-xl shadow-xl p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Quick Actions</h3>
+                        <div class="space-y-3">
+                            <button onclick="createEmergencyOrder()" class="w-full bg-red-100 hover:bg-red-200 text-red-800 font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                Emergency Order
+                            </button>
+                            
+                            <button onclick="bulkAssignOrders()" class="w-full bg-blue-100 hover:bg-blue-200 text-blue-800 font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                                <i class="fas fa-layer-group mr-2"></i>
+                                Bulk Assignment
+                            </button>
+                            
+                            <button onclick="optimizeRoutes()" class="w-full bg-green-100 hover:bg-green-200 text-green-800 font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                                <i class="fas fa-magic mr-2"></i>
+                                Auto-Optimize Routes
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Payment Status -->
+                    <div class="glass-effect rounded-xl shadow-xl p-6">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Payment Status</h3>
+                        <div class="space-y-3" id="paymentStatus">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-600">COD Collections</span>
+                                <div class="flex items-center space-x-2">
+                                    <span id="codAmount" class="text-sm font-semibold text-green-600">₹--</span>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-600">Online Payments</span>
+                                <div class="flex items-center space-x-2">
+                                    <span id="onlineAmount" class="text-sm font-semibold text-blue-600">₹--</span>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-600">Pending Collection</span>
+                                <div class="flex items-center space-x-2">
+                                    <span id="pendingAmount" class="text-sm font-semibold text-red-600">₹--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Orders Table -->
+            <div class="glass-effect rounded-xl shadow-xl p-6 mt-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Order Details</h3>
+                    <div class="flex space-x-3">
+                        <input type="search" id="orderSearch" placeholder="Search orders..." class="border rounded-lg px-3 py-2 text-sm">
+                        <select id="statusFilterTable" onchange="filterOrdersTable()" class="border rounded-lg px-3 py-2 text-sm">
+                            <option value="all">All Status</option>
+                            <option value="packed">Packed</option>
+                            <option value="assigned">Assigned</option>
+                            <option value="picked">Out for Delivery</option>
+                            <option value="delivered">Delivered</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Order ID</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Customer</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Address</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Status</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Payment</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Amount</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody">
+                            <tr>
+                                <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
+                                    Loading orders...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Mobile Footer Navigation -->
+    <nav class="mobile-footer fixed bottom-0 left-0 right-0 bg-slate-800 text-white">
+        <div class="flex justify-around items-center h-full px-2">
+            <a href="#dashboard" class="flex flex-col items-center py-2 px-3 text-blue-400">
+                <i class="fas fa-home text-lg mb-1"></i>
+                <span class="text-xs">Dashboard</span>
+            </a>
+            
+            <a href="#orders" class="flex flex-col items-center py-2 px-3 text-white relative">
+                <i class="fas fa-tasks text-lg mb-1"></i>
+                <span class="text-xs">Orders</span>
+                <span id="mobileOrderCount" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
+            </a>
+            
+            <a href="#tracking" class="flex flex-col items-center py-2 px-3 text-white">
+                <i class="fas fa-map-marker-alt text-lg mb-1"></i>
+                <span class="text-xs">Tracking</span>
+            </a>
+            
+            <a href="#drivers" class="flex flex-col items-center py-2 px-3 text-white">
+                <i class="fas fa-users text-lg mb-1"></i>
+                <span class="text-xs">Drivers</span>
+            </a>
+            
+            <a href="#analytics" class="flex flex-col items-center py-2 px-3 text-white">
+                <i class="fas fa-chart-line text-lg mb-1"></i>
+                <span class="text-xs">Analytics</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobileOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
+
+    <script>
+      // Global variables for Firebase data
+let orders = [];
+let filteredOrders = [];
+let realTimeListener = null;
+let connectionRetryCount = 0;
+const maxRetries = 3;
+
+// Time display functions
+function updateTime() {
+    const now = new Date();
+    const timeString = now.toLocaleString('en-IN', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+    
+    const mobileTimeString = now.toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    
+    const desktopTimeElement = document.getElementById('desktopTime');
+    const mobileTimeElement = document.getElementById('mobileTime');
+    
+    if (desktopTimeElement) desktopTimeElement.textContent = timeString;
+    if (mobileTimeElement) mobileTimeElement.textContent = mobileTimeString;
+}
+
+// Firebase data loading functions
+async function loadOrdersFromFirebase() {
+    try {
+        // Mock Firebase data for demonstration
+        // In actual implementation, replace with real Firebase calls
+        const mockOrders = [
+            {
+                id: 'ORD-001',
+                customerName: 'John Doe',
+                customerPhone: '+91-9876543210',
+                address: '123 Main St, Sector 15, Gurgaon',
+                status: 'packed',
+                paymentMethod: 'COD',
+                amount: 1250,
+                items: ['Product A', 'Product B'],
+                createdAt: new Date(Date.now() - 30 * 60 * 1000),
+                packedAt: new Date(Date.now() - 20 * 60 * 1000)
+            },
+            {
+                id: 'ORD-002',
+                customerName: 'Jane Smith',
+                customerPhone: '+91-9876543211',
+                address: '456 Park Ave, DLF Phase 2, Gurgaon',
+                status: 'assigned',
+                paymentMethod: 'Online',
+                amount: 890,
+                driverName: 'Raj Kumar',
+                items: ['Product C'],
+                createdAt: new Date(Date.now() - 45 * 60 * 1000),
+                assignedAt: new Date(Date.now() - 10 * 60 * 1000)
+            },
+            {
+                id: 'ORD-003',
+                customerName: 'Mike Johnson',
+                customerPhone: '+91-9876543212',
+                address: '789 Oak Rd, MG Road, Bangalore',
+                status: 'picked',
+                paymentMethod: 'COD',
+                amount: 2100,
+                driverName: 'Suresh Sharma',
+                items: ['Product D', 'Product E'],
+                createdAt: new Date(Date.now() - 60 * 60 * 1000),
+                pickedAt: new Date(Date.now() - 25 * 60 * 1000)
+            },
+            {
+                id: 'ORD-004',
+                customerName: 'Sarah Wilson',
+                customerPhone: '+91-9876543213',
+                address: '321 Pine St, Koramangala, Bangalore',
+                status: 'delivered',
+                paymentMethod: 'Online',
+                amount: 1575,
+                items: ['Product F'],
+                createdAt: new Date(Date.now() - 120 * 60 * 1000),
+                deliveredAt: new Date(Date.now() - 15 * 60 * 1000)
+            }
+        ];
+        
+        // Add more mock orders for variety
+        for (let i = 5; i <= 20; i++) {
+            const statuses = ['packed', 'assigned', 'picked', 'delivered'];
+            const payments = ['COD', 'Online'];
+            const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+            
+            mockOrders.push({
+                id: `ORD-${i.toString().padStart(3, '0')}`,
+                customerName: `Customer ${i}`,
+                customerPhone: `+91-987654${i.toString().padStart(4, '0')}`,
+                address: `${i * 10} Sample Street, City ${i}`,
+                status: randomStatus,
+                paymentMethod: payments[Math.floor(Math.random() * payments.length)],
+                amount: Math.floor(Math.random() * 3000) + 500,
+                items: [`Product ${String.fromCharCode(65 + (i % 26))}`],
+                createdAt: new Date(Date.now() - Math.random() * 180 * 60 * 1000),
+                ...(randomStatus !== 'packed' && { assignedAt: new Date(Date.now() - Math.random() * 120 * 60 * 1000) }),
+                ...(randomStatus === 'picked' && { pickedAt: new Date(Date.now() - Math.random() * 60 * 60 * 1000) }),
+                ...(randomStatus === 'delivered' && { deliveredAt: new Date(Date.now() - Math.random() * 30 * 60 * 1000) })
+            });
+        }
+        
+        orders = mockOrders;
+        updateConnectionStatus(true);
+        updateDashboardMetrics();
+        updateActivityFeed();
+        updateOrdersTable();
+        console.log('Loaded', orders.length, 'orders');
+        
+    } catch (error) {
+        console.error('Error loading orders:', error);
+        updateConnectionStatus(false);
+        showError('Failed to load orders');
+    }
+}
+
+// Real-time listener setup
+function setupRealTimeListener() {
+    try {
+        // Mock real-time updates
+        realTimeListener = setInterval(() => {
+            // Simulate occasional status updates
+            if (Math.random() > 0.8) {
+                const randomOrder = orders[Math.floor(Math.random() * orders.length)];
+                if (randomOrder && randomOrder.status !== 'delivered') {
+                    updateOrderStatus(randomOrder);
+                }
+            }
+        }, 10000); // Check every 10 seconds
+        
+        console.log('Real-time listener established');
+        
+    } catch (error) {
+        console.error('Error setting up real-time listener:', error);
+        updateConnectionStatus(false);
+    }
+}
+
+// Update order status (simulate progression)
+function updateOrderStatus(order) {
+    const statusProgression = {
+        'packed': 'assigned',
+        'assigned': 'picked',
+        'picked': 'delivered'
+    };
+    
+    if (statusProgression[order.status]) {
+        const oldStatus = order.status;
+        order.status = statusProgression[order.status];
+        
+        // Update timestamp
+        const now = new Date();
+        switch (order.status) {
+            case 'assigned':
+                order.assignedAt = now;
+                order.driverName = `Driver ${Math.floor(Math.random() * 50) + 1}`;
+                break;
+            case 'picked':
+                order.pickedAt = now;
+                break;
+            case 'delivered':
+                order.deliveredAt = now;
+                break;
+        }
+        
+        console.log(`Order ${order.id} updated from ${oldStatus} to ${order.status}`);
+        updateDashboardMetrics();
+        updateActivityFeed();
+        updateOrdersTable();
+    }
+}
+
+// Update connection status indicator
+function updateConnectionStatus(connected) {
+    const statusElement = document.getElementById('connectionStatus');
+    if (!statusElement) return;
+    
+    const indicator = statusElement.querySelector('div');
+    const text = statusElement.querySelector('span');
+    
+    if (connected) {
+        indicator.className = 'w-2 h-2 bg-green-500 rounded-full';
+        text.textContent = 'Connected to Database';
+        text.className = 'text-sm text-green-600';
+    } else {
+        indicator.className = 'w-2 h-2 bg-red-500 rounded-full';
+        text.textContent = 'Connection failed';
+        text.className = 'text-sm text-red-600';
+    }
+}
+
+// Update dashboard metrics
+function updateDashboardMetrics() {
+    const metrics = {
+        packed: orders.filter(o => o.status === 'packed').length,
+        assigned: orders.filter(o => o.status === 'assigned').length,
+        picked: orders.filter(o => o.status === 'picked').length,
+        delivered: orders.filter(o => o.status === 'delivered').length,
+        cod: orders.filter(o => o.paymentMethod === 'COD').length,
+        totalRevenue: orders.filter(o => o.status === 'delivered')
+            .reduce((sum, order) => sum + order.amount, 0)
+    };
+    
+    // Update metric displays
+    updateElement('packedCount', metrics.packed);
+    updateElement('assignedCount', metrics.assigned);
+    updateElement('pickedCount', metrics.picked);
+    updateElement('deliveredCount', metrics.delivered);
+    updateElement('codCount', metrics.cod);
+    updateElement('totalRevenue', `₹${metrics.totalRevenue.toLocaleString()}`);
+    
+    // Update navigation badges
+    updateElement('pendingOrdersCount', metrics.packed + metrics.assigned);
+    updateElement('mobileOrderCount', metrics.packed + metrics.assigned);
+    
+    // Update summary counts
+    updateElement('newOrdersCount', metrics.packed);
+    updateElement('pendingPaymentCount', orders.filter(o => o.paymentMethod === 'COD' && o.status !== 'delivered').length);
+    updateElement('completedOrdersCount', metrics.delivered);
+    
+    // Update payment amounts
+    const codAmount = orders.filter(o => o.paymentMethod === 'COD' && o.status === 'delivered')
+        .reduce((sum, order) => sum + order.amount, 0);
+    const onlineAmount = orders.filter(o => o.paymentMethod === 'Online' && o.status === 'delivered')
+        .reduce((sum, order) => sum + order.amount, 0);
+    const pendingAmount = orders.filter(o => o.paymentMethod === 'COD' && o.status !== 'delivered')
+        .reduce((sum, order) => sum + order.amount, 0);
+    
+    updateElement('codAmount', `₹${codAmount.toLocaleString()}`);
+    updateElement('onlineAmount', `₹${onlineAmount.toLocaleString()}`);
+    updateElement('pendingAmount', `₹${pendingAmount.toLocaleString()}`);
+}
+
+// Update activity feed
+function updateActivityFeed() {
+    const feedElement = document.getElementById('activityFeed');
+    if (!feedElement) return;
+    
+    const recentOrders = orders.slice(0, 10); // Show last 10 orders
+    
+    feedElement.innerHTML = recentOrders.map(order => `
+        <div class="flex items-center space-x-4 p-3 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+            <div class="status-dot w-3 h-3 rounded-full ${getStatusColor(order.status)}"></div>
+            <div class="flex-1">
+                <div class="flex items-center justify-between">
+                    <span class="font-semibold text-gray-800">${order.id}</span>
+                    <span class="text-sm text-gray-500">${formatTimeAgo(order.createdAt)}</span>
+                </div>
+                <div class="text-sm text-gray-600">${order.customerName} - ${order.address.split(',')[0]}</div>
+                <div class="flex items-center space-x-2 mt-1">
+                    <span class="text-xs px-2 py-1 rounded-full ${getStatusBadgeClass(order.status)}">${formatStatus(order.status)}</span>
+                    <span class="text-xs text-gray-500">${order.paymentMethod}</span>
+                    <span class="text-xs font-semibold text-gray-700">₹${order.amount}</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Update orders table
+function updateOrdersTable() {
+    const tableBody = document.getElementById('ordersTableBody');
+    if (!tableBody) return;
+    
+    const displayOrders = filteredOrders.length > 0 ? filteredOrders : orders;
+    
+    tableBody.innerHTML = displayOrders.map(order => `
+        <tr class="border-b border-gray-200 hover:bg-gray-50">
+            <td class="px-4 py-3 text-sm font-medium text-gray-900">${order.id}</td>
+            <td class="px-4 py-3 text-sm text-gray-600">
+                <div>${order.customerName}</div>
+                <div class="text-xs text-gray-400">${order.customerPhone}</div>
+            </td>
+            <td class="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">${order.address}</td>
+            <td class="px-4 py-3">
+                <span class="text-xs px-2 py-1 rounded-full ${getStatusBadgeClass(order.status)}">${formatStatus(order.status)}</span>
+            </td>
+            <td class="px-4 py-3 text-sm">
+                <span class="px-2 py-1 rounded-full text-xs ${order.paymentMethod === 'COD' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">${order.paymentMethod}</span>
+            </td>
+            <td class="px-4 py-3 text-sm font-semibold text-gray-900">₹${order.amount}</td>
+            <td class="px-4 py-3 text-sm">
+                <div class="flex space-x-2">
+                    <button onclick="viewOrderDetails('${order.id}')" class="text-blue-600 hover:text-blue-800 text-xs px-2 py-1 rounded border border-blue-200 hover:bg-blue-50">View</button>
+                    ${order.status !== 'delivered' ? `<button onclick="updateOrderStatusManual('${order.id}')" class="text-green-600 hover:text-green-800 text-xs px-2 py-1 rounded border border-green-200 hover:bg-green-50">Update</button>` : ''}
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Utility functions
+function updateElement(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.textContent = value;
+        element.classList.remove('loading-shimmer');
+    }
+}
+
+function getStatusColor(status) {
+    const colors = {
+        'packed': 'bg-blue-500',
+        'assigned': 'bg-orange-500',
+        'picked': 'bg-purple-500',
+        'delivered': 'bg-green-500'
+    };
+    return colors[status] || 'bg-gray-400';
+}
+
+function getStatusBadgeClass(status) {
+    const classes = {
+        'packed': 'bg-blue-100 text-blue-800',
+        'assigned': 'bg-orange-100 text-orange-800',
+        'picked': 'bg-purple-100 text-purple-800',
+        'delivered': 'bg-green-100 text-green-800'
+    };
+    return classes[status] || 'bg-gray-100 text-gray-800';
+}
+
+function formatStatus(status) {
+    const statuses = {
+        'packed': 'Packed',
+        'assigned': 'Assigned',
+        'picked': 'Out for Delivery',
+        'delivered': 'Delivered'
+    };
+    return statuses[status] || status;
+}
+
+function formatTimeAgo(date) {
+    if (!date) return 'N/A';
+    
+    const now = new Date();
+    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    return `${Math.floor(diffInMinutes / 1440)}d ago`;
+}
+
+// Filter functions
+function filterActivity() {
+    const filterValue = document.getElementById('statusFilter').value;
+    // Implementation for filtering activity feed
+    updateActivityFeed();
+}
+
+function filterOrdersTable() {
+    const statusFilter = document.getElementById('statusFilterTable').value;
+    const searchTerm = document.getElementById('orderSearch').value.toLowerCase();
+    
+    filteredOrders = orders.filter(order => {
+        const statusMatch = statusFilter === 'all' || order.status === statusFilter;
+        const searchMatch = !searchTerm || 
+            order.id.toLowerCase().includes(searchTerm) ||
+            order.customerName.toLowerCase().includes(searchTerm) ||
+            order.address.toLowerCase().includes(searchTerm);
+        
+        return statusMatch && searchMatch;
+    });
+    
+    updateOrdersTable();
+}
+
+// Action functions
+function refreshData() {
+    showSuccess('Refreshing data...');
+    loadOrdersFromFirebase();
+}
+
+function refreshActivity() {
+    updateActivityFeed();
+    showSuccess('Activity feed refreshed');
+}
+
+function exportData() {
+    const csvContent = "data:text/csv;charset=utf-8," 
+        + "Order ID,Customer,Phone,Address,Status,Payment,Amount,Created\n"
+        + orders.map(order => `${order.id},${order.customerName},${order.customerPhone},"${order.address}",${order.status},${order.paymentMethod},${order.amount},${order.createdAt}`).join("\n");
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `orders_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showSuccess('Orders exported successfully');
+}
+
+function viewOrderDetails(orderId) {
+    const order = orders.find(o => o.id === orderId);
+    if (order) {
+        alert(`Order Details:\n\nID: ${order.id}\nCustomer: ${order.customerName}\nPhone: ${order.customerPhone}\nAddress: ${order.address}\nStatus: ${formatStatus(order.status)}\nPayment: ${order.paymentMethod}\nAmount: ₹${order.amount}\nItems: ${order.items.join(', ')}\nCreated: ${order.createdAt.toLocaleString()}`);
+    }
+}
+
+function updateOrderStatusManual(orderId) {
+    const order = orders.find(o => o.id === orderId);
+    if (order) {
+        updateOrderStatus(order);
+        showSuccess(`Order ${orderId} status updated`);
+    }
+}
+
+function createEmergencyOrder() {
+    showInfo('Emergency order creation feature would be implemented here');
+}
+
+function bulkAssignOrders() {
+    const packedOrders = orders.filter(o => o.status === 'packed');
+    if (packedOrders.length === 0) {
+        showWarning('No packed orders available for assignment');
+        return;
+    }
+    
+    packedOrders.forEach(order => {
+        order.status = 'assigned';
+        order.assignedAt = new Date();
+        order.driverName = `Driver ${Math.floor(Math.random() * 50) + 1}`;
+    });
+    
+    updateDashboardMetrics();
+    updateActivityFeed();
+    updateOrdersTable();
+    showSuccess(`${packedOrders.length} orders assigned to drivers`);
+}
+
+function optimizeRoutes() {
+    showInfo('Route optimization algorithm would run here');
+}
+
+function logout() {
+    if (confirm('Are you sure you want to logout?')) {
+        showInfo('Logging out...');
+        window.location='loginPage.html';
+    }
+}
+
+// Mobile navigation functions
+function toggleMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('mobileOverlay');
+    
+    if (sidebar && overlay) {
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('hidden');
+    }
+}
+
+// Notification functions
+function showSuccess(message) {
+    showNotification(message, 'success');
+}
+
+function showError(message) {
+    showNotification(message, 'error');
+}
+
+function showWarning(message) {
+    showNotification(message, 'warning');
+}
+
+function showInfo(message) {
+    showNotification(message, 'info');
+}
+
+function showNotification(message, type) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 px-6 py-4 rounded-lg shadow-lg z-50 transition-all duration-300 ${getNotificationClass(type)}`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        notification.classList.add('opacity-0');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+function getNotificationClass(type) {
+    const classes = {
+        'success': 'bg-green-500 text-white',
+        'error': 'bg-red-500 text-white',
+        'warning': 'bg-yellow-500 text-white',
+        'info': 'bg-blue-500 text-white'
+    };
+    return classes[type] || classes.info;
+}
+
+// Initialize the dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Delivery Dashboard initializing...');
+    
+    // Set up time updates
+    updateTime();
+    setInterval(updateTime, 1000);
+    
+    // Load initial data
+    loadOrdersFromFirebase();
+    
+    // Set up real-time listener
+    setupRealTimeListener();
+    
+    // Set up mobile menu toggle
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const mobileOverlay = document.getElementById('mobileOverlay');
+    
+    if (mobileMenuBtn) {
+        mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+    }
+    
+    if (mobileOverlay) {
+        mobileOverlay.addEventListener('click', toggleMobileMenu);
+    }
+    
+    // Set up search functionality
+    const orderSearch = document.getElementById('orderSearch');
+    if (orderSearch) {
+        orderSearch.addEventListener('input', filterOrdersTable);
+    }
+    
+    // Set up navigation
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Remove active class from all nav items
+            navItems.forEach(nav => nav.classList.remove('active'));
+            
+            // Add active class to clicked item
+            this.classList.add('active');
+            
+            const href = this.getAttribute('href');
+            console.log('Navigating to:', href);
+
+// In your existing navigation code
+const orderNavItem = document.querySelector('a[href="#orders"]');
+if (orderNavItem) {
+    orderNavItem.addEventListener('click', function(e) {
+        e.preventDefault();
+        window.orderManager.showOrderManagement();
+    });
+}
+
+
+// Add to your navigation handler
+const profileNavItem = document.querySelector('a[href="#profile"]');
+if (profileNavItem) {
+    profileNavItem.addEventListener('click', function(e) {
+        e.preventDefault();
+        window.profileManager.showProfile();
+    });
+}
+
+
+            // Here you would implement actual navigation logic
+           // showInfo(`Navigating to ${href.replace('#', '').toUpperCase()} section`);
+        });
+    });
+    
+    console.log('Dashboard initialized successfully');
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (realTimeListener) {
+        clearInterval(realTimeListener);
+    }
+});
+
+// profile section starts here
+// Profile Management System for Delivery Dashboard
+
+// Global profile data
+let currentUser = {
+    id: 'usr_001',
+    name: 'John Manager',
+    email: 'john.manager@deliveryhub.com',
+    phone: '+91-9876543210',
+    role: 'Operations Manager',
+    department: 'Logistics',
+    joinDate: '2023-01-15',
+    lastLogin: new Date(),
+    avatar: null,
+    permissions: ['view_orders', 'manage_drivers', 'view_analytics', 'export_data'],
+    preferences: {
+        theme: 'light',
+        notifications: {
+            email: true,
+            push: true,
+            sms: false
+        },
+        dashboard: {
+            autoRefresh: true,
+            refreshInterval: 30,
+            defaultView: 'dashboard'
+        },
+        language: 'en'
+    },
+    stats: {
+        ordersManaged: 1245,
+        driversSupervised: 15,
+        totalRevenue: 125000,
+        avgResponseTime: '2.5 min'
+    }
+};
+
+// Profile Section HTML Generator
+function generateProfileSection() {
+    return `
+        <div class="profile-section">
+            <!-- Profile Header -->
+            <div class="glass-effect rounded-xl shadow-xl p-6 mb-8">
+                <div class="flex flex-col lg:flex-row items-start lg:items-center space-y-4 lg:space-y-0 lg:space-x-6">
+                    <div class="relative">
+                        <div class="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                            ${getInitials(currentUser.name)}
+                        </div>
+                        <button onclick="changeAvatar()" class="absolute -bottom-2 -right-2 bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-blue-600 transition-colors">
+                            <i class="fas fa-camera text-sm"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="flex-1">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-1">${currentUser.name}</h2>
+                        <p class="text-gray-600 mb-2">${currentUser.role} • ${currentUser.department}</p>
+                        <div class="flex flex-wrap gap-4 text-sm text-gray-500">
+                            <span><i class="fas fa-envelope mr-1"></i>${currentUser.email}</span>
+                            <span><i class="fas fa-phone mr-1"></i>${currentUser.phone}</span>
+                            <span><i class="fas fa-calendar mr-1"></i>Joined ${formatDate(currentUser.joinDate)}</span>
+                            <span><i class="fas fa-clock mr-1"></i>Last login: ${formatTimeAgo(currentUser.lastLogin)}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button onclick="editProfile()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-edit mr-2"></i>Edit Profile
+                        </button>
+                        <button onclick="showSettings()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-cog mr-2"></i>Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="glass-effect rounded-xl p-4 text-center">
+                    <div class="text-2xl font-bold text-blue-600 mb-1">${currentUser.stats.ordersManaged.toLocaleString()}</div>
+                    <div class="text-sm text-gray-600">Orders Managed</div>
+                </div>
+                <div class="glass-effect rounded-xl p-4 text-center">
+                    <div class="text-2xl font-bold text-green-600 mb-1">${currentUser.stats.driversSupervised}</div>
+                    <div class="text-sm text-gray-600">Drivers Supervised</div>
+                </div>
+                <div class="glass-effect rounded-xl p-4 text-center">
+                    <div class="text-2xl font-bold text-purple-600 mb-1">₹${(currentUser.stats.totalRevenue / 1000).toFixed(0)}K</div>
+                    <div class="text-sm text-gray-600">Total Revenue</div>
+                </div>
+                <div class="glass-effect rounded-xl p-4 text-center">
+                    <div class="text-2xl font-bold text-orange-600 mb-1">${currentUser.stats.avgResponseTime}</div>
+                    <div class="text-sm text-gray-600">Avg Response Time</div>
+                </div>
+            </div>
+
+            <!-- Profile Tabs -->
+            <div class="glass-effect rounded-xl shadow-xl">
+                <div class="border-b border-gray-200">
+                    <nav class="flex space-x-8 px-6">
+                        <button onclick="showProfileTab('overview')" class="profile-tab active py-4 border-b-2 border-blue-500 text-blue-600 font-semibold">
+                            <i class="fas fa-user mr-2"></i>Overview
+                        </button>
+                        <button onclick="showProfileTab('activity')" class="profile-tab py-4 border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-chart-line mr-2"></i>Activity
+                        </button>
+                        <button onclick="showProfileTab('permissions')" class="profile-tab py-4 border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-shield-alt mr-2"></i>Permissions
+                        </button>
+                        <button onclick="showProfileTab('security')" class="profile-tab py-4 border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-lock mr-2"></i>Security
+                        </button>
+                    </nav>
+                </div>
+
+                <div class="p-6">
+                    <div id="profileTabContent">
+                        ${generateOverviewTab()}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Generate Overview Tab Content
+function generateOverviewTab() {
+    return `
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Personal Information -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Personal Information</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-sm font-medium text-gray-700">Full Name</label>
+                        <div class="mt-1 text-gray-900">${currentUser.name}</div>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-700">Email Address</label>
+                        <div class="mt-1 text-gray-900">${currentUser.email}</div>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-700">Phone Number</label>
+                        <div class="mt-1 text-gray-900">${currentUser.phone}</div>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-700">Role</label>
+                        <div class="mt-1">
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                ${currentUser.role}
+                            </span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-700">Department</label>
+                        <div class="mt-1 text-gray-900">${currentUser.department}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preferences -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Preferences</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-sm font-medium text-gray-700">Theme</label>
+                        <div class="mt-1">
+                            <select onchange="updateTheme(this.value)" class="border border-gray-300 rounded-md px-3 py-2 text-sm">
+                                <option value="light" ${currentUser.preferences.theme === 'light' ? 'selected' : ''}>Light</option>
+                                <option value="dark" ${currentUser.preferences.theme === 'dark' ? 'selected' : ''}>Dark</option>
+                                <option value="auto" ${currentUser.preferences.theme === 'auto' ? 'selected' : ''}>Auto</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-700">Language</label>
+                        <div class="mt-1">
+                            <select onchange="updateLanguage(this.value)" class="border border-gray-300 rounded-md px-3 py-2 text-sm">
+                                <option value="en" ${currentUser.preferences.language === 'en' ? 'selected' : ''}>English</option>
+                                <option value="hi" ${currentUser.preferences.language === 'hi' ? 'selected' : ''}>Hindi</option>
+                                <option value="ta" ${currentUser.preferences.language === 'ta' ? 'selected' : ''}>Tamil</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" ${currentUser.preferences.dashboard.autoRefresh ? 'checked' : ''} 
+                                   onchange="updateAutoRefresh(this.checked)" class="mr-2">
+                            <span class="text-sm text-gray-700">Auto-refresh dashboard</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-700">Refresh Interval</label>
+                        <div class="mt-1">
+                            <select onchange="updateRefreshInterval(this.value)" class="border border-gray-300 rounded-md px-3 py-2 text-sm">
+                                <option value="15" ${currentUser.preferences.dashboard.refreshInterval === 15 ? 'selected' : ''}>15 seconds</option>
+                                <option value="30" ${currentUser.preferences.dashboard.refreshInterval === 30 ? 'selected' : ''}>30 seconds</option>
+                                <option value="60" ${currentUser.preferences.dashboard.refreshInterval === 60 ? 'selected' : ''}>1 minute</option>
+                                <option value="300" ${currentUser.preferences.dashboard.refreshInterval === 300 ? 'selected' : ''}>5 minutes</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Generate Activity Tab Content
+function generateActivityTab() {
+    return `
+        <div class="space-y-6">
+            <h3 class="text-lg font-semibold text-gray-800">Recent Activity</h3>
+            
+            <div class="space-y-4">
+                <div class="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-sign-in-alt text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm font-medium text-gray-900">Logged in</div>
+                        <div class="text-xs text-gray-500">${formatDateTime(currentUser.lastLogin)}</div>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-tasks text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm font-medium text-gray-900">Bulk assigned 15 orders</div>
+                        <div class="text-xs text-gray-500">2 hours ago</div>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-download text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm font-medium text-gray-900">Exported orders report</div>
+                        <div class="text-xs text-gray-500">4 hours ago</div>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-users text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm font-medium text-gray-900">Added new driver: Rahul Kumar</div>
+                        <div class="text-xs text-gray-500">1 day ago</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Generate Permissions Tab Content
+function generatePermissionsTab() {
+    const allPermissions = [
+        { id: 'view_orders', name: 'View Orders', description: 'View all order information' },
+        { id: 'manage_orders', name: 'Manage Orders', description: 'Create, update, and delete orders' },
+        { id: 'view_drivers', name: 'View Drivers', description: 'View driver information' },
+        { id: 'manage_drivers', name: 'Manage Drivers', description: 'Add, edit, and remove drivers' },
+        { id: 'view_analytics', name: 'View Analytics', description: 'Access analytics and reports' },
+        { id: 'export_data', name: 'Export Data', description: 'Export data to various formats' },
+        { id: 'manage_users', name: 'Manage Users', description: 'Manage user accounts and permissions' },
+        { id: 'system_settings', name: 'System Settings', description: 'Access system configuration' }
+    ];
+
+    return `
+        <div class="space-y-6">
+            <h3 class="text-lg font-semibold text-gray-800">Current Permissions</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                ${allPermissions.map(permission => `
+                    <div class="p-4 border border-gray-200 rounded-lg ${currentUser.permissions.includes(permission.id) ? 'bg-green-50 border-green-200' : 'bg-gray-50'}">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h4 class="font-medium text-gray-900">${permission.name}</h4>
+                                <p class="text-sm text-gray-600">${permission.description}</p>
+                            </div>
+                            <div class="ml-4">
+                                ${currentUser.permissions.includes(permission.id) ? 
+                                    '<i class="fas fa-check-circle text-green-500"></i>' : 
+                                    '<i class="fas fa-times-circle text-gray-400"></i>'}
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div class="flex">
+                    <i class="fas fa-info-circle text-yellow-400 mr-3 mt-1"></i>
+                    <div>
+                        <h4 class="text-sm font-medium text-yellow-800">Permission Changes</h4>
+                        <p class="text-sm text-yellow-700">Contact your system administrator to modify permissions.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Generate Security Tab Content
+function generateSecurityTab() {
+    return `
+        <div class="space-y-8">
+            <!-- Password Section -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Password & Security</h3>
+                <div class="space-y-4">
+                    <button onclick="changePassword()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-key mr-2"></i>Change Password
+                    </button>
+                    
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-shield-check text-green-500 mr-3"></i>
+                            <div>
+                                <h4 class="text-sm font-medium text-green-800">Two-Factor Authentication</h4>
+                                <p class="text-sm text-green-700">Enabled - Your account is secure</p>
+                            </div>
+                            <button onclick="manage2FA()" class="ml-auto text-green-600 hover:text-green-800 text-sm">
+                                Manage
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notification Preferences -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Notification Preferences</h3>
+                <div class="space-y-4">
+                    <label class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                        <div>
+                            <div class="font-medium text-gray-900">Email Notifications</div>
+                            <div class="text-sm text-gray-600">Receive updates via email</div>
+                        </div>
+                        <input type="checkbox" ${currentUser.preferences.notifications.email ? 'checked' : ''} 
+                               onchange="updateNotificationPreference('email', this.checked)" class="toggle-checkbox">
+                    </label>
+                    
+                    <label class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                        <div>
+                            <div class="font-medium text-gray-900">Push Notifications</div>
+                            <div class="text-sm text-gray-600">Receive browser notifications</div>
+                        </div>
+                        <input type="checkbox" ${currentUser.preferences.notifications.push ? 'checked' : ''} 
+                               onchange="updateNotificationPreference('push', this.checked)" class="toggle-checkbox">
+                    </label>
+                    
+                    <label class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                        <div>
+                            <div class="font-medium text-gray-900">SMS Notifications</div>
+                            <div class="text-sm text-gray-600">Receive text messages</div>
+                        </div>
+                        <input type="checkbox" ${currentUser.preferences.notifications.sms ? 'checked' : ''} 
+                               onchange="updateNotificationPreference('sms', this.checked)" class="toggle-checkbox">
+                    </label>
+                </div>
+            </div>
+
+            <!-- Login History -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Login Activity</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-desktop text-gray-400"></i>
+                            <div>
+                                <div class="text-sm font-medium">Desktop - Chrome</div>
+                                <div class="text-xs text-gray-500">Current session</div>
+                            </div>
+                        </div>
+                        <div class="text-xs text-gray-500">${formatDateTime(currentUser.lastLogin)}</div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-mobile-alt text-gray-400"></i>
+                            <div>
+                                <div class="text-sm font-medium">Mobile - Safari</div>
+                                <div class="text-xs text-gray-500">Mumbai, IN</div>
+                            </div>
+                        </div>
+                        <div class="text-xs text-gray-500">2 hours ago</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Profile Navigation Functions
+function showProfile() {
+    const mainContent = document.querySelector('.main-content .container');
+    if (mainContent) {
+        mainContent.innerHTML = generateProfileSection();
+        showSuccess('Profile loaded successfully');
+    }
+}
+
+function showProfileTab(tabName) {
+    // Update active tab
+    const tabs = document.querySelectorAll('.profile-tab');
+    tabs.forEach(tab => {
+        tab.classList.remove('active', 'border-blue-500', 'text-blue-600');
+        tab.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    event.target.classList.add('active', 'border-blue-500', 'text-blue-600');
+    event.target.classList.remove('border-transparent', 'text-gray-500');
+    
+    // Update content
+    const contentElement = document.getElementById('profileTabContent');
+    if (contentElement) {
+        switch (tabName) {
+            case 'overview':
+                contentElement.innerHTML = generateOverviewTab();
+                break;
+            case 'activity':
+                contentElement.innerHTML = generateActivityTab();
+                break;
+            case 'permissions':
+                contentElement.innerHTML = generatePermissionsTab();
+                break;
+            case 'security':
+                contentElement.innerHTML = generateSecurityTab();
+                break;
+        }
+    }
+}
+
+// Profile Action Functions
+function editProfile() {
+    const modal = createModal('Edit Profile', `
+        <form id="editProfileForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <input type="text" id="editName" value="${currentUser.name}" class="w-full border border-gray-300 rounded-md px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input type="email" id="editEmail" value="${currentUser.email}" class="w-full border border-gray-300 rounded-md px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                <input type="tel" id="editPhone" value="${currentUser.phone}" class="w-full border border-gray-300 rounded-md px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                <select id="editDepartment" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                    <option value="Logistics" ${currentUser.department === 'Logistics' ? 'selected' : ''}>Logistics</option>
+                    <option value="Operations" ${currentUser.department === 'Operations' ? 'selected' : ''}>Operations</option>
+                    <option value="Customer Service" ${currentUser.department === 'Customer Service' ? 'selected' : ''}>Customer Service</option>
+                    <option value="Management" ${currentUser.department === 'Management' ? 'selected' : ''}>Management</option>
+                </select>
+            </div>
+        </form>
+    `, [
+        {
+            text: 'Cancel',
+            class: 'bg-gray-500 hover:bg-gray-600',
+            onclick: 'closeModal()'
+        },
+        {
+            text: 'Save Changes',
+            class: 'bg-blue-500 hover:bg-blue-600',
+            onclick: 'saveProfileChanges()'
+        }
+    ]);
+    
+    showModal(modal);
+}
+
+function saveProfileChanges() {
+    const name = document.getElementById('editName').value;
+    const email = document.getElementById('editEmail').value;
+    const phone = document.getElementById('editPhone').value;
+    const department = document.getElementById('editDepartment').value;
+    
+    if (name && email && phone) {
+        currentUser.name = name;
+        currentUser.email = email;
+        currentUser.phone = phone;
+        currentUser.department = department;
+        
+        closeModal();
+        showProfile(); // Refresh profile display
+        showSuccess('Profile updated successfully');
+    } else {
+        showError('Please fill in all required fields');
+    }
+}
+
+function changeAvatar() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentUser.avatar = e.target.result;
+                showProfile(); // Refresh profile display
+                showSuccess('Avatar updated successfully');
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    input.click();
+}
+
+function changePassword() {
+    const modal = createModal('Change Password', `
+        <form id="changePasswordForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                <input type="password" id="currentPassword" class="w-full border border-gray-300 rounded-md px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                <input type="password" id="newPassword" class="w-full border border-gray-300 rounded-md px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                <input type="password" id="confirmPassword" class="w-full border border-gray-300 rounded-md px-3 py-2">
+            </div>
+            <div class="text-sm text-gray-600">
+                <ul class="list-disc list-inside space-y-1">
+                    <li>Password must be at least 8 characters long</li>
+                    <li>Include uppercase and lowercase letters</li>
+                    <li>Include at least one number and special character</li>
+                </ul>
+            </div>
+        </form>
+    `, [
+        {
+            text: 'Cancel',
+            class: 'bg-gray-500 hover:bg-gray-600',
+            onclick: 'closeModal()'
+        },
+        {
+            text: 'Update Password',
+            class: 'bg-blue-500 hover:bg-blue-600',
+            onclick: 'updatePassword()'
+        }
+    ]);
+    
+    showModal(modal);
+}
+
+function updatePassword() {
+    const current = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirm = document.getElementById('confirmPassword').value;
+    
+    if (!current || !newPassword || !confirm) {
+        showError('Please fill in all password fields');
+        return;
+    }
+    
+    if (newPassword !== confirm) {
+        showError('New passwords do not match');
+        return;
+    }
+    
+    if (newPassword.length < 8) {
+        showError('Password must be at least 8 characters long');
+        return;
+    }
+    
+    // Here you would normally verify the current password and update
+    closeModal();
+    showSuccess('Password updated successfully');
+}
+
+// Preference Update Functions
+function updateTheme(theme) {
+    currentUser.preferences.theme = theme;
+    showSuccess(`Theme changed to ${theme}`);
+    // Apply theme changes to the UI
+    applyTheme(theme);
+}
+
+function updateLanguage(language) {
+    currentUser.preferences.language = language;
+    showSuccess('Language preference updated');
+}
+
+function updateAutoRefresh(enabled) {
+    currentUser.preferences.dashboard.autoRefresh = enabled;
+    showSuccess(`Auto-refresh ${enabled ? 'enabled' : 'disabled'}`);
+}
+
+function updateRefreshInterval(interval) {
+    currentUser.preferences.dashboard.refreshInterval = parseInt(interval);
+    showSuccess(`Refresh interval set to ${interval} seconds`);
+}
+
+function updateNotificationPreference(type, enabled) {
+    currentUser.preferences.notifications[type] = enabled;
+    showSuccess(`${type} notifications ${enabled ? 'enabled' : 'disabled'}`);
+}
+
+// Utility Functions
+function getInitials(name) {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+}
+
+function formatDate(dateString) {
+    return new Date(dateString).toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+    });
+}
+
+function formatDateTime(date) {
+    return date.toLocaleString('en-IN', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function formatTimeAgo(date) {
+    const now = new Date();
+    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    return `${Math.floor(diffInMinutes / 1440)}d ago`;
+}
+
+// Modal System for Profile Actions
+function createModal(title, content, buttons = []) {
+    return `
+        <div id="profileModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-hidden">
+                <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">${title}</h3>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="p-6 max-h-96 overflow-y-auto">
+                    ${content}
+                </div>
+                
+                ${buttons.length > 0 ? `
+                    <div class="flex justify-end space-x-3 p-6 border-t border-gray-200">
+                        ${buttons.map(btn => `
+                            <button onclick="${btn.onclick}" class="px-4 py-2 rounded-lg text-white font-medium transition-colors ${btn.class}">
+                                ${btn.text}
+                            </button>
+                        `).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+
+function showModal(modalHtml) {
+    // Remove existing modal if any
+    const existingModal = document.getElementById('profileModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add new modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+    const modal = document.getElementById('profileModal');
+    if (modal) {
+        modal.remove();
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// Settings Management
+function showSettings() {
+    const modal = createModal('System Settings', `
+        <div class="space-y-6">
+            <!-- Dashboard Settings -->
+            <div>
+                <h4 class="font-medium text-gray-900 mb-3">Dashboard Settings</h4>
+                <div class="space-y-3">
+                    <label class="flex items-center justify-between">
+                        <span class="text-sm text-gray-700">Show welcome message</span>
+                        <input type="checkbox" checked class="toggle-checkbox">
+                    </label>
+                    <label class="flex items-center justify-between">
+                        <span class="text-sm text-gray-700">Enable animations</span>
+                        <input type="checkbox" checked class="toggle-checkbox">
+                    </label>
+                    <label class="flex items-center justify-between">
+                        <span class="text-sm text-gray-700">Compact view</span>
+                        <input type="checkbox" class="toggle-checkbox">
+                    </label>
+                </div>
+            </div>
+
+            <!-- Data Settings -->
+            <div>
+                <h4 class="font-medium text-gray-900 mb-3">Data & Storage</h4>
+                <div class="space-y-3">
+                    <button onclick="clearCache()" class="w-full text-left text-sm text-gray-700 p-2 hover:bg-gray-50 rounded">
+                        Clear browser cache
+                    </button>
+                    <button onclick="exportUserData()" class="w-full text-left text-sm text-gray-700 p-2 hover:bg-gray-50 rounded">
+                        Export my data
+                    </button>
+                    <button onclick="resetSettings()" class="w-full text-left text-sm text-red-600 p-2 hover:bg-red-50 rounded">
+                        Reset all settings
+                    </button>
+                </div>
+            </div>
+
+            <!-- Account Actions -->
+            <div>
+                <h4 class="font-medium text-gray-900 mb-3">Account Actions</h4>
+                <div class="space-y-3">
+                    <button onclick="downloadAccountData()" class="w-full text-left text-sm text-gray-700 p-2 hover:bg-gray-50 rounded">
+                        Download account data
+                    </button>
+                    <button onclick="requestAccountDeletion()" class="w-full text-left text-sm text-red-600 p-2 hover:bg-red-50 rounded">
+                        Request account deletion
+                    </button>
+                </div>
+            </div>
+        </div>
+    `, [
+        {
+            text: 'Close',
+            class: 'bg-gray-500 hover:bg-gray-600',
+            onclick: 'closeModal()'
+        },
+        {
+            text: 'Save Settings',
+            class: 'bg-blue-500 hover:bg-blue-600',
+            onclick: 'saveSettings()'
+        }
+    ]);
+    
+    showModal(modal);
+}
+
+function saveSettings() {
+    closeModal();
+    showSuccess('Settings saved successfully');
+}
+
+function clearCache() {
+    if (confirm('Are you sure you want to clear the cache? This will refresh the page.')) {
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.reload();
+    }
+}
+
+function exportUserData() {
+    const userData = {
+        profile: currentUser,
+        exportDate: new Date().toISOString(),
+        version: '1.0'
+    };
+    
+    const dataStr = JSON.stringify(userData, null, 2);
+    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = `profile_data_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    
+    showSuccess('User data exported successfully');
+}
+
+function resetSettings() {
+    if (confirm('Are you sure you want to reset all settings to default? This action cannot be undone.')) {
+        // Reset to default preferences
+        currentUser.preferences = {
+            theme: 'light',
+            notifications: {
+                email: true,
+                push: true,
+                sms: false
+            },
+            dashboard: {
+                autoRefresh: true,
+                refreshInterval: 30,
+                defaultView: 'dashboard'
+            },
+            language: 'en'
+        };
+        
+        closeModal();
+        showProfile(); // Refresh profile display
+        showSuccess('Settings reset to default');
+    }
+}
+
+function downloadAccountData() {
+    const accountData = {
+        profile: currentUser,
+        activityLog: [
+            { action: 'login', timestamp: new Date(), details: 'User logged in' },
+            { action: 'bulk_assign', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), details: 'Bulk assigned 15 orders' },
+            { action: 'export', timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000), details: 'Exported orders report' }
+        ],
+        permissions: currentUser.permissions,
+        exportDate: new Date().toISOString()
+    };
+    
+    const dataStr = JSON.stringify(accountData, null, 2);
+    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = `account_data_${currentUser.id}_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    
+    showSuccess('Account data downloaded successfully');
+}
+
+function requestAccountDeletion() {
+    const modal = createModal('Request Account Deletion', `
+        <div class="space-y-4">
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div class="flex">
+                    <i class="fas fa-exclamation-triangle text-red-400 mr-3 mt-1"></i>
+                    <div>
+                        <h4 class="text-sm font-medium text-red-800">Warning</h4>
+                        <p class="text-sm text-red-700 mt-1">
+                            This action will permanently delete your account and all associated data. 
+                            This cannot be undone.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Type "DELETE" to confirm:
+                </label>
+                <input type="text" id="deleteConfirmation" class="w-full border border-gray-300 rounded-md px-3 py-2" placeholder="DELETE">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Reason for deletion (optional):
+                </label>
+                <textarea id="deletionReason" rows="3" class="w-full border border-gray-300 rounded-md px-3 py-2" placeholder="Please tell us why you're deleting your account..."></textarea>
+            </div>
+        </div>
+    `, [
+        {
+            text: 'Cancel',
+            class: 'bg-gray-500 hover:bg-gray-600',
+            onclick: 'closeModal()'
+        },
+        {
+            text: 'Request Deletion',
+            class: 'bg-red-500 hover:bg-red-600',
+            onclick: 'confirmAccountDeletion()'
+        }
+    ]);
+    
+    showModal(modal);
+}
+
+function confirmAccountDeletion() {
+    const confirmation = document.getElementById('deleteConfirmation').value;
+    const reason = document.getElementById('deletionReason').value;
+    
+    if (confirmation !== 'DELETE') {
+        showError('Please type "DELETE" to confirm account deletion');
+        return;
+    }
+    
+    // In a real application, this would send a request to the server
+    closeModal();
+    showInfo('Account deletion request submitted. You will be contacted within 24 hours.');
+}
+
+// Two-Factor Authentication Management
+function manage2FA() {
+    const modal = createModal('Two-Factor Authentication', `
+        <div class="space-y-6">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-shield-check text-green-600 text-2xl"></i>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-900">2FA is Currently Enabled</h4>
+                <p class="text-sm text-gray-600">Your account is protected with two-factor authentication</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h5 class="font-medium text-gray-900 mb-2">Backup Codes</h5>
+                    <p class="text-sm text-gray-600 mb-3">
+                        Use these codes if you lose access to your authenticator device.
+                    </p>
+                    <div class="grid grid-cols-2 gap-2 text-sm font-mono">
+                        <div class="bg-white p-2 rounded border">ABC123-456789</div>
+                        <div class="bg-white p-2 rounded border">DEF456-789012</div>
+                        <div class="bg-white p-2 rounded border">GHI789-012345</div>
+                        <div class="bg-white p-2 rounded border">JKL012-345678</div>
+                    </div>
+                    <button onclick="regenerateBackupCodes()" class="mt-3 text-sm text-blue-600 hover:text-blue-800">
+                        Generate new codes
+                    </button>
+                </div>
+                
+                <div class="space-y-3">
+                    <button onclick="reconfigure2FA()" class="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                        <div class="font-medium text-gray-900">Reconfigure 2FA</div>
+                        <div class="text-sm text-gray-600">Set up with a new device</div>
+                    </button>
+                    
+                    <button onclick="disable2FA()" class="w-full text-left p-3 border border-red-200 rounded-lg hover:bg-red-50 text-red-600">
+                        <div class="font-medium">Disable 2FA</div>
+                        <div class="text-sm">Remove two-factor authentication</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `, [
+        {
+            text: 'Close',
+            class: 'bg-gray-500 hover:bg-gray-600',
+            onclick: 'closeModal()'
+        }
+    ]);
+    
+    showModal(modal);
+}
+
+function regenerateBackupCodes() {
+    if (confirm('Generate new backup codes? This will invalidate your current codes.')) {
+        showSuccess('New backup codes generated');
+        // Here you would regenerate the codes display
+    }
+}
+
+function reconfigure2FA() {
+    closeModal();
+    showInfo('2FA reconfiguration would redirect to setup page');
+}
+
+function disable2FA() {
+    if (confirm('Are you sure you want to disable two-factor authentication? This will make your account less secure.')) {
+        closeModal();
+        showWarning('Two-factor authentication disabled');
+    }
+}
+
+// Theme Application Function
+function applyTheme(theme) {
+    const body = document.body;
+    
+    // Remove existing theme classes
+    body.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+    
+    // Apply new theme
+    switch (theme) {
+        case 'dark':
+            body.classList.add('theme-dark');
+            break;
+        case 'auto':
+            body.classList.add('theme-auto');
+            // Check system preference
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                body.classList.add('theme-dark');
+            }
+            break;
+        default:
+            body.classList.add('theme-light');
+    }
+}
+
+// Integration with main navigation
+function initializeProfileSection() {
+    // Add event listener for profile navigation
+    const profileNavItem = document.querySelector('a[href="#profile"]');
+    if (profileNavItem) {
+        profileNavItem.addEventListener('click', function(e) {
+            e.preventDefault();
+            showProfile();
+            
+            // Update navigation active state
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => item.classList.remove('active'));
+            this.classList.add('active');
+        });
+    }
+    
+    // Apply saved theme on initialization
+    applyTheme(currentUser.preferences.theme);
+}
+
+// Auto-save profile changes
+function autoSaveProfile() {
+    // In a real application, this would save to a backend
+    localStorage.setItem('userProfile', JSON.stringify(currentUser));
+}
+
+// Load profile from storage
+function loadProfileFromStorage() {
+    const savedProfile = localStorage.getItem('userProfile');
+    if (savedProfile) {
+        try {
+            const parsed = JSON.parse(savedProfile);
+            currentUser = { ...currentUser, ...parsed };
+        } catch (e) {
+            console.error('Error loading saved profile:', e);
+        }
+    }
+}
+
+// Initialize profile system when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    loadProfileFromStorage();
+    initializeProfileSection();
+    
+    // Auto-save profile changes every 30 seconds
+    setInterval(autoSaveProfile, 30000);
+});
+
+// Export functions for use in main dashboard
+window.profileManager = {
+    showProfile,
+    currentUser,
+    updateTheme,
+    updateLanguage,
+    showSettings
+};
+// profile section ends here
+
+
+// orders section starts here
+
+// Order Management System for Delivery Dashboard
+
+// Global order management variables
+let orderFilters = {
+    status: 'all',
+    paymentMethod: 'all',
+    dateRange: 'today',
+    searchTerm: '',
+    sortBy: 'createdAt',
+    sortOrder: 'desc'
+};
+
+let selectedOrders = [];
+let orderTemplates = [];
+
+// Order Management Main View Generator
+function generateOrderManagementSection() {
+    return `
+        <div class="order-management-section">
+            <!-- Order Management Header -->
+            <div class="glass-effect rounded-xl shadow-xl p-6 mb-8">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center">
+                    <div class="mb-4 lg:mb-0">
+                        <h1 class="text-3xl font-bold text-gray-800 mb-2">Order Management</h1>
+                        <p class="text-gray-600">Create, track, and manage all delivery orders</p>
+                        <div class="mt-2 flex items-center space-x-4 text-sm text-gray-500">
+                            <span><i class="fas fa-box mr-1"></i>Total Orders: ${orders.length}</span>
+                            <span><i class="fas fa-clock mr-1"></i>Pending: ${orders.filter(o => o.status !== 'delivered').length}</span>
+                            <span><i class="fas fa-check-circle mr-1"></i>Completed: ${orders.filter(o => o.status === 'delivered').length}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="createNewOrder()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-plus mr-2"></i>New Order
+                        </button>
+                        <button onclick="showBulkActions()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-layer-group mr-2"></i>Bulk Actions
+                        </button>
+                        <button onclick="importOrders()" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-upload mr-2"></i>Import
+                        </button>
+                        <button onclick="exportOrders()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-download mr-2"></i>Export
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+                ${generateQuickStatsCards()}
+            </div>
+
+            <!-- Filters and Search -->
+            <div class="glass-effect rounded-xl shadow-xl p-6 mb-8">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
+                    <div class="flex flex-wrap gap-4">
+                        <!-- Search -->
+                        <div class="relative">
+                            <input type="text" id="orderSearchInput" placeholder="Search orders..." 
+                                   value="${orderFilters.searchTerm}"
+                                   onkeyup="handleOrderSearch(this.value)"
+                                   class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        </div>
+
+                        <!-- Status Filter -->
+                        <select id="statusFilterSelect" onchange="updateOrderFilter('status', this.value)" 
+                                class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                            <option value="all">All Status</option>
+                            <option value="packed" ${orderFilters.status === 'packed' ? 'selected' : ''}>Packed</option>
+                            <option value="assigned" ${orderFilters.status === 'assigned' ? 'selected' : ''}>Assigned</option>
+                            <option value="picked" ${orderFilters.status === 'picked' ? 'selected' : ''}>Out for Delivery</option>
+                            <option value="delivered" ${orderFilters.status === 'delivered' ? 'selected' : ''}>Delivered</option>
+                        </select>
+
+                        <!-- Payment Filter -->
+                        <select id="paymentFilterSelect" onchange="updateOrderFilter('paymentMethod', this.value)" 
+                                class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                            <option value="all">All Payment Methods</option>
+                            <option value="COD" ${orderFilters.paymentMethod === 'COD' ? 'selected' : ''}>Cash on Delivery</option>
+                            <option value="Online" ${orderFilters.paymentMethod === 'Online' ? 'selected' : ''}>Online Payment</option>
+                        </select>
+
+                        <!-- Date Range Filter -->
+                        <select id="dateRangeSelect" onchange="updateOrderFilter('dateRange', this.value)" 
+                                class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                            <option value="today" ${orderFilters.dateRange === 'today' ? 'selected' : ''}>Today</option>
+                            <option value="yesterday" ${orderFilters.dateRange === 'yesterday' ? 'selected' : ''}>Yesterday</option>
+                            <option value="week" ${orderFilters.dateRange === 'week' ? 'selected' : ''}>This Week</option>
+                            <option value="month" ${orderFilters.dateRange === 'month' ? 'selected' : ''}>This Month</option>
+                            <option value="custom" ${orderFilters.dateRange === 'custom' ? 'selected' : ''}>Custom Range</option>
+                        </select>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button onclick="resetOrderFilters()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            <i class="fas fa-undo mr-2"></i>Reset
+                        </button>
+                        <button onclick="saveFilterPreset()" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                            <i class="fas fa-save mr-2"></i>Save Filter
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Advanced Filters Toggle -->
+                <div class="mt-4">
+                    <button onclick="toggleAdvancedFilters()" class="text-blue-600 hover:text-blue-800 text-sm">
+                        <i class="fas fa-filter mr-1"></i>Advanced Filters
+                        <i class="fas fa-chevron-down ml-1" id="advancedFilterIcon"></i>
+                    </button>
+                    
+                    <div id="advancedFilters" class="hidden mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Amount Range</label>
+                            <div class="flex space-x-2">
+                                <input type="number" placeholder="Min" class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm">
+                                <input type="number" placeholder="Max" class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Customer Type</label>
+                            <select class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                                <option value="all">All Customers</option>
+                                <option value="new">New Customers</option>
+                                <option value="returning">Returning Customers</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Area</label>
+                            <select class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                                <option value="all">All Areas</option>
+                                <option value="zone1">Zone 1</option>
+                                <option value="zone2">Zone 2</option>
+                                <option value="zone3">Zone 3</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bulk Selection Bar -->
+            <div id="bulkSelectionBar" class="hidden glass-effect rounded-xl p-4 mb-6 border-l-4 border-blue-500">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm font-medium text-gray-700">
+                            <span id="selectedCount">0</span> orders selected
+                        </span>
+                        <button onclick="selectAllVisibleOrders()" class="text-sm text-blue-600 hover:text-blue-800">
+                            Select all visible
+                        </button>
+                        <button onclick="clearOrderSelection()" class="text-sm text-gray-600 hover:text-gray-800">
+                            Clear selection
+                        </button>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="bulkUpdateStatus()" class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">
+                            Update Status
+                        </button>
+                        <button onclick="bulkAssignDriver()" class="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600">
+                            Assign Driver
+                        </button>
+                        <button onclick="bulkExport()" class="px-3 py-1 bg-orange-500 text-white rounded text-sm hover:bg-orange-600">
+                            Export Selected
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders Table -->
+            <div class="glass-effect rounded-xl shadow-xl">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-800">Orders List</h3>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-gray-600">Sort by:</span>
+                            <select onchange="updateOrderSort(this.value)" class="border border-gray-300 rounded px-3 py-1 text-sm">
+                                <option value="createdAt_desc">Newest First</option>
+                                <option value="createdAt_asc">Oldest First</option>
+                                <option value="amount_desc">Amount (High to Low)</option>
+                                <option value="amount_asc">Amount (Low to High)</option>
+                                <option value="status_asc">Status (A-Z)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left">
+                                    <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)" 
+                                           class="rounded border-gray-300">
+                                </th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Order Details</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Customer</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Items</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Status</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Payment</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Amount</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersManagementTableBody">
+                            ${generateOrderTableRows()}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="px-6 py-4 border-t border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <div class="text-sm text-gray-600">
+                            Showing <span id="showingFrom">1</span> to <span id="showingTo">10</span> of <span id="totalOrders">${orders.length}</span> orders
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="previousPage()" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50">
+                                Previous
+                            </button>
+                            <div class="flex space-x-1" id="paginationNumbers">
+                                <!-- Pagination numbers will be generated here -->
+                            </div>
+                            <button onclick="nextPage()" class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50">
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+// Generate Quick Stats Cards
+function generateQuickStatsCards() {
+    const stats = calculateOrderStats();
+    
+    return `
+        <div class="glass-effect rounded-xl p-4 text-center">
+            <div class="text-2xl font-bold text-blue-600 mb-1">${stats.total}</div>
+            <div class="text-xs text-gray-600">Total Orders</div>
+        </div>
+        <div class="glass-effect rounded-xl p-4 text-center">
+            <div class="text-2xl font-bold text-orange-600 mb-1">${stats.pending}</div>
+            <div class="text-xs text-gray-600">Pending</div>
+        </div>
+        <div class="glass-effect rounded-xl p-4 text-center">
+            <div class="text-2xl font-bold text-purple-600 mb-1">${stats.inTransit}</div>
+            <div class="text-xs text-gray-600">In Transit</div>
+        </div>
+        <div class="glass-effect rounded-xl p-4 text-center">
+            <div class="text-2xl font-bold text-green-600 mb-1">${stats.delivered}</div>
+            <div class="text-xs text-gray-600">Delivered</div>
+        </div>
+        <div class="glass-effect rounded-xl p-4 text-center">
+            <div class="text-2xl font-bold text-red-600 mb-1">${stats.cod}</div>
+            <div class="text-xs text-gray-600">COD Orders</div>
+        </div>
+        <div class="glass-effect rounded-xl p-4 text-center">
+            <div class="text-2xl font-bold text-teal-600 mb-1">₹${stats.revenue}</div>
+            <div class="text-xs text-gray-600">Today's Revenue</div>
+        </div>
+    `;
+}
+
+// Generate Order Table Rows
+function generateOrderTableRows() {
+    const filteredOrders = getFilteredOrders();
+    
+    return filteredOrders.map(order => `
+        <tr class="border-b border-gray-200 hover:bg-gray-50 ${selectedOrders.includes(order.id) ? 'bg-blue-50' : ''}">
+            <td class="px-4 py-3">
+                <input type="checkbox" ${selectedOrders.includes(order.id) ? 'checked' : ''} 
+                       onchange="toggleOrderSelection('${order.id}', this.checked)" 
+                       class="rounded border-gray-300">
+            </td>
+            <td class="px-4 py-3">
+                <div class="flex flex-col">
+                    <span class="font-medium text-gray-900">${order.id}</span>
+                    <span class="text-xs text-gray-500">${formatDateTime(order.createdAt)}</span>
+                    ${order.driverName ? `<span class="text-xs text-blue-600"><i class="fas fa-user mr-1"></i>${order.driverName}</span>` : ''}
+                </div>
+            </td>
+            <td class="px-4 py-3">
+                <div class="flex flex-col">
+                    <span class="font-medium text-gray-900">${order.customerName}</span>
+                    <span class="text-xs text-gray-500">${order.customerPhone}</span>
+                    <span class="text-xs text-gray-500 max-w-xs truncate">${order.address}</span>
+                </div>
+            </td>
+            <td class="px-4 py-3">
+                <div class="text-sm text-gray-900">
+                    ${order.items.slice(0, 2).join(', ')}
+                    ${order.items.length > 2 ? `<br><span class="text-xs text-gray-500">+${order.items.length - 2} more</span>` : ''}
+                </div>
+            </td>
+            <td class="px-4 py-3">
+                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeClass(order.status)}">
+                    ${formatStatus(order.status)}
+                </span>
+                ${getStatusTimestamp(order)}
+            </td>
+            <td class="px-4 py-3">
+                <span class="inline-flex px-2 py-1 text-xs rounded-full ${order.paymentMethod === 'COD' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
+                    ${order.paymentMethod}
+                </span>
+            </td>
+            <td class="px-4 py-3">
+                <span class="font-semibold text-gray-900">₹${order.amount.toLocaleString()}</span>
+            </td>
+            <td class="px-4 py-3">
+                <div class="flex space-x-1">
+                    <button onclick="viewOrderDetails('${order.id}')" class="text-blue-600 hover:text-blue-800 p-1 rounded" title="View Details">
+                        <i class="fas fa-eye text-sm"></i>
+                    </button>
+                    <button onclick="editOrder('${order.id}')" class="text-green-600 hover:text-green-800 p-1 rounded" title="Edit Order">
+                        <i class="fas fa-edit text-sm"></i>
+                    </button>
+                    ${order.status !== 'delivered' ? `
+                        <button onclick="quickStatusUpdate('${order.id}')" class="text-purple-600 hover:text-purple-800 p-1 rounded" title="Update Status">
+                            <i class="fas fa-arrow-up text-sm"></i>
+                        </button>
+                    ` : ''}
+                    <button onclick="duplicateOrder('${order.id}')" class="text-orange-600 hover:text-orange-800 p-1 rounded" title="Duplicate">
+                        <i class="fas fa-copy text-sm"></i>
+                    </button>
+                    <div class="relative inline-block">
+                        <button onclick="showOrderActions('${order.id}')" class="text-gray-600 hover:text-gray-800 p-1 rounded" title="More Actions">
+                            <i class="fas fa-ellipsis-v text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Order Management Functions
+function showOrderManagement() {
+    const mainContent = document.querySelector('.main-content .container');
+    if (mainContent) {
+        mainContent.innerHTML = generateOrderManagementSection();
+        updateOrderDisplay();
+        showSuccess('Order Management loaded');
+    }
+}
+
+function createNewOrder() {
+    const modal = createModal('Create New Order', `
+        <form id="newOrderForm" class="space-y-4">
+            <!-- Customer Information -->
+            <div class="border-b border-gray-200 pb-4">
+                <h4 class="font-medium text-gray-900 mb-3">Customer Information</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Customer Name *</label>
+                        <input type="text" id="customerName" required class="w-full border border-gray-300 rounded-md px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+                        <input type="tel" id="customerPhone" required class="w-full border border-gray-300 rounded-md px-3 py-2">
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Address *</label>
+                    <textarea id="deliveryAddress" required rows="3" class="w-full border border-gray-300 rounded-md px-3 py-2"></textarea>
+                </div>
+            </div>
+
+            <!-- Order Details -->
+            <div class="border-b border-gray-200 pb-4">
+                <h4 class="font-medium text-gray-900 mb-3">Order Details</h4>
+                <div id="orderItems">
+                    <div class="order-item flex space-x-2 mb-2">
+                        <input type="text" placeholder="Item name" class="flex-1 border border-gray-300 rounded-md px-3 py-2">
+                        <input type="number" placeholder="Qty" min="1" value="1" class="w-20 border border-gray-300 rounded-md px-3 py-2">
+                        <input type="number" placeholder="Price" min="0" step="0.01" class="w-32 border border-gray-300 rounded-md px-3 py-2">
+                        <button type="button" onclick="removeOrderItem(this)" class="text-red-600 hover:text-red-800 p-2">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <button type="button" onclick="addOrderItem()" class="text-blue-600 hover:text-blue-800 text-sm">
+                    <i class="fas fa-plus mr-1"></i>Add Item
+                </button>
+            </div>
+
+            <!-- Payment & Delivery -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method *</label>
+                    <select id="paymentMethod" required class="w-full border border-gray-300 rounded-md px-3 py-2">
+                        <option value="">Select payment method</option>
+                        <option value="COD">Cash on Delivery</option>
+                        <option value="Online">Online Payment</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                    <select id="orderPriority" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                        <option value="normal">Normal</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Special Instructions -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Special Instructions</label>
+                <textarea id="specialInstructions" rows="2" placeholder="Any special delivery instructions..." 
+                          class="w-full border border-gray-300 rounded-md px-3 py-2"></textarea>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h5 class="font-medium text-gray-900 mb-2">Order Summary</h5>
+                <div class="flex justify-between text-sm">
+                    <span>Subtotal:</span>
+                    <span id="orderSubtotal">₹0.00</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span>Delivery Charges:</span>
+                    <span id="deliveryCharges">₹50.00</span>
+                </div>
+                <div class="flex justify-between font-semibold border-t border-gray-200 pt-2 mt-2">
+                    <span>Total:</span>
+                    <span id="orderTotal">₹50.00</span>
+                </div>
+            </div>
+        </form>
+    `, [
+        {
+            text: 'Cancel',
+            class: 'bg-gray-500 hover:bg-gray-600',
+            onclick: 'closeModal()'
+        },
+        {
+            text: 'Save as Draft',
+            class: 'bg-yellow-500 hover:bg-yellow-600',
+            onclick: 'saveOrderDraft()'
+        },
+        {
+            text: 'Create Order',
+            class: 'bg-blue-500 hover:bg-blue-600',
+            onclick: 'submitNewOrder()'
+        }
+    ]);
+    
+    showModal(modal);
+    setupOrderFormListeners();
+}
+
+function setupOrderFormListeners() {
+    // Auto-calculate totals when item prices change
+    document.addEventListener('input', function(e) {
+        if (e.target.type === 'number' && e.target.closest('.order-item')) {
+            calculateOrderTotal();
+        }
+    });
+}
+
+function addOrderItem() {
+    const itemsContainer = document.getElementById('orderItems');
+    const newItem = document.createElement('div');
+    newItem.className = 'order-item flex space-x-2 mb-2';
+    newItem.innerHTML = `
+        <input type="text" placeholder="Item name" class="flex-1 border border-gray-300 rounded-md px-3 py-2">
+        <input type="number" placeholder="Qty" min="1" value="1" class="w-20 border border-gray-300 rounded-md px-3 py-2">
+        <input type="number" placeholder="Price" min="0" step="0.01" class="w-32 border border-gray-300 rounded-md px-3 py-2">
+        <button type="button" onclick="removeOrderItem(this)" class="text-red-600 hover:text-red-800 p-2">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    itemsContainer.appendChild(newItem);
+}
+
+function removeOrderItem(button) {
+    button.closest('.order-item').remove();
+    calculateOrderTotal();
+}
+
+function calculateOrderTotal() {
+    let subtotal = 0;
+    const items = document.querySelectorAll('.order-item');
+    
+    items.forEach(item => {
+        const qty = parseFloat(item.querySelector('input[placeholder="Qty"]').value) || 0;
+        const price = parseFloat(item.querySelector('input[placeholder="Price"]').value) || 0;
+        subtotal += qty * price;
+    });
+    
+    const deliveryCharges = 50; // Fixed delivery charge
+    const total = subtotal + deliveryCharges;
+    
+    document.getElementById('orderSubtotal').textContent = `₹${subtotal.toFixed(2)}`;
+    document.getElementById('orderTotal').textContent = `₹${total.toFixed(2)}`;
+}
+
+function submitNewOrder() {
+    const form = document.getElementById('newOrderForm');
+    const formData = new FormData(form);
+    
+    // Validate required fields
+    const customerName = document.getElementById('customerName').value;
+    const customerPhone = document.getElementById('customerPhone').value;
+    const deliveryAddress = document.getElementById('deliveryAddress').value;
+    const paymentMethod = document.getElementById('paymentMethod').value;
+    
+    if (!customerName || !customerPhone || !deliveryAddress || !paymentMethod) {
+        showError('Please fill in all required fields');
+        return;
+    }
+    
+    // Collect order items
+    const items = [];
+    document.querySelectorAll('.order-item').forEach(item => {
+        const name = item.querySelector('input[placeholder="Item name"]').value;
+        const qty = item.querySelector('input[placeholder="Qty"]').value;
+        const price = item.querySelector('input[placeholder="Price"]').value;
+        
+        if (name && qty && price) {
+            items.push({ name, quantity: parseInt(qty), price: parseFloat(price) });
+        }
+    });
+    
+    if (items.length === 0) {
+        showError('Please add at least one item to the order');
+        return;
+    }
+    
+    // Calculate total
+    const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+    const total = subtotal + 50; // Add delivery charges
+    
+    // Create new order object
+    const newOrder = {
+        id: `ORD-${String(orders.length + 1).padStart(3, '0')}`,
+        customerName: customerName,
+        customerPhone: customerPhone,
+        address: deliveryAddress,
+        items: items.map(item => item.name),
+        itemDetails: items,
+        status: 'packed',
+        paymentMethod: paymentMethod,
+        amount: total,
+        priority: document.getElementById('orderPriority').value || 'normal',
+        specialInstructions: document.getElementById('specialInstructions').value,
+        createdAt: new Date(),
+        packedAt: new Date()
+    };
+    
+    // Add to orders array
+    orders.unshift(newOrder);
+    
+    closeModal();
+    updateOrderDisplay();
+    updateDashboardMetrics();
+    showSuccess(`Order ${newOrder.id} created successfully`);
+}
+
+// Order Editing Functions
+function editOrder(orderId) {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) {
+        showError('Order not found');
+        return;
+    }
+    
+    const modal = createModal(`Edit Order ${orderId}`, `
+        <form id="editOrderForm" class="space-y-4">
+            <!-- Customer Information -->
+            <div class="border-b border-gray-200 pb-4">
+                <h4 class="font-medium text-gray-900 mb-3">Customer Information</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
+                        <input type="text" id="editCustomerName" value="${order.customerName}" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                        <input type="tel" id="editCustomerPhone" value="${order.customerPhone}" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Address</label>
+                    <textarea id="editDeliveryAddress" rows="3" class="w-full border border-gray-300 rounded-md px-3 py-2">${order.address}</textarea>
+                </div>
+            </div>
+
+            <!-- Order Status -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Order Status</label>
+                    <select id="editOrderStatus" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                        <option value="packed" ${order.status === 'packed' ? 'selected' : ''}>Packed</option>
+                        <option value="assigned" ${order.status === 'assigned' ? 'selected' : ''}>Assigned</option>
+                        <option value="picked" ${order.status === 'picked' ? 'selected' : ''}>Out for Delivery</option>
+                        <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Delivered</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                    <select id="editPaymentMethod" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                        <option value="COD" ${order.paymentMethod === 'COD' ? 'selected' : ''}>Cash on Delivery</option>
+                        <option value="Online" ${order.paymentMethod === 'Online' ? 'selected' : ''}>Online Payment</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Driver Assignment (if applicable) -->
+            ${order.status === 'assigned' || order.status === 'picked' ? `
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Assigned Driver</label>
+                    <select id="editAssignedDriver" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                        <option value="">Select Driver</option>
+                        <option value="Raj Kumar" ${order.driverName === 'Raj Kumar' ? 'selected' : ''}>Raj Kumar</option>
+                        <option value="Suresh Sharma" ${order.driverName === 'Suresh Sharma' ? 'selected' : ''}>Suresh Sharma</option>
+                        <option value="Amit Singh" ${order.driverName === 'Amit Singh' ? 'selected' : ''}>Amit Singh</option>
+                        <option value="Rahul Gupta" ${order.driverName === 'Rahul Gupta' ? 'selected' : ''}>Rahul Gupta</option>
+                    </select>
+                </div>
+            ` : ''}
+
+            <!-- Order Items -->
+            <div>
+                <h4 class="font-medium text-gray-900 mb-3">Order Items</h4>
+                <div class="bg-gray-50 rounded-lg p-3">
+                    ${order.items.map(item => `<div class="text-sm text-gray-700">• ${item}</div>`).join('')}
+                </div>
+                <div class="mt-2 text-sm font-semibold">Total Amount: ₹${order.amount.toLocaleString()}</div>
+            </div>
+
+            <!-- Special Instructions -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Special Instructions</label>
+                <textarea id="editSpecialInstructions" rows="2" class="w-full border border-gray-300 rounded-md px-3 py-2">${order.specialInstructions || ''}</textarea>
+            </div>
+
+            <!-- Order Timeline -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h5 class="font-medium text-gray-900 mb-2">Order Timeline</h5>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span>Created:</span>
+                        <span>${formatDateTime(order.createdAt)}</span>
+                    </div>
+                    ${order.packedAt ? `
+                        <div class="flex justify-between">
+                            <span>Packed:</span>
+                            <span>${formatDateTime(order.packedAt)}</span>
+                        </div>
+                    ` : ''}
+                    ${order.assignedAt ? `
+                        <div class="flex justify-between">
+                            <span>Assigned:</span>
+                            <span>${formatDateTime(order.assignedAt)}</span>
+                        </div>
+                    ` : ''}
+                    ${order.pickedAt ? `
+                        <div class="flex justify-between">
+                            <span>Picked:</span>
+                            <span>${formatDateTime(order.pickedAt)}</span>
+                        </div>
+                    ` : ''}
+                    ${order.deliveredAt ? `
+                        <div class="flex justify-between">
+                            <span>Delivered:</span>
+                            <span>${formatDateTime(order.deliveredAt)}</span>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        </form>
+    `, [
+        {
+            text: 'Cancel',
+            class: 'bg-gray-500 hover:bg-gray-600',
+            onclick: 'closeModal()'
+        },
+        {
+            text: 'Update Order',
+            class: 'bg-blue-500 hover:bg-blue-600',
+            onclick: `updateOrder('${orderId}')`
+        }
+    ]);
+    
+    showModal(modal);
+}
+
+function updateOrder(orderId) {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) {
+        showError('Order not found');
+        return;
+    }
+    
+    // Get updated values
+    const customerName = document.getElementById('editCustomerName').value;
+    const customerPhone = document.getElementById('editCustomerPhone').value;
+    const address = document.getElementById('editDeliveryAddress').value;
+    const status = document.getElementById('editOrderStatus').value;
+    const paymentMethod = document.getElementById('editPaymentMethod').value;
+    const specialInstructions = document.getElementById('editSpecialInstructions').value;
+    
+    // Update order object
+    const oldStatus = order.status;
+    order.customerName = customerName;
+    order.customerPhone = customerPhone;
+    order.address = address;
+    order.status = status;
+    order.paymentMethod = paymentMethod;
+    order.specialInstructions = specialInstructions;
+    
+    // Update driver if applicable
+    const driverSelect = document.getElementById('editAssignedDriver');
+    if (driverSelect) {
+        order.driverName = driverSelect.value;
+    }
+    
+    // Update timestamps if status changed
+    if (oldStatus !== status) {
+        const now = new Date();
+        switch (status) {
+            case 'assigned':
+                order.assignedAt = now;
+                break;
+            case 'picked':
+                order.pickedAt = now;
+                break;
+            case 'delivered':
+                order.deliveredAt = now;
+                break;
+        }
+    }
+    
+    closeModal();
+    updateOrderDisplay();
+    updateDashboardMetrics();
+    showSuccess(`Order ${orderId} updated successfully`);
+}
+
+// Quick Status Update
+function quickStatusUpdate(orderId) {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+    
+    const statusProgression = {
+        'packed': 'assigned',
+        'assigned': 'picked',
+        'picked': 'delivered'
+    };
+    
+    const nextStatus = statusProgression[order.status];
+    if (nextStatus) {
+        const oldStatus = order.status;
+        order.status = nextStatus;
+        
+        // Update timestamp
+        const now = new Date();
+        switch (nextStatus) {
+            case 'assigned':
+                order.assignedAt = now;
+                order.driverName = `Driver ${Math.floor(Math.random() * 50) + 1}`;
+                break;
+            case 'picked':
+                order.pickedAt = now;
+                break;
+            case 'delivered':
+                order.deliveredAt = now;
+                break;
+        }
+        
+        updateOrderDisplay();
+        updateDashboardMetrics();
+        showSuccess(`Order ${orderId} status updated from ${formatStatus(oldStatus)} to ${formatStatus(nextStatus)}`);
+    }
+}
+
+// Bulk Operations
+function showBulkActions() {
+    if (selectedOrders.length === 0) {
+        showWarning('Please select orders to perform bulk actions');
+        return;
+    }
+    
+    const modal = createModal('Bulk Actions', `
+        <div class="space-y-4">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="flex items-center">
+                    <i class="fas fa-info-circle text-blue-400 mr-3"></i>
+                    <span class="text-sm text-blue-800">
+                        ${selectedOrders.length} orders selected for bulk action
+                    </span>
+                </div>
+            </div>
+            
+            <div class="space-y-3">
+                <button onclick="bulkUpdateStatus()" class="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <div class="flex items-center">
+                        <i class="fas fa-arrow-up text-blue-600 mr-3"></i>
+                        <div>
+                            <div class="font-medium">Update Status</div>
+                            <div class="text-sm text-gray-600">Change status for selected orders</div>
+                        </div>
+                    </div>
+                </button>
+                
+                <button onclick="bulkAssignDriver()" class="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <div class="flex items-center">
+                        <i class="fas fa-user text-green-600 mr-3"></i>
+                        <div>
+                            <div class="font-medium">Assign Driver</div>
+                            <div class="text-sm text-gray-600">Assign driver to selected orders</div>
+                        </div>
+                    </div>
+                </button>
+                
+                <button onclick="bulkExport()" class="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <div class="flex items-center">
+                        <i class="fas fa-download text-orange-600 mr-3"></i>
+                        <div>
+                            <div class="font-medium">Export Selected</div>
+                            <div class="text-sm text-gray-600">Export selected orders to CSV</div>
+                        </div>
+                    </div>
+                </button>
+                
+                <button onclick="bulkPrintLabels()" class="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <div class="flex items-center">
+                        <i class="fas fa-print text-purple-600 mr-3"></i>
+                        <div>
+                            <div class="font-medium">Print Labels</div>
+                            <div class="text-sm text-gray-600">Print shipping labels for selected orders</div>
+                        </div>
+                    </div>
+                </button>
+                
+                <button onclick="bulkDelete()" class="w-full text-left p-3 border border-red-200 rounded-lg hover:bg-red-50 text-red-600">
+                    <div class="flex items-center">
+                        <i class="fas fa-trash text-red-600 mr-3"></i>
+                        <div>
+                            <div class="font-medium">Delete Orders</div>
+                            <div class="text-sm text-red-500">Permanently delete selected orders</div>
+                        </div>
+                    </div>
+                </button>
+            </div>
+        </div>
+    `, [
+        {
+            text: 'Close',
+            class: 'bg-gray-500 hover:bg-gray-600',
+            onclick: 'closeModal()'
+        }
+    ]);
+    
+    showModal(modal);
+}
+
+function bulkUpdateStatus() {
+    closeModal();
+    
+    const statusModal = createModal('Bulk Status Update', `
+        <div class="space-y-4">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <span class="text-sm text-blue-800">
+                    Updating status for ${selectedOrders.length} selected orders
+                </span>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">New Status</label>
+                <select id="bulkStatusSelect" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                    <option value="">Select new status</option>
+                    <option value="packed">Packed</option>
+                    <option value="assigned">Assigned</option>
+                    <option value="picked">Out for Delivery</option>
+                    <option value="delivered">Delivered</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
+                <textarea id="bulkStatusNotes" rows="3" placeholder="Add notes for this status update..." 
+                          class="w-full border border-gray-300 rounded-md px-3 py-2"></textarea>
+            </div>
+        </div>
+    `, [
+        {
+            text: 'Cancel',
+            class: 'bg-gray-500 hover:bg-gray-600',
+            onclick: 'closeModal()'
+        },
+        {
+            text: 'Update Status',
+            class: 'bg-blue-500 hover:bg-blue-600',
+            onclick: 'confirmBulkStatusUpdate()'
+        }
+    ]);
+    
+    showModal(statusModal);
+}
+
+function confirmBulkStatusUpdate() {
+    const newStatus = document.getElementById('bulkStatusSelect').value;
+    const notes = document.getElementById('bulkStatusNotes').value;
+    
+    if (!newStatus) {
+        showError('Please select a new status');
+        return;
+    }
+    
+    let updatedCount = 0;
+    selectedOrders.forEach(orderId => {
+        const order = orders.find(o => o.id === orderId);
+        if (order) {
+            order.status = newStatus;
+            
+            // Update timestamp
+            const now = new Date();
+            switch (newStatus) {
+                case 'assigned':
+                    order.assignedAt = now;
+                    if (!order.driverName) {
+                        order.driverName = `Driver ${Math.floor(Math.random() * 50) + 1}`;
+                    }
+                    break;
+                case 'picked':
+                    order.pickedAt = now;
+                    break;
+                case 'delivered':
+                    order.deliveredAt = now;
+                    break;
+            }
+            
+            if (notes) {
+                order.statusNotes = notes;
+            }
+            
+            updatedCount++;
+        }
+    });
+    
+    closeModal();
+    clearOrderSelection();
+    updateOrderDisplay();
+    updateDashboardMetrics();
+    showSuccess(`${updatedCount} orders updated to ${formatStatus(newStatus)}`);
+}
+
+function bulkAssignDriver() {
+    closeModal();
+    
+    const driverModal = createModal('Bulk Driver Assignment', `
+        <div class="space-y-4">
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <span class="text-sm text-green-800">
+                    Assigning driver to ${selectedOrders.length} selected orders
+                </span>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Select Driver</label>
+                <select id="bulkDriverSelect" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                    <option value="">Select a driver</option>
+                    <option value="Raj Kumar">Raj Kumar</option>
+                    <option value="Suresh Sharma">Suresh Sharma</option>
+                    <option value="Amit Singh">Amit Singh</option>
+                    <option value="Rahul Gupta">Rahul Gupta</option>
+                    <option value="Vikash Yadav">Vikash Yadav</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="flex items-center">
+                    <input type="checkbox" id="updateStatusToAssigned" checked class="mr-2">
+                    <span class="text-sm text-gray-700">Update status to "Assigned"</span>
+                </label>
+            </div>
+        </div>
+    `, [
+        {
+            text: 'Cancel',
+            class: 'bg-gray-500 hover:bg-gray-600',
+            onclick: 'closeModal()'
+        },
+        {
+            text: 'Assign Driver',
+            class: 'bg-green-500 hover:bg-green-600',
+            onclick: 'confirmBulkDriverAssignment()'
+        }
+    ]);
+    
+    showModal(driverModal);
+}
+
+function confirmBulkDriverAssignment() {
+    const driverName = document.getElementById('bulkDriverSelect').value;
+    const updateStatus = document.getElementById('updateStatusToAssigned').checked;
+    
+    if (!driverName) {
+        showError('Please select a driver');
+        return;
+    }
+    
+    let assignedCount = 0;
+    selectedOrders.forEach(orderId => {
+        const order = orders.find(o => o.id === orderId);
+        if (order) {
+            order.driverName = driverName;
+            
+            if (updateStatus) {
+                order.status = 'assigned';
+                order.assignedAt = new Date();
+            }
+            
+            assignedCount++;
+        }
+    });
+    
+    closeModal();
+    clearOrderSelection();
+    updateOrderDisplay();
+    updateDashboardMetrics();
+    showSuccess(`${assignedCount} orders assigned to ${driverName}`);
+}
+
+function bulkExport() {
+    const selectedOrderData = orders.filter(order => selectedOrders.includes(order.id));
+    
+    const csvContent = "data:text/csv;charset=utf-8,"
+        + "Order ID,Customer,Phone,Address,Status,Payment,Amount,Items,Created,Driver\n"
+        + selectedOrderData.map(order => 
+            `${order.id},"${order.customerName}","${order.customerPhone}","${order.address}",${order.status},${order.paymentMethod},${order.amount},"${order.items.join(', ')}",${order.createdAt.toISOString()},${order.driverName || 'N/A'}`
+        ).join("\n");
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `selected_orders_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    closeModal();
+    showSuccess(`${selectedOrderData.length} orders exported successfully`);
+}
+
+function generatePrintLabels(orderData) {
+    return orderData.map(order => `
+        <div class="label">
+            <h3>Delivery Label - ${order.id}</h3>
+            <div class="label-section">
+                <strong>To:</strong><br>
+                ${order.customerName}<br>
+                ${order.customerPhone}<br>
+                ${order.address}
+            </div>
+            <div class="label-section">
+                <strong>Items:</strong> ${order.items.join(', ')}
+            </div>
+            <div class="label-section">
+                <strong>Payment:</strong> ${order.paymentMethod} | 
+                <strong>Amount:</strong> ₹${order.amount}
+            </div>
+            ${order.specialInstructions ? `
+                <div class="label-section">
+                    <strong>Special Instructions:</strong> ${order.specialInstructions}
+                </div>
+            ` : ''}
+        </div>
+    `).join('');
+}
+
+function bulkDelete() {
+    if (confirm(`Are you sure you want to delete ${selectedOrders.length} selected orders? This action cannot be undone.`)) {
+        let deletedCount = 0;
+        selectedOrders.forEach(orderId => {
+            const orderIndex = orders.findIndex(o => o.id === orderId);
+            if (orderIndex > -1) {
+                orders.splice(orderIndex, 1);
+                deletedCount++;
+            }
+        });
+        
+        closeModal();
+        clearOrderSelection();
+        updateOrderDisplay();
+        updateDashboardMetrics();
+        showSuccess(`${deletedCount} orders deleted successfully`);
+    }
+}
+
+// Filter and Search Functions
+function updateOrderFilter(filterType, value) {
+    orderFilters[filterType] = value;
+    updateOrderDisplay();
+}
+
+function handleOrderSearch(searchTerm) {
+    orderFilters.searchTerm = searchTerm.toLowerCase();
+    updateOrderDisplay();
+}
+
+function resetOrderFilters() {
+    orderFilters = {
+        status: 'all',
+        paymentMethod: 'all',
+        dateRange: 'today',
+        searchTerm: '',
+        sortBy: 'createdAt',
+        sortOrder: 'desc'
+    };
+    
+    // Reset form elements
+    document.getElementById('orderSearchInput').value = '';
+    document.getElementById('statusFilterSelect').value = 'all';
+    document.getElementById('paymentFilterSelect').value = 'all';
+    document.getElementById('dateRangeSelect').value = 'today';
+    
+    updateOrderDisplay();
+    showSuccess('Filters reset successfully');
+}
+
+function toggleAdvancedFilters() {
+    const filtersDiv = document.getElementById('advancedFilters');
+    const icon = document.getElementById('advancedFilterIcon');
+    
+    if (filtersDiv.classList.contains('hidden')) {
+        filtersDiv.classList.remove('hidden');
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+    } else {
+        filtersDiv.classList.add('hidden');
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+    }
+}
+
+
+function getFilteredOrders() {
+    let filtered = [...orders];
+    
+    // Apply filters
+    if (orderFilters.status !== 'all') {
+        filtered = filtered.filter(order => order.status === orderFilters.status);
+    }
+    
+    if (orderFilters.paymentMethod !== 'all') {
+        filtered = filtered.filter(order => order.paymentMethod === orderFilters.paymentMethod);
+    }
+    
+    // Date range filter
+    if (orderFilters.dateRange !== 'all') {
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startOfYesterday = new Date(startOfToday);
+        startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+        const startOfWeek = new Date(startOfToday);
+        startOfWeek.setDate(startOfWeek.getDate() - 7);
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        
+        filtered = filtered.filter(order => {
+            const orderDate = new Date(order.createdAt);
+            
+            switch (orderFilters.dateRange) {
+                case 'today':
+                    return orderDate >= startOfToday;
+                case 'yesterday':
+                    return orderDate >= startOfYesterday && orderDate < startOfToday;
+                case 'week':
+                    return orderDate >= startOfWeek;
+                case 'month':
+                    return orderDate >= startOfMonth;
+                default:
+                    return true;
+            }
+        });
+    }
+    
+    // Search filter
+    if (orderFilters.searchTerm) {
+        filtered = filtered.filter(order => 
+            order.id.toLowerCase().includes(orderFilters.searchTerm) ||
+            order.customerName.toLowerCase().includes(orderFilters.searchTerm) ||
+            order.customerPhone.includes(orderFilters.searchTerm) ||
+            order.address.toLowerCase().includes(orderFilters.searchTerm) ||
+            order.items.some(item => item.toLowerCase().includes(orderFilters.searchTerm))
+        );
+    }
+    
+    // Sort orders
+    filtered.sort((a, b) => {
+        let aValue, bValue;
+        
+        switch (orderFilters.sortBy) {
+            case 'createdAt':
+                aValue = new Date(a.createdAt);
+                bValue = new Date(b.createdAt);
+                break;
+            case 'amount':
+                aValue = a.amount;
+                bValue = b.amount;
+                break;
+            case 'status':
+                aValue = a.status;
+                bValue = b.status;
+                break;
+            default:
+                aValue = a.createdAt;
+                bValue = b.createdAt;
+        }
+        
+        if (orderFilters.sortOrder === 'asc') {
+            return aValue > bValue ? 1 : -1;
+        } else {
+            return aValue < bValue ? 1 : -1;
+        }
+    });
+    
+    return filtered;
+}
+
+function toggleSelectAll(selectAll) {
+    const filteredOrders = getFilteredOrders();
+    
+    if (selectAll) {
+        filteredOrders.forEach(order => {
+            if (!selectedOrders.includes(order.id)) {
+                selectedOrders.push(order.id);
+            }
+        });
+    } else {
+        selectedOrders = [];
+    }
+    
+    updateOrderDisplay();
+    updateSelectionUI();
+}
+
+function selectAllVisibleOrders() {
+    const filteredOrders = getFilteredOrders();
+    filteredOrders.forEach(order => {
+        if (!selectedOrders.includes(order.id)) {
+            selectedOrders.push(order.id);
+        }
+    });
+    
+    updateOrderDisplay();
+    updateSelectionUI();
+}
+
+function clearOrderSelection() {
+    selectedOrders = [];
+    updateOrderDisplay();
+    updateSelectionUI();
+}
+
+function updateSelectionUI() {
+    const bulkBar = document.getElementById('bulkSelectionBar');
+    const countElement = document.getElementById('selectedCount');
+    
+    if (selectedOrders.length > 0) {
+        bulkBar.classList.remove('hidden');
+        if (countElement) countElement.textContent = selectedOrders.length;
+    } else {
+        bulkBar.classList.add('hidden');
+    }
+    
+    // Update select all checkbox
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    if (selectAllCheckbox) {
+        const filteredOrders = getFilteredOrders();
+        const allSelected = filteredOrders.length > 0 && filteredOrders.every(order => selectedOrders.includes(order.id));
+        selectAllCheckbox.checked = allSelected;
+    }
+}
+
+// Utility Functions for Order Management
+function calculateOrderStats() {
+    return {
+        total: orders.length,
+        pending: orders.filter(o => o.status === 'packed').length,
+        inTransit: orders.filter(o => o.status === 'picked').length,
+        delivered: orders.filter(o => o.status === 'delivered').length,
+        cod: orders.filter(o => o.paymentMethod === 'COD').length,
+        revenue: orders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + o.amount, 0).toLocaleString()
+    };
+}
+
+function getStatusTimestamp(order) {
+    let timestamp = '';
+    switch (order.status) {
+        case 'packed':
+            timestamp = order.packedAt ? `<div class="text-xs text-gray-500 mt-1">Packed: ${formatTimeAgo(order.packedAt)}</div>` : '';
+            break;
+        case 'assigned':
+            timestamp = order.assignedAt ? `<div class="text-xs text-gray-500 mt-1">Assigned: ${formatTimeAgo(order.assignedAt)}</div>` : '';
+            break;
+        case 'picked':
+            timestamp = order.pickedAt ? `<div class="text-xs text-gray-500 mt-1">Picked: ${formatTimeAgo(order.pickedAt)}</div>` : '';
+            break;
+        case 'delivered':
+            timestamp = order.deliveredAt ? `<div class="text-xs text-gray-500 mt-1">Delivered: ${formatTimeAgo(order.deliveredAt)}</div>` : '';
+            break;
+    }
+    return timestamp;
+}
+
+
+function updateOrderDisplay() {
+    const tableBody = document.getElementById('ordersManagementTableBody');
+    if (tableBody) {
+        tableBody.innerHTML = generateOrderTableRows();
+    }
+    
+    // Update stats cards
+    const statsContainer = document.querySelector('.order-management-section .grid');
+    if (statsContainer) {
+        const statsCards = statsContainer.querySelectorAll('.glass-effect');
+        if (statsCards.length >= 6) {
+            const stats = calculateOrderStats();
+            statsCards[0].innerHTML = `<div class="text-2xl font-bold text-blue-600 mb-1">${stats.total}</div><div class="text-xs text-gray-600">Total Orders</div>`;
+            statsCards[1].innerHTML = `<div class="text-2xl font-bold text-orange-600 mb-1">${stats.pending}</div><div class="text-xs text-gray-600">Pending</div>`;
+            statsCards[2].innerHTML = `<div class="text-2xl font-bold text-purple-600 mb-1">${stats.inTransit}</div><div class="text-xs text-gray-600">In Transit</div>`;
+            statsCards[3].innerHTML = `<div class="text-2xl font-bold text-green-600 mb-1">${stats.delivered}</div><div class="text-xs text-gray-600">Delivered</div>`;
+            statsCards[4].innerHTML = `<div class="text-2xl font-bold text-red-600 mb-1">${stats.cod}</div><div class="text-xs text-gray-600">COD Orders</div>`;
+            statsCards[5].innerHTML = `<div class="text-2xl font-bold text-teal-600 mb-1">₹${stats.revenue}</div><div class="text-xs text-gray-600">Today's Revenue</div>`;
+        }
+    }
+    
+    updateSelectionUI();
+}
+
+function updateOrderSort(sortValue) {
+    const [sortBy, sortOrder] = sortValue.split('_');
+    orderFilters.sortBy = sortBy;
+    orderFilters.sortOrder = sortOrder;
+    updateOrderDisplay();
+}
+
+// Import/Export Functions
+function importOrders() {
+    const modal = createModal('Import Orders', `
+        <div class="space-y-4">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="flex items-center">
+                    <i class="fas fa-info-circle text-blue-400 mr-3"></i>
+                    <div>
+                        <h4 class="text-sm font-medium text-blue-800">Import Instructions</h4>
+                        <p class="text-sm text-blue-700">Upload a CSV file with order data. The file should include columns: Customer Name, Phone, Address, Items, Payment Method, Amount.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Select CSV File</label>
+                <input type="file" id="importFile" accept=".csv" class="w-full border border-gray-300 rounded-md px-3 py-2">
+            </div>
+            
+            <div class="space-y-2">
+                <label class="flex items-center">
+                    <input type="checkbox" id="skipHeader" checked class="mr-2">
+                    <span class="text-sm text-gray-700">Skip first row (headers)</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" id="validateData" checked class="mr-2">
+                    <span class="text-sm text-gray-700">Validate data before import</span>
+                </label>
+            </div>
+            
+            <div>
+                <button onclick="downloadSampleCSV()" class="text-blue-600 hover:text-blue-800 text-sm">
+                    <i class="fas fa-download mr-1"></i>Download sample CSV format
+                </button>
+            </div>
+        </div>
+    `, [
+        {
+            text: 'Cancel',
+            class: 'bg-gray-500 hover:bg-gray-600',
+            onclick: 'closeModal()'
+        },
+        {
+            text: 'Import Orders',
+            class: 'bg-blue-500 hover:bg-blue-600',
+            onclick: 'processImport()'
+        }
+    ]);
+    
+    showModal(modal);
+}
+function downloadSampleCSV() {
+    const sampleData = `Customer Name,Phone,Address,Items,Payment Method,Amount
+John Doe,+91-9876543210,"123 Main St, Sector 15, Gurgaon","Product A, Product B",COD,1250
+Jane Smith,+91-9876543211,"456 Park Ave, DLF Phase 2, Gurgaon",Product C,Online,890`;
+    
+    const blob = new Blob([sampleData], { type: 'text/csv' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'sample_orders.csv';
+    link.click();
+    
+    showSuccess('Sample CSV downloaded');
+}
+
+function processImport() {
+    const fileInput = document.getElementById('importFile');
+    const skipHeader = document.getElementById('skipHeader').checked;
+    const validateData = document.getElementById('validateData').checked;
+    
+    if (!fileInput.files.length) {
+        showError('Please select a CSV file');
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        const csv = e.target.result;
+        const lines = csv.split('\n');
+        const startIndex = skipHeader ? 1 : 0;
+        let importedCount = 0;
+        let errors = [];
+        
+        for (let i = startIndex; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            
+            const columns = parseCSVLine(line);
+            
+            if (columns.length < 6) {
+                errors.push(`Line ${i + 1}: Insufficient columns`);
+                continue;
+            }
+            
+            const [customerName, phone, address, items, paymentMethod, amount] = columns;
+            
+            if (validateData) {
+                if (!customerName || !phone || !address || !items || !paymentMethod || !amount) {
+                    errors.push(`Line ${i + 1}: Missing required data`);
+                    continue;
+                }
+                
+                if (isNaN(amount) || parseFloat(amount) <= 0) {
+                    errors.push(`Line ${i + 1}: Invalid amount`);
+                    continue;
+                }
+            }
+            
+            // Create new order
+            const newOrder = {
+                id: `ORD-${String(orders.length + 1).padStart(3, '0')}`,
+                customerName: customerName.trim(),
+                customerPhone: phone.trim(),
+                address: address.trim(),
+                items: items.split(',').map(item => item.trim()),
+                status: 'packed',
+                paymentMethod: paymentMethod.trim(),
+                amount: parseFloat(amount),
+                createdAt: new Date(),
+                packedAt: new Date()
+            };
+            
+            orders.unshift(newOrder);
+            importedCount++;
+        }
+        
+        closeModal();
+        
+        if (errors.length > 0) {
+            const errorModal = createModal('Import Results', `
+                <div class="space-y-4">
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <h4 class="text-sm font-medium text-yellow-800">Import Summary</h4>
+                        <p class="text-sm text-yellow-700">
+                            ${importedCount} orders imported successfully<br>
+                            ${errors.length} errors encountered
+                        </p>
+                    </div>
+                    
+                    ${errors.length > 0 ? `
+                        <div class="max-h-48 overflow-y-auto">
+                            <h5 class="text-sm font-medium text-gray-900 mb-2">Errors:</h5>
+                            <div class="space-y-1">
+                                ${errors.map(error => `<div class="text-sm text-red-600">• ${error}</div>`).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `, [
+                {
+                    text: 'Close',
+                    class: 'bg-gray-500 hover:bg-gray-600',
+                    onclick: 'closeModal()'
+                }
+            ]);
+            
+            showModal(errorModal);
+        } else {
+            showSuccess(`${importedCount} orders imported successfully`);
+        }
+        
+        updateOrderDisplay();
+        updateDashboardMetrics();
+    };
+    
+    reader.readAsText(file);
+}
+
+function parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        
+        if (char === '"') {
+            inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    
+    result.push(current.trim());
+    return result;
+}
+
+function exportOrders() {
+    const modal = createModal('Export Orders', `
+        <div class="space-y-4">
+            <div>
+                <h4 class="font-medium text-gray-900 mb-3">Export Options</h4>
+                
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="radio" name="exportType" value="all" checked class="mr-2">
+                        <span class="text-sm text-gray-700">All Orders (${orders.length} orders)</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="exportType" value="filtered" class="mr-2">
+                        <span class="text-sm text-gray-700">Filtered Orders (${getFilteredOrders().length} orders)</span>
+                    </label>
+                    ${selectedOrders.length > 0 ? `
+                        <label class="flex items-center">
+                            <input type="radio" name="exportType" value="selected" class="mr-2">
+                            <span class="text-sm text-gray-700">Selected Orders (${selectedOrders.length} orders)</span>
+                        </label>
+                    ` : ''}
+                </div>
+            </div>
+            
+            <div>
+                <h4 class="font-medium text-gray-900 mb-3">Format</h4>
+                
+                <div class="space-y-2">
+                    <label class="flex items-center">
+                        <input type="radio" name="exportFormat" value="csv" checked class="mr-2">
+                        <span class="text-sm text-gray-700">CSV (Comma Separated Values)</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="exportFormat" value="excel" class="mr-2">
+                        <span class="text-sm text-gray-700">Excel (.xlsx)</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="exportFormat" value="json" class="mr-2">
+                        <span class="text-sm text-gray-700">JSON</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div>
+                <label class="flex items-center">
+                    <input type="checkbox" id="includeTimestamps" checked class="mr-2">
+                    <span class="text-sm text-gray-700">Include timestamps</span>
+                </label>
+            </div>
+        </div>
+    `, [
+        {
+            text: 'Cancel',
+            class: 'bg-gray-500 hover:bg-gray-600',
+            onclick: 'closeModal()'
+        },
+        {
+            text: 'Export',
+            class: 'bg-blue-500 hover:bg-blue-600',
+            onclick: 'processExport()'
+        }
+    ]);
+    
+    showModal(modal);
+}
+
+function processExport() {
+    const exportType = document.querySelector('input[name="exportType"]:checked').value;
+    const exportFormat = document.querySelector('input[name="exportFormat"]:checked').value;
+    const includeTimestamps = document.getElementById('includeTimestamps').checked;
+    
+    let exportData = [];
+    
+    switch (exportType) {
+        case 'all':
+            exportData = [...orders];
+            break;
+        case 'filtered':
+            exportData = getFilteredOrders();
+            break;
+        case 'selected':
+            exportData = orders.filter(order => selectedOrders.includes(order.id));
+            break;
+    }
+    
+    switch (exportFormat) {
+        case 'csv':
+            exportToCSV(exportData, includeTimestamps);
+            break;
+        case 'excel':
+            exportToExcel(exportData, includeTimestamps);
+            break;
+        case 'json':
+            exportToJSON(exportData, includeTimestamps);
+            break;
+    }
+    
+    closeModal();
+    showSuccess(`${exportData.length} orders exported as ${exportFormat.toUpperCase()}`);
+}
+
+function exportToCSV(data, includeTimestamps) {
+    let headers = ['Order ID', 'Customer', 'Phone', 'Address', 'Status', 'Payment', 'Amount', 'Items'];
+    if (includeTimestamps) {
+        headers.push('Created', 'Packed', 'Assigned', 'Picked', 'Delivered');
+    }
+    
+    const csvContent = "data:text/csv;charset=utf-8,"
+        + headers.join(',') + '\n'
+        + data.map(order => {
+            let row = [
+                order.id,
+                `"${order.customerName}"`,
+                `"${order.customerPhone}"`,
+                `"${order.address}"`,
+                order.status,
+                order.paymentMethod,
+                order.amount,
+                `"${order.items.join(', ')}"`
+            ];
+            
+            if (includeTimestamps) {
+                row.push(
+                    order.createdAt ? order.createdAt.toISOString() : '',
+                    order.packedAt ? order.packedAt.toISOString() : '',
+                    order.assignedAt ? order.assignedAt.toISOString() : '',
+                    order.pickedAt ? order.pickedAt.toISOString() : '',
+                    order.deliveredAt ? order.deliveredAt.toISOString() : ''
+                );
+            }
+            
+            return row.join(',');
+        }).join('\n');
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `orders_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function exportToJSON(data, includeTimestamps) {
+    let exportData = data.map(order => {
+        const orderData = {
+            id: order.id,
+            customerName: order.customerName,
+            customerPhone: order.customerPhone,
+            address: order.address,
+            status: order.status,
+            paymentMethod: order.paymentMethod,
+            amount: order.amount,
+            items: order.items
+        };
+        
+        if (includeTimestamps) {
+            orderData.timestamps = {
+                created: order.createdAt,
+                packed: order.packedAt,
+                assigned: order.assignedAt,
+                picked: order.pickedAt,
+                delivered: order.deliveredAt
+            };
+        }
+        
+        return orderData;
+    });
+    
+    const jsonData = JSON.stringify({ orders: exportData, exportedAt: new Date(), totalCount: exportData.length }, null, 2);
+    const blob = new Blob([jsonData], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `orders_export_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+}
+
+function exportToExcel(data, includeTimestamps) {
+    // For demo purposes, we'll export as CSV with .xlsx extension
+    // In a real application, you'd use a library like SheetJS
+    showInfo('Excel export would use SheetJS library in production');
+    exportToCSV(data, includeTimestamps);
+}
+
+// Order Actions Menu
+function showOrderActions(orderId) {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+    
+    const modal = createModal(`Actions for ${orderId}`, `
+        <div class="space-y-2">
+            <button onclick="viewOrderDetails('${orderId}')" class="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                <div class="flex items-center">
+                    <i class="fas fa-eye text-blue-600 mr-3"></i>
+                    <span>View Details</span>
+                </div>
+            </button>
+            
+            <button onclick="editOrder('${orderId}')" class="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                <div class="flex items-center">
+                    <i class="fas fa-edit text-green-600 mr-3"></i>
+                    <span>Edit Order</span>
+                </div>
+            </button>
+            
+            <button onclick="duplicateOrder('${orderId}')" class="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                <div class="flex items-center">
+                    <i class="fas fa-copy text-purple-600 mr-3"></i>
+                    <span>Duplicate Order</span>
+                </div>
+            </button>
+            
+            <button onclick="printOrder('${orderId}')" class="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                <div class="flex items-center">
+                    <i class="fas fa-print text-orange-600 mr-3"></i>
+                    <span>Print Order</span>
+                </div>
+            </button>
+            
+            ${order.status !== 'delivered' ? `
+                <button onclick="markAsDelivered('${orderId}')" class="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle text-green-600 mr-3"></i>
+                        <span>Mark as Delivered</span>
+                    </div>
+                </button>
+            ` : ''}
+            
+            <button onclick="deleteOrder('${orderId}')" class="w-full text-left p-3 border border-red-200 rounded-lg hover:bg-red-50 text-red-600">
+                <div class="flex items-center">
+                    <i class="fas fa-trash text-red-600 mr-3"></i>
+                    <span>Delete Order</span>
+                </div>
+            </button>
+        </div>
+    `, [
+        {
+            text: 'Close',
+            class: 'bg-gray-500 hover:bg-gray-600',
+            onclick: 'closeModal()'
+        }
+    ]);
+    
+    showModal(modal);
+}
+
+
+function downloadSampleCSV() {
+    const sampleData = `Customer Name,Phone,Address,Items,Payment Method,Amount
+John Doe,+91-9876543210,"123 Main St, Sector 15, Gurgaon","Product A, Product B",COD,1250
+Jane Smith,+91-9876543211,"456 Park Ave, DLF Phase 2, Gurgaon",Product C,Online,890`;
+    
+    const blob = new Blob([sampleData], { type: 'text/csv' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'sample_orders.csv';
+    link.click();
+    
+    showSuccess('Sample CSV downloaded');
+}
+
+function processImport() {
+    const fileInput = document.getElementById('importFile');
+    const skipHeader = document.getElementById('skipHeader').checked;
+    const validateData = document.getElementById('validateData').checked;
+    
+    if (!fileInput.files.length) {
+        showError('Please select a CSV file');
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        const csv = e.target.result;
+        const lines = csv.split('\n');
+        const startIndex = skipHeader ? 1 : 0;
+        let importedCount = 0;
+        let errors = [];
+        
+        for (let i = startIndex; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            
+            const columns = parseCSVLine(line);
+            
+            if (columns.length < 6) {
+                errors.push(`Line ${i + 1}: Insufficient columns`);
+                continue;
+            }
+            
+            const [customerName, phone, address, items, paymentMethod, amount] = columns;
+            
+            if (validateData) {
+                if (!customerName || !phone || !address || !items || !paymentMethod || !amount) {
+                    errors.push(`Line ${i + 1}: Missing required data`);
+                    continue;
+                }
+                
+                if (isNaN(amount) || parseFloat(amount) <= 0) {
+                    errors.push(`Line ${i + 1}: Invalid amount`);
+                    continue;
+                }
+            }
+            
+            // Create new order
+            const newOrder = {
+                id: `ORD-${String(orders.length + 1).padStart(3, '0')}`,
+                customerName: customerName.trim(),
+                customerPhone: phone.trim(),
+                address: address.trim(),
+                items: items.split(',').map(item => item.trim()),
+                status: 'packed',
+                paymentMethod: paymentMethod.trim(),
+                amount: parseFloat(amount),
+                createdAt: new Date(),
+                packedAt: new Date()
+            };
+            
+            orders.unshift(newOrder);
+            importedCount++;
+        }
+        
+        closeModal();
+        
+        if (errors.length > 0) {
+            const errorModal = createModal('Import Results', `
+                <div class="space-y-4">
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <h4 class="text-sm font-medium text-yellow-800">Import Summary</h4>
+                        <p class="text-sm text-yellow-700">
+                            ${importedCount} orders imported successfully<br>
+                            ${errors.length} errors encountered
+                        </p>
+                    </div>
+                    
+                    ${errors.length > 0 ? `
+                        <div class="max-h-48 overflow-y-auto">
+                            <h5 class="text-sm font-medium text-gray-900 mb-2">Errors:</h5>
+                            <div class="space-y-1">
+                                ${errors.map(error => `<div class="text-sm text-red-600">• ${error}</div>`).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `, [
+                {
+                    text: 'Close',
+                    class: 'bg-gray-500 hover:bg-gray-600',
+                    onclick: 'closeModal()'
+                }
+            ]);
+            
+            showModal(errorModal);
+        } else {
+            showSuccess(`${importedCount} orders imported successfully`);
+        }
+        
+        updateOrderDisplay();
+        updateDashboardMetrics();
+    };
+    
+    reader.readAsText(file);
+}
+
+function parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        
+        if (char === '"') {
+            inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    
+    result.push(current.trim());
+    return result;
+}
+
+function exportOrders() {
+    const modal = createModal('Export Orders', `
+        <div class="space-y-4">
+            <div>
+                <h4 class="font-medium text-gray-900 mb-3">Export Options</h4>
+                
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="radio" name="exportType" value="all" checked class="mr-2">
+                        <span class="text-sm text-gray-700">All Orders (${orders.length} orders)</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="exportType" value="filtered" class="mr-2">
+                        <span class="text-sm text-gray-700">Filtered Orders (${getFilteredOrders().length} orders)</span>
+                    </label>
+                    ${selectedOrders.length > 0 ? `
+                        <label class="flex items-center">
+                            <input type="radio" name="exportType" value="selected" class="mr-2">
+                            <span class="text-sm text-gray-700">Selected Orders (${selectedOrders.length} orders)</span>
+                        </label>
+                    ` : ''}
+                </div>
+            </div>
+            
+            <div>
+                <h4 class="font-medium text-gray-900 mb-3">Format</h4>
+                
+                <div class="space-y-2">
+                    <label class="flex items-center">
+                        <input type="radio" name="exportFormat" value="csv" checked class="mr-2">
+                        <span class="text-sm text-gray-700">CSV (Comma Separated Values)</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="exportFormat" value="excel" class="mr-2">
+                        <span class="text-sm text-gray-700">Excel (.xlsx)</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="exportFormat" value="json" class="mr-2">
+                        <span class="text-sm text-gray-700">JSON</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div>
+                <label class="flex items-center">
+                    <input type="checkbox" id="includeTimestamps" checked class="mr-2">
+                    <span class="text-sm text-gray-700">Include timestamps</span>
+                </label>
+            </div>
+        </div>
+    `, [
+        {
+            text: 'Cancel',
+            class: 'bg-gray-500 hover:bg-gray-600',
+            onclick: 'closeModal()'
+        },
+        {
+            text: 'Export',
+            class: 'bg-blue-500 hover:bg-blue-600',
+            onclick: 'processExport()'
+        }
+    ]);
+    
+    showModal(modal);
+}
+
+function processExport() {
+    const exportType = document.querySelector('input[name="exportType"]:checked').value;
+    const exportFormat = document.querySelector('input[name="exportFormat"]:checked').value;
+    const includeTimestamps = document.getElementById('includeTimestamps').checked;
+    
+    let exportData = [];
+    
+    switch (exportType) {
+        case 'all':
+            exportData = [...orders];
+            break;
+        case 'filtered':
+            exportData = getFilteredOrders();
+            break;
+        case 'selected':
+            exportData = orders.filter(order => selectedOrders.includes(order.id));
+            break;
+    }
+    
+    switch (exportFormat) {
+        case 'csv':
+            exportToCSV(exportData, includeTimestamps);
+            break;
+        case 'excel':
+            exportToExcel(exportData, includeTimestamps);
+            break;
+        case 'json':
+            exportToJSON(exportData, includeTimestamps);
+            break;
+    }
+    
+    closeModal();
+    showSuccess(`${exportData.length} orders exported as ${exportFormat.toUpperCase()}`);
+}
+
+function exportToCSV(data, includeTimestamps) {
+    let headers = ['Order ID', 'Customer', 'Phone', 'Address', 'Status', 'Payment', 'Amount', 'Items'];
+    if (includeTimestamps) {
+        headers.push('Created', 'Packed', 'Assigned', 'Picked', 'Delivered');
+    }
+    
+    const csvContent = "data:text/csv;charset=utf-8,"
+        + headers.join(',') + '\n'
+        + data.map(order => {
+            let row = [
+                order.id,
+                `"${order.customerName}"`,
+                `"${order.customerPhone}"`,
+                `"${order.address}"`,
+                order.status,
+                order.paymentMethod,
+                order.amount,
+                `"${order.items.join(', ')}"`
+            ];
+            
+            if (includeTimestamps) {
+                row.push(
+                    order.createdAt ? order.createdAt.toISOString() : '',
+                    order.packedAt ? order.packedAt.toISOString() : '',
+                    order.assignedAt ? order.assignedAt.toISOString() : '',
+                    order.pickedAt ? order.pickedAt.toISOString() : '',
+                    order.deliveredAt ? order.deliveredAt.toISOString() : ''
+                );
+            }
+            
+            return row.join(',');
+        }).join('\n');
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `orders_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function exportToJSON(data, includeTimestamps) {
+    let exportData = data.map(order => {
+        const orderData = {
+            id: order.id,
+            customerName: order.customerName,
+            customerPhone: order.customerPhone,
+            address: order.address,
+            status: order.status,
+            paymentMethod: order.paymentMethod,
+            amount: order.amount,
+            items: order.items
+        };
+        
+        if (includeTimestamps) {
+            orderData.timestamps = {
+                created: order.createdAt,
+                packed: order.packedAt,
+                assigned: order.assignedAt,
+                picked: order.pickedAt,
+                delivered: order.deliveredAt
+            };
+        }
+        
+        return orderData;
+    });
+    
+    const jsonData = JSON.stringify({ orders: exportData, exportedAt: new Date(), totalCount: exportData.length }, null, 2);
+    const blob = new Blob([jsonData], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `orders_export_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+}
+
+function exportToExcel(data, includeTimestamps) {
+    // For demo purposes, we'll export as CSV with .xlsx extension
+    // In a real application, you'd use a library like SheetJS
+    showInfo('Excel export would use SheetJS library in production');
+    exportToCSV(data, includeTimestamps);
+}
+
+// Order Actions Menu
+function showOrderActions(orderId) {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+    
+    const modal = createModal(`Actions for ${orderId}`, `
+        <div class="space-y-2">
+            <button onclick="viewOrderDetails('${orderId}')" class="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                <div class="flex items-center">
+                    <i class="fas fa-eye text-blue-600 mr-3"></i>
+                    <span>View Details</span>
+                </div>
+            </button>
+            
+            <button onclick="editOrder('${orderId}')" class="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                <div class="flex items-center">
+                    <i class="fas fa-edit text-green-600 mr-3"></i>
+                    <span>Edit Order</span>
+                </div>
+            </button>
+            
+            <button onclick="duplicateOrder('${orderId}')" class="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                <div class="flex items-center">
+                    <i class="fas fa-copy text-purple-600 mr-3"></i>
+                    <span>Duplicate Order</span>
+                </div>
+            </button>
+            
+            <button onclick="printOrder('${orderId}')" class="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                <div class="flex items-center">
+                    <i class="fas fa-print text-orange-600 mr-3"></i>
+                    <span>Print Order</span>
+                </div>
+            </button>
+            
+            ${order.status !== 'delivered' ? `
+                <button onclick="markAsDelivered('${orderId}')" class="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle text-green-600 mr-3"></i>
+                        <span>Mark as Delivered</span>
+                    </div>
+                </button>
+            ` : ''}
+            
+            <button onclick="deleteOrder('${orderId}')" class="w-full text-left p-3 border border-red-200 rounded-lg hover:bg-red-50 text-red-600">
+                <div class="flex items-center">
+                    <i class="fas fa-trash text-red-600 mr-3"></i>
+                    <span>Delete Order</span>
+                </div>
+            </button>
+        </div>
+    `, [
+        {
+            text: 'Close',
+            class: 'bg-gray-500 hover:bg-gray-600',
+            onclick: 'closeModal()'
+        }
+    ]);
+    
+    showModal(modal);
+}
+
+function duplicateOrder(orderId) {
+    const originalOrder = orders.find(o => o.id === orderId);
+    if (!originalOrder) {
+        showError('Order not found');
+        return;
+    }
+    
+    const duplicatedOrder = {
+        ...originalOrder,
+        id: `ORD-${String(orders.length + 1).padStart(3, '0')}`,
+        status: 'packed',
+        createdAt: new Date(),
+        packedAt: new Date(),
+        assignedAt: null,
+        pickedAt: null,
+        deliveredAt: null,
+        driverName: null
+    };
+    
+    orders.unshift(duplicatedOrder);
+    closeModal();
+    updateOrderDisplay();
+    updateDashboardMetrics();
+    showSuccess(`Order ${duplicatedOrder.id} created as duplicate of ${orderId}`);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function markAsDelivered(orderId) {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+    
+    order.status = 'delivered';
+    order.deliveredAt = new Date();
+    
+    closeModal();
+    updateOrderDisplay();
+    updateDashboardMetrics();
+    showSuccess(`Order ${orderId} marked as delivered`);
+}
+
+function deleteOrder(orderId) {
+    if (confirm(`Are you sure you want to delete order ${orderId}? This action cannot be undone.`)) {
+        const orderIndex = orders.findIndex(o => o.id === orderId);
+        if (orderIndex > -1) {
+            orders.splice(orderIndex, 1);
+            
+            closeModal();
+            updateOrderDisplay();
+            updateDashboardMetrics();
+            showSuccess(`Order ${orderId} deleted successfully`);
+        }
+    }
+}
+
+
+
+
+// Initialize Order Management
+function initializeOrderManagement() {
+    // Add event listener for order management navigation
+    const orderNavItem = document.querySelector('a[href="#orders"]');
+    if (orderNavItem) {
+        orderNavItem.addEventListener('click', function(e) {
+            e.preventDefault();
+            showOrderManagement();
+            
+            // Update navigation active state
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => item.classList.remove('active'));
+            this.classList.add('active');
+        });
+    }
+}
+
+// Initialize on DOM load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeOrderManagement();
+});
+
+// Export functions for global use
+window.orderManager = {
+    showOrderManagement,
+    createNewOrder,
+    editOrder,
+    updateOrderDisplay,
+    getFilteredOrders
+};
+
+// orders section ends here
+
+
+</script>
+</body>
+</html>

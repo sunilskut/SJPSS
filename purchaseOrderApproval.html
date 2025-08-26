@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Order Approval</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/umd/lucide.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
+    <style>
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #3B82F6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .status-draft { @apply bg-gray-100 text-gray-800 border-gray-300; }
+        .status-approved { @apply bg-green-100 text-green-800 border-green-300; }
+        .status-sent { @apply bg-blue-100 text-blue-800 border-blue-300; }
+        .status-confirmed { @apply bg-purple-100 text-purple-800 border-purple-300; }
+        .status-cancelled { @apply bg-red-100 text-red-800 border-red-300; }
+        .status-delivered { @apply bg-emerald-100 text-emerald-800 border-emerald-300; }
+        .po-card:hover { transform: translateY(-2px); }
+        .unauthorized-access {
+            background: linear-gradient(135deg, #FEE2E2, #FECACA);
+            border: 2px solid #F87171;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Unauthorized Access Warning -->
+    <div id="unauthorizedAccess" class="hidden">
+        <div class="min-h-screen flex items-center justify-center px-4">
+            <div class="unauthorized-access rounded-lg p-8 max-w-md w-full text-center">
+                <div class="mb-4">
+                    <i data-lucide="shield-x" class="w-16 h-16 text-red-500 mx-auto"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-red-800 mb-4">Access Denied</h2>
+                <p class="text-red-700 mb-6">You need admin privileges to access this page. Please contact your system administrator.</p>
+                <button onclick="window.history.back()" class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                    <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
+                    Go Back
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="mainContent" class="hidden">
+        <div class="py-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <!-- Header -->
+                <div class="bg-white shadow-xl rounded-lg overflow-hidden mb-6">
+                    <div class="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4">
+                        <h1 class="text-2xl font-bold text-white flex items-center">
+                            <i data-lucide="clipboard-check" class="mr-3"></i>
+                            Purchase Order Approval
+                        </h1>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loadingState" class="bg-white shadow-xl rounded-lg p-8 text-center">
+                    <div class="loading-spinner mx-auto mb-4"></div>
+                    <p class="text-gray-600">Loading purchase orders...</p>
+                </div>
+
+                <!-- Filters -->
+                <div id="filtersSection" class="hidden bg-white shadow rounded-lg p-4 mb-6">
+                    <div class="flex flex-wrap gap-4 items-center">
+                        <div class="flex items-center space-x-2">
+                            <label class="text-sm font-medium text-gray-700">Filter by Status:</label>
+                            <select id="statusFilter" class="px-3 py-1 border border-gray-300 rounded-md text-sm">
+                                <option value="">All Statuses</option>
+                                <option value="draft">Draft</option>
+                                <option value="approved">Approved</option>
+                                <option value="sent">Sent</option>
+                                <option value="confirmed">Confirmed</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <label class="text-sm font-medium text-gray-700">Search:</label>
+                            <input type="text" id="searchInput" placeholder="PO ID, Vendor..." class="px-3 py-1 border border-gray-300 rounded-md text-sm w-48">
+                        </div>
+                        <button id="refreshBtn" class="inline-flex items-center px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">
+                            <i data-lucide="refresh-cw" class="w-4 h-4 mr-1"></i>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Purchase Orders List -->
+                <div id="purchaseOrdersList" class="hidden space-y-4">
+                    <!-- PO cards will be populated here -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden bg-white shadow rounded-lg p-8 text-center">
+                    <i data-lucide="file-search" class="w-16 h-16 text-gray-400 mx-auto mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No Purchase Orders Found</h3>
+                    <p class="text-gray-600">No purchase orders match your current filters.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PO Detail Modal -->
+    <div id="poModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg max-w-4xl w-full max-h-screen overflow-y-auto">
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-white">Purchase Order Details</h2>
+                    <button id="closeModal" class="text-white hover:text-gray-200">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="poModalContent" class="p-6">
+                <!-- PO details will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+            authDomain: "sjpss-f504b.firebaseapp.com",
+            projectId: "sjpss-f504b",
+            storageBucket: "sjpss-f504b.firebasestorage.app",
+            messagingSenderId: "227402980311",
+            appId: "1:227402980311:web:56b580456ab6b9c6758992",
+            measurementId: "G-LZ4YP9YPN6"
+        };
+
+        // Firebase initialization
+        let db = null;
+        let purchaseOrders = [];
+        let vendors = [];
+        let currentUserRole = '';
+
+        // Check admin access and initialize
+        function checkAdminAccess() {
+            currentUserRole = sessionStorage.getItem('userRole');
+
+
+
+            alert(currentUserRole);
+
+
+            if (currentUserRole !== 'admin') {
+                document.getElementById('unauthorizedAccess').classList.remove('hidden');
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+                return false;
+            }
+            
+            document.getElementById('mainContent').classList.remove('hidden');
+            return true;
+        }
+
+        // Initialize Firebase and load data
+        function initializeApp() {
+            if (!checkAdminAccess()) return;
+
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                
+                setupEventListeners();
+                loadData();
+            } catch (error) {
+                console.error('Failed to initialize Firebase:', error);
+                alert('Failed to connect to Firebase: ' + error.message);
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            document.getElementById('statusFilter').addEventListener('change', filterPOs);
+            document.getElementById('searchInput').addEventListener('input', filterPOs);
+            document.getElementById('refreshBtn').addEventListener('click', loadData);
+            document.getElementById('closeModal').addEventListener('click', closeModal);
+            
+            // Close modal on outside click
+            document.getElementById('poModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal();
+                }
+            });
+        }
+
+        // Load data from Firebase
+        async function loadData() {
+            try {
+                document.getElementById('loadingState').classList.remove('hidden');
+                document.getElementById('filtersSection').classList.add('hidden');
+                document.getElementById('purchaseOrdersList').classList.add('hidden');
+                document.getElementById('emptyState').classList.add('hidden');
+
+                // Load vendors and POs concurrently
+                await Promise.all([loadVendors(), loadPurchaseOrders()]);
+                
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('filtersSection').classList.remove('hidden');
+                
+                renderPurchaseOrders();
+                
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('loadingState').classList.add('hidden');
+                alert('Error loading data: ' + error.message);
+            }
+        }
+
+        // Load vendors for reference
+        async function loadVendors() {
+            const snapshot = await db.collection('vendors').get();
+            vendors = {};
+            snapshot.forEach(doc => {
+                const vendorData = doc.data();
+                vendors[vendorData.vendorId || doc.id] = vendorData;
+            });
+        }
+
+        // Load purchase orders
+        async function loadPurchaseOrders() {
+            const snapshot = await db.collection('purchaseOrders').get();
+            purchaseOrders = [];
+            snapshot.forEach(doc => {
+                purchaseOrders.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+            
+            // Sort by creation date (newest first)
+            purchaseOrders.sort((a, b) => {
+                const dateA = a.createdAt ? new Date(a.createdAt.toDate ? a.createdAt.toDate() : a.createdAt) : new Date(0);
+                const dateB = b.createdAt ? new Date(b.createdAt.toDate ? b.createdAt.toDate() : b.createdAt) : new Date(0);
+                return dateB - dateA;
+            });
+        }
+
+        // Filter purchase orders
+        function filterPOs() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            const filteredPOs = purchaseOrders.filter(po => {
+                const matchesStatus = !statusFilter || po.status === statusFilter;
+                const matchesSearch = !searchTerm || 
+                    (po.poId && po.poId.toLowerCase().includes(searchTerm)) ||
+                    (vendors[po.vendorId] && vendors[po.vendorId].companyName && 
+                     vendors[po.vendorId].companyName.toLowerCase().includes(searchTerm));
+                
+                return matchesStatus && matchesSearch;
+            });
+            
+            renderPurchaseOrders(filteredPOs);
+        }
+
+        // Render purchase orders
+        function renderPurchaseOrders(posToRender = purchaseOrders) {
+            const container = document.getElementById('purchaseOrdersList');
+            const emptyState = document.getElementById('emptyState');
+            
+            container.innerHTML = '';
+            
+            if (posToRender.length === 0) {
+                container.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            container.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            
+            posToRender.forEach(po => {
+                const vendor = vendors[po.vendorId] || {};
+                const createdDate = po.createdAt ? 
+                    new Date(po.createdAt.toDate ? po.createdAt.toDate() : po.createdAt).toLocaleDateString() : 
+                    'N/A';
+                
+                const poCard = document.createElement('div');
+                poCard.className = 'po-card bg-white shadow rounded-lg p-6 transition-all duration-200 cursor-pointer hover:shadow-lg';
+                poCard.onclick = () => showPODetails(po);
+                
+                poCard.innerHTML = `
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <h3 class="text-lg font-semibold text-gray-900">${po.poId || 'N/A'}</h3>
+                                <span class="status-${po.status || 'draft'} px-2 py-1 rounded-full text-xs font-medium border">
+                                    ${(po.status || 'draft').toUpperCase()}
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                    <span class="font-medium text-gray-700">Vendor:</span>
+                                    <p class="text-gray-900">${vendor.companyName || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <span class="font-medium text-gray-700">Total Amount:</span>
+                                    <p class="text-gray-900 font-semibold">₹${(po.totalAmount || 0).toFixed(2)}</p>
+                                </div>
+                                <div>
+                                    <span class="font-medium text-gray-700">Created:</span>
+                                    <p class="text-gray-900">${createdDate}</p>
+                                </div>
+                                <div>
+                                    <span class="font-medium text-gray-700">Products:</span>
+                                    <p class="text-gray-900">${(po.products || []).length} items</p>
+                                </div>
+                            </div>
+                            ${po.remarks ? `
+                                <div class="mt-3">
+                                    <span class="font-medium text-gray-700">Remarks:</span>
+                                    <p class="text-gray-600 text-sm">${po.remarks}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="flex flex-col space-y-2 ml-4">
+                            <i data-lucide="eye" class="w-5 h-5 text-gray-400"></i>
+                            ${po.status === 'draft' ? `
+                                <button onclick="event.stopPropagation(); approvePO('${po.id}')" 
+                                        class="inline-flex items-center px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700">
+                                    <i data-lucide="check" class="w-3 h-3 mr-1"></i>
+                                    Approve
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(poCard);
+            });
+            
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
+        // Show PO details in modal
+        function showPODetails(po) {
+            const vendor = vendors[po.vendorId] || {};
+            const modal = document.getElementById('poModal');
+            const content = document.getElementById('poModalContent');
+            
+            const createdDate = po.createdAt ? 
+                new Date(po.createdAt.toDate ? po.createdAt.toDate() : po.createdAt).toLocaleString() : 
+                'N/A';
+            
+            content.innerHTML = `
+                <div class="space-y-6">
+                    <!-- PO Header -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4">Purchase Order Information</h3>
+                            <div class="space-y-2 text-sm">
+                                <div><span class="font-medium">PO Number:</span> ${po.poId || 'N/A'}</div>
+                                <div><span class="font-medium">Status:</span> 
+                                    <span class="status-${po.status || 'draft'} px-2 py-1 rounded-full text-xs font-medium border ml-2">
+                                        ${(po.status || 'draft').toUpperCase()}
+                                    </span>
+                                </div>
+                                <div><span class="font-medium">PO Date:</span> ${po.poDate || 'N/A'}</div>
+                                <div><span class="font-medium">Expected Delivery:</span> ${po.expectedDeliveryDate || 'N/A'}</div>
+                                <div><span class="font-medium">Created:</span> ${createdDate}</div>
+                                <div><span class="font-medium">Created By:</span> ${po.createdBy || 'N/A'}</div>
+                                ${po.approvedBy ? `<div><span class="font-medium">Approved By:</span> ${po.approvedBy}</div>` : ''}
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4">Vendor Information</h3>
+                            <div class="space-y-2 text-sm">
+                                <div><span class="font-medium">Company:</span> ${vendor.companyName || 'N/A'}</div>
+                                <div><span class="font-medium">Contact:</span> ${vendor.name || 'N/A'}</div>
+                                <div><span class="font-medium">Phone:</span> ${vendor.phone || 'N/A'}</div>
+                                <div><span class="font-medium">Email:</span> ${vendor.email || 'N/A'}</div>
+                                <div><span class="font-medium">City:</span> ${vendor.city || 'N/A'}</div>
+                                ${vendor.gstNumber ? `<div><span class="font-medium">GST:</span> ${vendor.gstNumber}</div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Products Table -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-4">Products Ordered</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Price</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tax</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${(po.products || []).map(product => `
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm font-medium text-gray-900">${product.name || 'N/A'}</div>
+                                                ${product.hsnCode ? `<div class="text-sm text-gray-500">HSN: ${product.hsnCode}</div>` : ''}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                ₹${(product.unitPrice || 0).toFixed(2)}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                ${product.quantity || 0}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                ₹${(product.lineTax || 0).toFixed(2)} ${product.gstRate ? `(${product.gstRate}%)` : ''}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                ₹${((product.lineTotal || 0) + (product.lineTax || 0)).toFixed(2)}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Totals -->
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                                <span class="font-medium text-gray-700">Total Quantity:</span>
+                                <p class="text-lg font-semibold text-gray-900">${po.totalQuantity || 0}</p>
+                            </div>
+                            <div>
+                                <span class="font-medium text-gray-700">Subtotal:</span>
+                                <p class="text-lg font-semibold text-gray-900">₹${(po.subtotalAmount || 0).toFixed(2)}</p>
+                            </div>
+                            <div>
+                                <span class="font-medium text-gray-700">Total Tax:</span>
+                                <p class="text-lg font-semibold text-gray-900">₹${(po.totalTax || 0).toFixed(2)}</p>
+                            </div>
+                            <div>
+                                <span class="font-medium text-gray-700">Grand Total:</span>
+                                <p class="text-xl font-bold text-blue-600">₹${(po.totalAmount || 0).toFixed(2)}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Details -->
+                    ${po.paymentTerms || po.remarks ? `
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            ${po.paymentTerms ? `
+                                <div>
+                                    <h4 class="font-medium text-gray-900 mb-2">Payment Terms</h4>
+                                    <p class="text-sm text-gray-700 bg-gray-50 p-3 rounded">${po.paymentTerms}</p>
+                                </div>
+                            ` : ''}
+                            ${po.remarks ? `
+                                <div>
+                                    <h4 class="font-medium text-gray-900 mb-2">Remarks</h4>
+                                    <p class="text-sm text-gray-700 bg-gray-50 p-3 rounded">${po.remarks}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    ` : ''}
+
+                    <!-- Action Buttons -->
+                    <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                        ${po.status === 'draft' ? `
+                            <button onclick="approvePO('${po.id}')" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                                <i data-lucide="check" class="w-4 h-4 mr-2"></i>
+                                Approve Purchase Order
+                            </button>
+                            <button onclick="rejectPO('${po.id}')" class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                                <i data-lucide="x" class="w-4 h-4 mr-2"></i>
+                                Reject
+                            </button>
+                        ` : po.status === 'approved' ? `
+                            <button onclick="sendPO('${po.id}')" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                                <i data-lucide="send" class="w-4 h-4 mr-2"></i>
+                                Send to Vendor
+                            </button>
+                        ` : ''}
+                        <button onclick="closeModal()" class="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+            
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('poModal').classList.add('hidden');
+        }
+
+        // Approve PO
+        async function approvePO(poId) {
+            if (!confirm('Are you sure you want to approve this Purchase Order?')) return;
+            
+            try {
+                await db.collection('purchaseOrders').doc(poId).update({
+                    status: 'approved',
+                    approvedBy: 'current-admin-id', // Replace with actual user ID
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                alert('Purchase Order approved successfully!');
+                closeModal();
+                loadData();
+            } catch (error) {
+                console.error('Error approving PO:', error);
+                alert('Error approving Purchase Order: ' + error.message);
+            }
+        }
+
+        // Reject PO
+        async function rejectPO(poId) {
+            const reason = prompt('Please provide a reason for rejection:');
+            if (!reason) return;
+            
+            try {
+                await db.collection('purchaseOrders').doc(poId).update({
+                    status: 'cancelled',
+                    approvedBy: 'current-admin-id', // Replace with actual user ID
+                    remarks: (purchaseOrders.find(po => po.id === poId)?.remarks || '') + '\n\nRejection Reason: ' + reason,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                alert('Purchase Order rejected successfully!');
+                closeModal();
+                loadData();
+            } catch (error) {
+                console.error('Error rejecting PO:', error);
+                alert('Error rejecting Purchase Order: ' + error.message);
+            }
+        }
+
+        // Send PO to vendor
+        async function sendPO(poId) {
+            if (!confirm('Send this Purchase Order to the vendor?')) return;
+            
+            try {
+                await db.collection('purchaseOrders').doc(poId).update({
+                    status: 'sent',
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                alert('Purchase Order sent to vendor successfully!');
+                closeModal();
+                loadData();
+            } catch (error) {
+                console.error('Error sending PO:', error);
+                alert('Error sending Purchase Order: ' + error.message);
+            }
+        }
+
+        // Initialize the page when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                initializeApp();
+            }, 100);
+        });
+    </script>
+</body>
+</html>

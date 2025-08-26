@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Management - Delivery Operations</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+        import { getFirestore, collection, doc, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+        
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+            authDomain: "sjpss-f504b.firebaseapp.com",
+            projectId: "sjpss-f504b",
+            storageBucket: "sjpss-f504b.firebasestorage.app",
+            messagingSenderId: "227402980311",
+            appId: "1:227402980311:web:56b580456ab6b9c6758992",
+            measurementId: "G-LZ4YP9YPN6"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // Make Firebase available globally
+        window.db = db;
+        window.firestoreFunctions = {
+            collection,
+            doc,
+            getDocs,
+            addDoc,
+            updateDoc,
+            deleteDoc,
+            onSnapshot,
+            query,
+            where,
+            orderBy,
+            serverTimestamp
+        };
+    </script>
+    
+    <style>
+        :root {
+            --sidebar-width: 280px;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding-bottom: 2rem;
+        }
+        
+        .nav-item {
+            transition: all 0.3s ease;
+        }
+        
+        .nav-item:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateX(4px);
+        }
+        
+        .nav-item.active {
+            background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+            border-right: 4px solid #60a5fa;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .driver-card {
+            transition: all 0.3s ease;
+        }
+        
+        .driver-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+        
+        .status-online {
+            background-color: #10b981;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-offline {
+            background-color: #ef4444;
+        }
+        
+        .status-busy {
+            background-color: #f59e0b;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-break {
+            background-color: #6b7280;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .modal {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                z-index: 50;
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body class="font-sans">
+    
+    <!-- Mobile Header -->
+    <div class="md:hidden bg-slate-800 text-white p-4 flex justify-between items-center">
+        <button id="mobileMenuBtn" class="text-2xl">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h1 class="text-xl font-bold">Driver Management</h1>
+        <button onclick="showAddDriverModal()" class="text-2xl">
+            <i class="fas fa-plus"></i>
+        </button>
+    </div>
+
+    <!-- Sidebar Navigation 
+    <nav id="sidebar" class="sidebar fixed left-0 top-0 h-full text-white z-40">
+        <div class="p-6 border-b border-slate-600">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-truck text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold">DeliveryHub</h2>
+                    <p class="text-sm text-slate-300">Driver Management</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4">
+            <ul class="space-y-2">
+                <li>
+                    <a href="index.html" class="nav-item flex items-center space-x-3 p-3 rounded-lg">
+                        <i class="fas fa-tachometer-alt w-5"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#orders" class="nav-item flex items-center space-x-3 p-3 rounded-lg">
+                        <i class="fas fa-tasks w-5"></i>
+                        <span>Order Management</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#tracking" class="nav-item flex items-center space-x-3 p-3 rounded-lg">
+                        <i class="fas fa-map-marker-alt w-5"></i>
+                        <span>Live Tracking</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#drivers" class="nav-item active flex items-center space-x-3 p-3 rounded-lg">
+                        <i class="fas fa-users w-5"></i>
+                        <span>Driver Management</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#routes" class="nav-item flex items-center space-x-3 p-3 rounded-lg">
+                        <i class="fas fa-route w-5"></i>
+                        <span>Route Planning</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#analytics" class="nav-item flex items-center space-x-3 p-3 rounded-lg">
+                        <i class="fas fa-chart-line w-5"></i>
+                        <span>Analytics</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+-->
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container mx-auto px-4 py-6">
+            
+            <!-- Header -->
+            <div class="glass-effect rounded-xl shadow-xl p-6 mb-8">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center">
+                    <div class="mb-4 lg:mb-0">
+                        <h1 class="text-3xl font-bold text-gray-800 mb-2">Driver Management</h1>
+                        <p class="text-gray-600">Manage delivery drivers, assignments, and performance</p>
+                        <div id="connectionStatus" class="mt-2 flex items-center space-x-2">
+                            <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                            <span class="text-sm text-gray-500">Connecting to Firebase...</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button onclick="showAddDriverModal()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Add Driver
+                        </button>
+                        <button onclick="refreshDrivers()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-refresh mr-2"></i>Refresh
+                        </button>
+                        <button onclick="exportDriverData()" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-download mr-2"></i>Export
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Driver Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
+                <div class="glass-effect rounded-xl p-6 text-center">
+                    <div id="totalDrivers" class="text-3xl font-bold text-blue-600 mb-1">--</div>
+                    <div class="text-sm text-gray-600">Total Drivers</div>
+                </div>
+                
+                <div class="glass-effect rounded-xl p-6 text-center">
+                    <div id="onlineDrivers" class="text-3xl font-bold text-green-600 mb-1">--</div>
+                    <div class="text-sm text-gray-600">Online</div>
+                </div>
+                
+                <div class="glass-effect rounded-xl p-6 text-center">
+                    <div id="busyDrivers" class="text-3xl font-bold text-yellow-600 mb-1">--</div>
+                    <div class="text-sm text-gray-600">On Delivery</div>
+                </div>
+                
+                <div class="glass-effect rounded-xl p-6 text-center">
+                    <div id="offlineDrivers" class="text-3xl font-bold text-red-600 mb-1">--</div>
+                    <div class="text-sm text-gray-600">Offline</div>
+                </div>
+                
+                <div class="glass-effect rounded-xl p-6 text-center">
+                    <div id="avgRating" class="text-3xl font-bold text-purple-600 mb-1">--</div>
+                    <div class="text-sm text-gray-600">Avg Rating</div>
+                </div>
+            </div>
+
+            <!-- Filters and Search -->
+            <div class="glass-effect rounded-xl shadow-xl p-6 mb-8">
+                <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div class="flex flex-col md:flex-row gap-3 items-center">
+                        <input type="search" id="searchDrivers" placeholder="Search drivers..." class="border rounded-lg px-4 py-2 w-full md:w-64">
+                        
+                        <select id="statusFilter" onchange="filterDrivers()" class="border rounded-lg px-3 py-2">
+                            <option value="all">All Status</option>
+                            <option value="online">Online</option>
+                            <option value="busy">Busy</option>
+                            <option value="offline">Offline</option>
+                            <option value="break">On Break</option>
+                        </select>
+                        
+                        <select id="vehicleFilter" onchange="filterDrivers()" class="border rounded-lg px-3 py-2">
+                            <option value="all">All Vehicles</option>
+                            <option value="bike">Bike</option>
+                            <option value="scooter">Scooter</option>
+                            <option value="car">Car</option>
+                            <option value="van">Van</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <button onclick="bulkStatusUpdate()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-edit mr-2"></i>Bulk Update
+                        </button>
+                        
+                        <button onclick="assignOrdersDialog()" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-clipboard-list mr-2"></i>Assign Orders
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drivers Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="driversGrid">
+                <!-- Loading placeholder -->
+                <div class="glass-effect rounded-xl p-6 text-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p class="text-gray-600">Loading drivers...</p>
+                </div>
+            </div>
+
+            <!-- Driver Details Table -->
+            <div class="glass-effect rounded-xl shadow-xl p-6 mt-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800">Driver Details</h3>
+                    <div class="flex space-x-3">
+                        <button onclick="toggleTableView()" class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50">
+                            <i id="tableViewIcon" class="fas fa-table"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">
+                                    <input type="checkbox" id="selectAll" onchange="selectAllDrivers()">
+                                </th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Driver</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Contact</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Vehicle</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Status</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Current Orders</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Rating</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="driversTableBody">
+                            <tr>
+                                <td colspan="8" class="px-4 py-8 text-center text-gray-500">
+                                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
+                                    Loading driver data...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Driver Modal -->
+    <div id="driverModal" class="modal fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="modalTitle" class="text-2xl font-bold text-gray-800">Add New Driver</h2>
+                <button onclick="closeDriverModal()" class="text-gray-500 hover:text-gray-700 text-2xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="driverForm" onsubmit="saveDriver(event)">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                        <input type="text" id="driverName" required class="w-full border rounded-lg px-3 py-2">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+                        <input type="tel" id="driverPhone" required class="w-full border rounded-lg px-3 py-2">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" id="driverEmail" class="w-full border rounded-lg px-3 py-2">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">License Number *</label>
+                        <input type="text" id="driverLicense" required class="w-full border rounded-lg px-3 py-2">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Vehicle Type *</label>
+                        <select id="vehicleType" required class="w-full border rounded-lg px-3 py-2">
+                            <option value="">Select Vehicle</option>
+                            <option value="bike">Bike</option>
+                            <option value="scooter">Scooter</option>
+                            <option value="car">Car</option>
+                            <option value="van">Van</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Vehicle Number *</label>
+                        <input type="text" id="vehicleNumber" required class="w-full border rounded-lg px-3 py-2">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                        <select id="driverStatus" class="w-full border rounded-lg px-3 py-2">
+                            <option value="offline">Offline</option>
+                            <option value="online">Online</option>
+                            <option value="busy">Busy</option>
+                            <option value="break">On Break</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Join Date</label>
+                        <input type="date" id="joinDate" class="w-full border rounded-lg px-3 py-2">
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                    <textarea id="driverAddress" rows="3" class="w-full border rounded-lg px-3 py-2"></textarea>
+                </div>
+                
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeDriverModal()" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                        <i class="fas fa-save mr-2"></i>Save Driver
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Driver Profile Modal -->
+    <div id="driverProfileModal" class="modal fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl p-8 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Driver Profile</h2>
+                <button onclick="closeDriverProfileModal()" class="text-gray-500 hover:text-gray-700 text-2xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div id="driverProfileContent">
+                <!-- Profile content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobileOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
+
+    <script>
+        // Global variables
+        let drivers = [];
+        let filteredDrivers = [];
+        let editingDriverId = null;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            loadDriversFromFirebase();
+            setupRealTimeListener();
+        });
+
+        // Event listeners setup
+        function setupEventListeners() {
+            // Mobile menu
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const mobileOverlay = document.getElementById('mobileOverlay');
+            
+            if (mobileMenuBtn) {
+                mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+            }
+            
+            if (mobileOverlay) {
+                mobileOverlay.addEventListener('click', closeMobileMenu);
+            }
+
+            // Search functionality
+            document.getElementById('searchDrivers').addEventListener('input', function() {
+                filterDrivers();
+            });
+
+            // Form validation
+            document.getElementById('driverForm').addEventListener('input', function() {
+                validateForm();
+            });
+        }
+
+        // Mobile menu functions
+        function toggleMobileMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('hidden');
+        }
+
+        function closeMobileMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            
+            sidebar.classList.remove('open');
+            overlay.classList.add('hidden');
+        }
+
+        // Firebase functions
+        async function loadDriversFromFirebase() {
+            try {
+                const { collection, getDocs, query, orderBy } = window.firestoreFunctions;
+                const driversRef = collection(window.db, 'drivers');
+                const q = query(driversRef, orderBy('name'));
+                
+                const querySnapshot = await getDocs(q);
+                drivers = [];
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    drivers.push({
+                        id: doc.id,
+                        ...data,
+                        joinDate: data.joinDate ? data.joinDate.toDate() : null,
+                        lastActive: data.lastActive ? data.lastActive.toDate() : null
+                    });
+                });
+                
+                updateConnectionStatus(true);
+                updateDriverStats();
+                renderDriversGrid();
+                renderDriversTable();
+                
+                console.log('Loaded', drivers.length, 'drivers from Firebase');
+                
+            } catch (error) {
+                console.error('Error loading drivers:', error);
+                updateConnectionStatus(false);
+                
+                // Load sample data for demonstration
+                loadSampleDrivers();
+            }
+        }
+
+        // Load sample drivers for demonstration
+        function loadSampleDrivers() {
+            drivers = [
+                {
+                    id: '1',
+                    name: 'Rajesh Kumar',
+                    phone: '+91 9876543210',
+                    email: 'rajesh@deliveryhub.com',
+                    license: 'KL-07-2023-001234',
+                    vehicleType: 'bike',
+                    vehicleNumber: 'KL-07-AB-1234',
+                    status: 'online',
+                    currentOrders: 2,
+                    totalDeliveries: 456,
+                    rating: 4.8,
+                    joinDate: new Date('2023-01-15'),
+                    lastActive: new Date(),
+                    address: 'Kakkanad, Kochi'
+                },
+                {
+                    id: '2',
+                    name: 'Priya Nair',
+                    phone: '+91 9876543211',
+                    email: 'priya@deliveryhub.com',
+                    license: 'KL-01-2023-005678',
+                    vehicleType: 'scooter',
+                    vehicleNumber: 'KL-01-CD-5678',
+                    status: 'busy',
+                    currentOrders: 3,
+                    totalDeliveries: 523,
+                    rating: 4.9,
+                    joinDate: new Date('2023-02-20'),
+                    lastActive: new Date(),
+                    address: 'Pattom, Thiruvananthapuram'
+                },
+                {
+                    id: '3',
+                    name: 'Arun Das',
+                    phone: '+91 9876543212',
+                    email: 'arun@deliveryhub.com',
+                    license: 'KL-14-2023-009012',
+                    vehicleType: 'car',
+                    vehicleNumber: 'KL-14-EF-9012',
+                    status: 'break',
+                    currentOrders: 0,
+                    totalDeliveries: 234,
+                    rating: 4.6,
+                    joinDate: new Date('2023-03-10'),
+                    lastActive: new Date(Date.now() - 30 * 60 * 1000),
+                    address: 'Technopark, Thiruvananthapuram'
+                },
+                {
+                    id: '4',
+                    name: 'Maya Singh',
+                    phone: '+91 9876543213',
+                    email: 'maya@deliveryhub.com',
+                    license: 'KL-07-2023-003456',
+                    vehicleType: 'bike',
+                    vehicleNumber: 'KL-07-GH-3456',
+                    status: 'online',
+                    currentOrders: 1,
+                    totalDeliveries: 789,
+                    rating: 4.7,
+                    joinDate: new Date('2022-11-05'),
+                    lastActive: new Date(),
+                    address: 'Kowdiar, Thiruvananthapuram'
+                },
+                {
+                    id: '5',
+                    name: 'Suresh Kumar',
+                    phone: '+91 9876543214',
+                    email: 'suresh@deliveryhub.com',
+                    license: 'KL-01-2023-007890',
+                    vehicleType: 'van',
+                    vehicleNumber: 'KL-01-IJ-7890',
+                    status: 'offline',
+                    currentOrders: 0,
+                    totalDeliveries: 123,
+                    rating: 4.5,
+                    joinDate: new Date('2023-04-12'),
+                    lastActive: new Date(Date.now() - 2 * 60 * 60 * 1000),
+                    address: 'Vyttila, Kochi'
+                }
+            ];
+            
+            updateDriverStats();
+            renderDriversGrid();
+            renderDriversTable();
+        }
+
+        // Real-time listener setup
+        function setupRealTimeListener() {
+            try {
+                const { collection, onSnapshot, query, orderBy } = window.firestoreFunctions;
+                const driversRef = collection(window.db, 'drivers');
+                const q = query(driversRef, orderBy('name'));
+                
+                const unsubscribe = onSnapshot(q, (snapshot) => {
+                    drivers = [];
+                    snapshot.forEach((doc) => {
+                        const data = doc.data();
+                        drivers.push({
+                            id: doc.id,
+                            ...data,
+                            joinDate: data.joinDate ? data.joinDate.toDate() : null,
+                            lastActive: data.lastActive ? data.lastActive.toDate() : null
+                        });
+                    });
+                    
+                    updateDriverStats();
+                    renderDriversGrid();
+                    renderDriversTable();
+                });
+                
+            } catch (error) {
+                console.log('Real-time listener not available, using sample data');
+            }
+        }
+
+        // Update connection status
+        function updateConnectionStatus(connected) {
+            const statusElement = document.getElementById('connectionStatus');
+            if (connected) {
+                statusElement.innerHTML = `
+                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span class="text-sm text-green-600">Connected to Firebase</span>
+                `;
+            } else {
+                statusElement.innerHTML = `
+                    <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                    <span class="text-sm text-red-600">Using sample data</span>
+                `;
+            }
+        }
+
+        // Update driver statistics
+        function updateDriverStats() {
+            const total = drivers.length;
+            const online = drivers.filter(d => d.status === 'online').length;
+            const busy = drivers.filter(d => d.status === 'busy').length;
+            const offline = drivers.filter(d => d.status === 'offline').length;
+            const avgRating = drivers.length > 0 ? 
+                (drivers.reduce((sum, d) => sum + (d.rating || 0), 0) / drivers.length).toFixed(1) : 0;
+
+            document.getElementById('totalDrivers').textContent = total;
+            document.getElementById('onlineDrivers').textContent = online;
+            document.getElementById('busyDrivers').textContent = busy;
+            document.getElementById('offlineDrivers').textContent = offline;
+            document.getElementById('avgRating').textContent = avgRating;
+        }
+
+        // Render drivers grid
+        function renderDriversGrid() {
+            const grid = document.getElementById('driversGrid');
+            
+            if (drivers.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full glass-effect rounded-xl p-8 text-center">
+                        <i class="fas fa-users text-6xl text-gray-300 mb-4"></i>
+                        <h3 class="text-xl font-semibold text-gray-600 mb-2">No Drivers Found</h3>
+                        <p class="text-gray-500 mb-4">Add your first driver to get started</p>
+                        <button onclick="showAddDriverModal()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg">
+                            <i class="fas fa-plus mr-2"></i>Add Driver
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const displayDrivers = filteredDrivers.length > 0 ? filteredDrivers : drivers;
+            
+            grid.innerHTML = displayDrivers.map(driver => `
+                <div class="driver-card glass-effect rounded-xl p-6 hover:shadow-xl transition-all">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                ${driver.name.charAt(0)}
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-800">${driver.name}</h3>
+                                <p class="text-sm text-gray-500">${driver.vehicleType} • ${driver.vehicleNumber}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 rounded-full status-${driver.status}"></div>
+                            <span class="text-sm font-medium capitalize ${getStatusColor(driver.status)}">${driver.status}</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Current Orders:</span>
+                            <span class="font-semibold text-blue-600">${driver.currentOrders || 0}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Total Deliveries:</span>
+                            <span class="font-semibold text-gray-800">${driver.totalDeliveries || 0}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Rating:</span>
+                            <div class="flex items-center space-x-1">
+                                <span class="font-semibold text-yellow-600">${driver.rating || 0}</span>
+                                <div class="flex">
+                                    ${generateStarRating(driver.rating || 0)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-2">
+                        <button onclick="viewDriverProfile('${driver.id}')" class="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-800 py-2 px-3 rounded-lg text-sm font-medium transition-colors">
+                            <i class="fas fa-eye mr-1"></i>View
+                        </button>
+                        <button onclick="editDriver('${driver.id}')" class="flex-1 bg-green-100 hover:bg-green-200 text-green-800 py-2 px-3 rounded-lg text-sm font-medium transition-colors">
+                            <i class="fas fa-edit mr-1"></i>Edit
+                        </button>
+                        <button onclick="toggleDriverStatus('${driver.id}')" class="flex-1 bg-orange-100 hover:bg-orange-200 text-orange-800 py-2 px-3 rounded-lg text-sm font-medium transition-colors">
+                            <i class="fas fa-power-off mr-1"></i>Status
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render drivers table
+        function renderDriversTable() {
+            const tbody = document.getElementById('driversTableBody');
+            
+            if (drivers.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="px-4 py-8 text-center text-gray-500">
+                            <i class="fas fa-users text-4xl text-gray-300 mb-3"></i>
+                            <div>No drivers found</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            const displayDrivers = filteredDrivers.length > 0 ? filteredDrivers : drivers;
+            
+            tbody.innerHTML = displayDrivers.map(driver => `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-4 py-3">
+                        <input type="checkbox" class="driver-checkbox" value="${driver.id}">
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                ${driver.name.charAt(0)}
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-800">${driver.name}</div>
+                                <div class="text-sm text-gray-500">${driver.license}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="text-sm">
+                            <div class="text-gray-800">${driver.phone}</div>
+                            ${driver.email ? `<div class="text-gray-500">${driver.email}</div>` : ''}
+                        </div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="text-sm">
+                            <div class="font-medium capitalize text-gray-800">${driver.vehicleType}</div>
+                            <div class="text-gray-500">${driver.vehicleNumber}</div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-2 h-2 rounded-full status-${driver.status}"></div>
+                            <span class="text-sm font-medium capitalize ${getStatusColor(driver.status)}">${driver.status}</span>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="text-center">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${driver.currentOrders > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}">
+                                ${driver.currentOrders || 0} orders
+                            </span>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex items-center space-x-1">
+                            <span class="text-sm font-semibold text-yellow-600">${driver.rating || 0}</span>
+                            <div class="flex text-xs">
+                                ${generateStarRating(driver.rating || 0, true)}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex space-x-1">
+                            <button onclick="viewDriverProfile('${driver.id}')" class="text-blue-600 hover:text-blue-800 p-1 rounded" title="View Profile">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button onclick="editDriver('${driver.id}')" class="text-green-600 hover:text-green-800 p-1 rounded" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="assignOrdersToDriver('${driver.id}')" class="text-purple-600 hover:text-purple-800 p-1 rounded" title="Assign Orders">
+                                <i class="fas fa-clipboard-list"></i>
+                            </button>
+                            <button onclick="deleteDriver('${driver.id}')" class="text-red-600 hover:text-red-800 p-1 rounded" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Helper functions
+        function getStatusColor(status) {
+            const colors = {
+                online: 'text-green-600',
+                busy: 'text-yellow-600',
+                offline: 'text-red-600',
+                break: 'text-gray-600'
+            };
+            return colors[status] || 'text-gray-600';
+        }
+
+        function generateStarRating(rating, small = false) {
+            const fullStars = Math.floor(rating);
+            const hasHalfStar = rating % 1 >= 0.5;
+            const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+            
+            const starSize = small ? 'text-xs' : 'text-sm';
+            let stars = '';
+            
+            for (let i = 0; i < fullStars; i++) {
+                stars += `<i class="fas fa-star text-yellow-500 ${starSize}"></i>`;
+            }
+            
+            if (hasHalfStar) {
+                stars += `<i class="fas fa-star-half-alt text-yellow-500 ${starSize}"></i>`;
+            }
+            
+            for (let i = 0; i < emptyStars; i++) {
+                stars += `<i class="far fa-star text-gray-300 ${starSize}"></i>`;
+            }
+            
+            return stars;
+        }
+
+        // Filter functions
+        function filterDrivers() {
+            const searchTerm = document.getElementById('searchDrivers').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const vehicleFilter = document.getElementById('vehicleFilter').value;
+            
+            filteredDrivers = drivers.filter(driver => {
+                const matchesSearch = driver.name.toLowerCase().includes(searchTerm) ||
+                                    driver.phone.includes(searchTerm) ||
+                                    driver.vehicleNumber.toLowerCase().includes(searchTerm);
+                                    
+                const matchesStatus = statusFilter === 'all' || driver.status === statusFilter;
+                const matchesVehicle = vehicleFilter === 'all' || driver.vehicleType === vehicleFilter;
+                
+                return matchesSearch && matchesStatus && matchesVehicle;
+            });
+            
+            renderDriversGrid();
+            renderDriversTable();
+        }
+
+        // Modal functions
+        function showAddDriverModal() {
+            editingDriverId = null;
+            document.getElementById('modalTitle').textContent = 'Add New Driver';
+            document.getElementById('driverForm').reset();
+            document.getElementById('joinDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('driverModal').classList.remove('hidden');
+        }
+
+        function closeDriverModal() {
+            document.getElementById('driverModal').classList.add('hidden');
+            editingDriverId = null;
+        }
+
+        function editDriver(driverId) {
+            const driver = drivers.find(d => d.id === driverId);
+            if (!driver) return;
+            
+            editingDriverId = driverId;
+            document.getElementById('modalTitle').textContent = 'Edit Driver';
+            
+            // Populate form
+            document.getElementById('driverName').value = driver.name || '';
+            document.getElementById('driverPhone').value = driver.phone || '';
+            document.getElementById('driverEmail').value = driver.email || '';
+            document.getElementById('driverLicense').value = driver.license || '';
+            document.getElementById('vehicleType').value = driver.vehicleType || '';
+            document.getElementById('vehicleNumber').value = driver.vehicleNumber || '';
+            document.getElementById('driverStatus').value = driver.status || 'offline';
+            document.getElementById('driverAddress').value = driver.address || '';
+            
+            if (driver.joinDate) {
+                document.getElementById('joinDate').value = driver.joinDate.toISOString().split('T')[0];
+            }
+            
+            document.getElementById('driverModal').classList.remove('hidden');
+        }
+
+        // Save driver function
+        async function saveDriver(event) {
+            event.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('driverName').value.trim(),
+                phone: document.getElementById('driverPhone').value.trim(),
+                email: document.getElementById('driverEmail').value.trim(),
+                license: document.getElementById('driverLicense').value.trim(),
+                vehicleType: document.getElementById('vehicleType').value,
+                vehicleNumber: document.getElementById('vehicleNumber').value.trim(),
+                status: document.getElementById('driverStatus').value,
+                address: document.getElementById('driverAddress').value.trim(),
+                joinDate: new Date(document.getElementById('joinDate').value),
+                currentOrders: 0,
+                totalDeliveries: 0,
+                rating: 5.0,
+                lastActive: new Date()
+            };
+            
+            try {
+                if (editingDriverId) {
+                    // Update existing driver
+                    if (window.db) {
+                        const { doc, updateDoc } = window.firestoreFunctions;
+                        const driverRef = doc(window.db, 'drivers', editingDriverId);
+                        await updateDoc(driverRef, formData);
+                    }
+                    
+                    // Update local data
+                    const index = drivers.findIndex(d => d.id === editingDriverId);
+                    if (index !== -1) {
+                        drivers[index] = { ...drivers[index], ...formData };
+                    }
+                    
+                    showSuccessMessage('Driver updated successfully!');
+                } else {
+                    // Add new driver
+                    const newId = 'driver_' + Date.now();
+                    
+                    if (window.db) {
+                        const { collection, addDoc } = window.firestoreFunctions;
+                        const driversRef = collection(window.db, 'drivers');
+                        const docRef = await addDoc(driversRef, formData);
+                        formData.id = docRef.id;
+                    } else {
+                        formData.id = newId;
+                    }
+                    
+                    drivers.push(formData);
+                    showSuccessMessage('Driver added successfully!');
+                }
+                
+                updateDriverStats();
+                renderDriversGrid();
+                renderDriversTable();
+                closeDriverModal();
+                
+            } catch (error) {
+                console.error('Error saving driver:', error);
+                showErrorMessage('Failed to save driver. Please try again.');
+            }
+        }
+
+        // View driver profile
+        function viewDriverProfile(driverId) {
+            const driver = drivers.find(d => d.id === driverId);
+            if (!driver) return;
+            
+            const profileContent = document.getElementById('driverProfileContent');
+            profileContent.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Driver Info -->
+                    <div class="lg:col-span-1">
+                        <div class="text-center mb-6">
+                            <div class="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-3xl mx-auto mb-4">
+                                ${driver.name.charAt(0)}
+                            </div>
+                            <h3 class="text-2xl font-bold text-gray-800">${driver.name}</h3>
+                            <div class="flex items-center justify-center space-x-2 mt-2">
+                                <div class="w-3 h-3 rounded-full status-${driver.status}"></div>
+                                <span class="text-sm font-medium capitalize ${getStatusColor(driver.status)}">${driver.status}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <h4 class="font-semibold text-gray-800 mb-2">Contact Information</h4>
+                                <div class="space-y-2 text-sm">
+                                    <div><i class="fas fa-phone w-4"></i> ${driver.phone}</div>
+                                    ${driver.email ? `<div><i class="fas fa-envelope w-4"></i> ${driver.email}</div>` : ''}
+                                    ${driver.address ? `<div><i class="fas fa-map-marker-alt w-4"></i> ${driver.address}</div>` : ''}
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <h4 class="font-semibold text-gray-800 mb-2">Vehicle Details</h4>
+                                <div class="space-y-2 text-sm">
+                                    <div><i class="fas fa-car w-4"></i> ${driver.vehicleType} - ${driver.vehicleNumber}</div>
+                                    <div><i class="fas fa-id-card w-4"></i> ${driver.license}</div>
+                                    <div><i class="fas fa-calendar w-4"></i> Joined: ${driver.joinDate ? driver.joinDate.toLocaleDateString() : 'N/A'}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Performance Metrics -->
+                    <div class="lg:col-span-2">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <div class="bg-blue-50 rounded-lg p-4 text-center">
+                                <div class="text-2xl font-bold text-blue-600">${driver.currentOrders || 0}</div>
+                                <div class="text-sm text-blue-700">Current Orders</div>
+                            </div>
+                            <div class="bg-green-50 rounded-lg p-4 text-center">
+                                <div class="text-2xl font-bold text-green-600">${driver.totalDeliveries || 0}</div>
+                                <div class="text-sm text-green-700">Total Deliveries</div>
+                            </div>
+                            <div class="bg-yellow-50 rounded-lg p-4 text-center">
+                                <div class="text-2xl font-bold text-yellow-600">${driver.rating || 0}</div>
+                                <div class="text-sm text-yellow-700">Rating</div>
+                            </div>
+                            <div class="bg-purple-50 rounded-lg p-4 text-center">
+                                <div class="text-2xl font-bold text-purple-600">98%</div>
+                                <div class="text-sm text-purple-700">Success Rate</div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-lg border p-6">
+                            <h4 class="font-semibold text-gray-800 mb-4">Recent Activity</h4>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                                    <div>
+                                        <div class="font-medium text-gray-800">Order #DEL-001 delivered</div>
+                                        <div class="text-sm text-gray-500">Kakkanad to Palarivattom</div>
+                                    </div>
+                                    <div class="text-sm text-gray-500">2 hours ago</div>
+                                </div>
+                                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                                    <div>
+                                        <div class="font-medium text-gray-800">Order #DEL-002 picked up</div>
+                                        <div class="text-sm text-gray-500">From warehouse</div>
+                                    </div>
+                                    <div class="text-sm text-gray-500">3 hours ago</div>
+                                </div>
+                                <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                                    <div>
+                                        <div class="font-medium text-gray-800">Shift started</div>
+                                        <div class="text-sm text-gray-500">Status changed to online</div>
+                                    </div>
+                                    <div class="text-sm text-gray-500">5 hours ago</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 flex justify-center space-x-3">
+                    <button onclick="editDriver('${driver.id}'); closeDriverProfileModal();" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg">
+                        <i class="fas fa-edit mr-2"></i>Edit Driver
+                    </button>
+                    <button onclick="assignOrdersToDriver('${driver.id}')" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg">
+                        <i class="fas fa-clipboard-list mr-2"></i>Assign Orders
+                    </button>
+                    <button onclick="toggleDriverStatus('${driver.id}')" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg">
+                        <i class="fas fa-power-off mr-2"></i>Change Status
+                    </button>
+                </div>
+            `;
+            
+            document.getElementById('driverProfileModal').classList.remove('hidden');
+        }
+
+        function closeDriverProfileModal() {
+            document.getElementById('driverProfileModal').classList.add('hidden');
+        }
+
+        // Toggle driver status
+        async function toggleDriverStatus(driverId) {
+            const driver = drivers.find(d => d.id === driverId);
+            if (!driver) return;
+            
+            const statusOptions = ['online', 'busy', 'offline', 'break'];
+            const currentIndex = statusOptions.indexOf(driver.status);
+            const nextStatus = statusOptions[(currentIndex + 1) % statusOptions.length];
+            
+            try {
+                if (window.db) {
+                    const { doc, updateDoc } = window.firestoreFunctions;
+                    const driverRef = doc(window.db, 'drivers', driverId);
+                    await updateDoc(driverRef, { 
+                        status: nextStatus,
+                        lastActive: new Date()
+                    });
+                }
+                
+                // Update local data
+                const index = drivers.findIndex(d => d.id === driverId);
+                if (index !== -1) {
+                    drivers[index].status = nextStatus;
+                    drivers[index].lastActive = new Date();
+                }
+                
+                updateDriverStats();
+                renderDriversGrid();
+                renderDriversTable();
+                
+                showSuccessMessage(`Driver status updated to ${nextStatus}`);
+                
+            } catch (error) {
+                console.error('Error updating driver status:', error);
+                showErrorMessage('Failed to update driver status');
+            }
+        }
+
+        // Delete driver
+        async function deleteDriver(driverId) {
+            const driver = drivers.find(d => d.id === driverId);
+            if (!driver) return;
+            
+            if (!confirm(`Are you sure you want to delete driver ${driver.name}? This action cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                if (window.db) {
+                    const { doc, deleteDoc } = window.firestoreFunctions;
+                    const driverRef = doc(window.db, 'drivers', driverId);
+                    await deleteDoc(driverRef);
+                }
+                
+                // Remove from local data
+                drivers = drivers.filter(d => d.id !== driverId);
+                filteredDrivers = filteredDrivers.filter(d => d.id !== driverId);
+                
+                updateDriverStats();
+                renderDriversGrid();
+                renderDriversTable();
+                
+                showSuccessMessage('Driver deleted successfully');
+                
+            } catch (error) {
+                console.error('Error deleting driver:', error);
+                showErrorMessage('Failed to delete driver');
+            }
+        }
+
+        // Utility functions
+        function refreshDrivers() {
+            loadDriversFromFirebase();
+        }
+
+        function exportDriverData() {
+            const csvContent = [
+                ['Name', 'Phone', 'Email', 'License', 'Vehicle Type', 'Vehicle Number', 'Status', 'Current Orders', 'Total Deliveries', 'Rating'],
+                ...drivers.map(d => [
+                    d.name, d.phone, d.email || '', d.license, d.vehicleType, 
+                    d.vehicleNumber, d.status, d.currentOrders || 0, d.totalDeliveries || 0, d.rating || 0
+                ])
+            ].map(row => row.join(',')).join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `drivers_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        function bulkStatusUpdate() {
+            const selectedDrivers = Array.from(document.querySelectorAll('.driver-checkbox:checked')).map(cb => cb.value);
+            
+            if (selectedDrivers.length === 0) {
+                showErrorMessage('Please select drivers to update');
+                return;
+            }
+            
+            const newStatus = prompt('Enter new status (online/busy/offline/break):');
+            if (!newStatus || !['online', 'busy', 'offline', 'break'].includes(newStatus)) {
+                showErrorMessage('Invalid status');
+                return;
+            }
+            
+            selectedDrivers.forEach(async (driverId) => {
+                try {
+                    if (window.db) {
+                        const { doc, updateDoc } = window.firestoreFunctions;
+                        const driverRef = doc(window.db, 'drivers', driverId);
+                        await updateDoc(driverRef, { 
+                            status: newStatus,
+                            lastActive: new Date()
+                        });
+                    }
+                    
+                    const index = drivers.findIndex(d => d.id === driverId);
+                    if (index !== -1) {
+                        drivers[index].status = newStatus;
+                        drivers[index].lastActive = new Date();
+                    }
+                } catch (error) {
+                    console.error('Error updating driver:', error);
+                }
+            });
+            
+            updateDriverStats();
+            renderDriversGrid();
+            renderDriversTable();
+            showSuccessMessage(`${selectedDrivers.length} drivers updated to ${newStatus}`);
+        }
+
+        function selectAllDrivers() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.driver-checkbox');
+            
+            checkboxes.forEach(cb => {
+                cb.checked = selectAll.checked;
+            });
+        }
+
+        function assignOrdersToDriver(driverId) {
+            // This would integrate with your order management system
+            showInfoMessage(`Order assignment for driver ${driverId} - integrate with order management system`);
+        }
+
+        function assignOrdersDialog() {
+            showInfoMessage('Bulk order assignment dialog - integrate with order management system');
+        }
+
+        function createEmergencyOrder() {
+            showInfoMessage('Emergency order creation - integrate with order management system');
+        }
+
+        function optimizeRoutes() {
+            showInfoMessage('Route optimization - integrate with route planning system');
+        }
+
+        function validateForm() {
+            const form = document.getElementById('driverForm');
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const isValid = form.checkValidity();
+            
+            submitBtn.disabled = !isValid;
+            submitBtn.classList.toggle('opacity-50', !isValid);
+        }
+
+        function toggleTableView() {
+            const grid = document.getElementById('driversGrid');
+            const table = document.querySelector('.overflow-x-auto').parentElement;
+            const icon = document.getElementById('tableViewIcon');
+            
+            if (grid.style.display === 'none') {
+                grid.style.display = 'grid';
+                table.style.display = 'none';
+                icon.className = 'fas fa-table';
+            } else {
+                grid.style.display = 'none';
+                table.style.display = 'block';
+                icon.className = 'fas fa-th';
+            }
+        }
+
+        // Message functions
+        function showSuccessMessage(message) {
+            showToast(message, 'success');
+        }
+
+        function showErrorMessage(message) {
+            showToast(message, 'error');
+        }
+
+        function showInfoMessage(message) {
+            showToast(message, 'info');
+        }
+
+        function showToast(message, type = 'info') {
+            const colors = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                info: 'bg-blue-500',
+                warning: 'bg-yellow-500'
+            };
+
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                info: 'fa-info-circle',
+                warning: 'fa-exclamation-triangle'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `fixed top-4 right-4 ${colors[type]} text-white p-4 rounded-lg shadow-lg z-50 max-w-sm transform translate-x-full transition-transform duration-300`;
+            toast.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <i class="fas ${icons[type]} text-xl"></i>
+                    <div>
+                        <div class="font-medium">${message}</div>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-white hover:text-gray-200 ml-4">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+
+            document.body.appendChild(toast);
+
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full');
+            }, 100);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => {
+                    if (toast.parentElement) {
+                        toast.remove();
+                    }
+                }, 300);
+            }, 5000);
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'n':
+                        e.preventDefault();
+                        showAddDriverModal();
+                        break;
+                    case 'f':
+                        e.preventDefault();
+                        document.getElementById('searchDrivers').focus();
+                        break;
+                    case 'r':
+                        e.preventDefault();
+                        refreshDrivers();
+                        break;
+                    case 'e':
+                        e.preventDefault();
+                        exportDriverData();
+                        break;
+                }
+            }
+            
+            // ESC key to close modals
+            if (e.key === 'Escape') {
+                closeDriverModal();
+                closeDriverProfileModal();
+            }
+        });
+
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            if (drivers.length > 0) {
+                // Simulate real-time updates for demo
+                const randomDriver = drivers[Math.floor(Math.random() * drivers.length)];
+                if (Math.random() > 0.8) { // 20% chance of status change
+                    const statuses = ['online', 'busy', 'offline', 'break'];
+                    randomDriver.status = statuses[Math.floor(Math.random() * statuses.length)];
+                    randomDriver.lastActive = new Date();
+                    
+                    updateDriverStats();
+                    renderDriversGrid();
+                    renderDriversTable();
+                }
+            }
+        }, 30000);
+
+        // Initialize tooltips and other UI enhancements
+        function initializeUIEnhancements() {
+            // Add tooltips
+            const tooltipElements = document.querySelectorAll('[title]');
+            tooltipElements.forEach(element => {
+                element.addEventListener('mouseenter', function() {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'absolute bg-gray-800 text-white text-sm px-2 py-1 rounded shadow-lg z-50';
+                    tooltip.textContent = this.getAttribute('title');
+                    tooltip.style.left = '50%';
+                    tooltip.style.transform = 'translateX(-50%)';
+                    tooltip.style.bottom = '100%';
+                    tooltip.style.marginBottom = '5px';
+                    
+                    this.style.position = 'relative';
+                    this.appendChild(tooltip);
+                    this.removeAttribute('title');
+                });
+                
+                element.addEventListener('mouseleave', function() {
+                    const tooltip = this.querySelector('.absolute.bg-gray-800');
+                    if (tooltip) {
+                        tooltip.remove();
+                    }
+                });
+            });
+        }
+
+        // Performance monitoring
+        function logPerformance(action, startTime) {
+            const endTime = performance.now();
+            const duration = endTime - startTime;
+            console.log(`${action} completed in ${duration.toFixed(2)}ms`);
+            
+            if (duration > 1000) {
+                console.warn(`Slow operation detected: ${action} took ${duration.toFixed(2)}ms`);
+            }
+        }
+
+        // Error boundary for better error handling
+        window.addEventListener('error', function(e) {
+            console.error('Global error caught:', e.error);
+            showErrorMessage('An unexpected error occurred. Please refresh the page.');
+        });
+
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Unhandled promise rejection:', e.reason);
+            showErrorMessage('A network error occurred. Please check your connection.');
+        });
+
+        // Cleanup function for when leaving the page
+        window.addEventListener('beforeunload', function() {
+            // Cleanup any intervals, listeners, etc.
+            if (window.realTimeListener) {
+                window.realTimeListener();
+            }
+        });
+
+        // Initialize UI enhancements after DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(initializeUIEnhancements, 1000);
+        });
+
+        // Service Worker registration for offline functionality
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                    console.log('ServiceWorker registration successful');
+                }).catch(function(err) {
+                    console.log('ServiceWorker registration failed');
+                });
+            });
+        }
+
+        // PWA install prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Show install button
+            const installBtn = document.createElement('button');
+            installBtn.className = 'fixed bottom-4 left-4 bg-blue-500 text-white p-3 rounded-full shadow-lg z-50';
+            installBtn.innerHTML = '<i class="fas fa-download"></i>';
+            installBtn.title = 'Install Driver Management App';
+            installBtn.onclick = () => {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                    }
+                    deferredPrompt = null;
+                    installBtn.remove();
+                });
+            };
+            
+            document.body.appendChild(installBtn);
+        });
+    </script>
+</body>
+</html>

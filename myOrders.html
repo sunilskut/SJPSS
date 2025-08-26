@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Orders</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+    // Import Firebase modules
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getFirestore, collection, query, where, orderBy, getDocs, doc, getDoc, deleteDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+      authDomain: "sjpss-f504b.firebaseapp.com",
+      projectId: "sjpss-f504b",
+      storageBucket: "sjpss-f504b.firebasestorage.app",
+      messagingSenderId: "227402980311",
+      appId: "1:227402980311:web:56b580456ab6b9c6758992",
+      measurementId: "G-LZ4YP9YPN6"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let allOrders = [];
+
+    // Load orders on page load
+    document.addEventListener('DOMContentLoaded', async () => {
+      loadCustomerName();
+      try {
+        allOrders = await viewOrders();
+        if (allOrders.length === 0) {
+          document.getElementById('activeOrdersContainer').innerHTML = '<p class="text-center text-gray-500 py-8">No orders found for this customer.</p>';
+          document.getElementById('deliveredOrdersContainer').innerHTML = '<p class="text-center text-gray-500 py-8">No delivered orders found.</p>';
+          return;
+        }
+        
+        // Separate active and delivered orders
+        const activeOrders = allOrders.filter(order => order.status !== 'delivered');
+        const deliveredOrders = allOrders.filter(order => order.status === 'delivered');
+        
+        document.getElementById('activeOrdersContainer').innerHTML = activeOrders.length === 0 
+          ? '<p class="text-center text-gray-500 py-8">No active orders found.</p>'
+          : await generateOrdersHTML(activeOrders);
+          
+        document.getElementById('deliveredOrdersContainer').innerHTML = deliveredOrders.length === 0 
+          ? '<p class="text-center text-gray-500 py-8">No delivered orders found.</p>'
+          : await generateOrdersHTML(deliveredOrders);
+          
+        // Update tab counts
+        document.getElementById('activeCount').textContent = activeOrders.length;
+        document.getElementById('deliveredCount').textContent = deliveredOrders.length;
+        
+      } catch (error) {
+        console.error('Failed to fetch orders:', error);
+        document.getElementById('activeOrdersContainer').innerHTML = '<p class="text-center text-red-500 py-8">Error loading orders. Please try again.</p>';
+      }
+    });
+
+    /**
+     * Fetches product details from Firestore
+     */
+    async function fetchProductDetails(productId) {
+      try {
+        const productRef = doc(db, 'products', productId);
+        const productSnap = await getDoc(productRef);
+        if (productSnap.exists()) {
+          return {
+            id: productSnap.id,
+            ...productSnap.data()
+          };
+        }
+        return null;
+      } catch (error) {
+        console.error(`Error fetching product ${productId}:`, error);
+        return null;
+      }
+    }
+
+    /**
+     * Toggle order status with double confirmation
+     */
+    async function toggleOrderStatus(orderId) {
+      const button = document.getElementById(`cancel-${orderId}`);
+      const currentLabel = button.textContent.trim();
+      const isCancelled = currentLabel === 'Revoke';
+
+      // First confirmation
+      const firstConfirm = confirm(isCancelled 
+        ? 'Are you sure you want to revoke this order back to pending?' 
+        : 'Are you sure you want to cancel this order?');
+      if (!firstConfirm) return;
+
+      // Second confirmation
+      const secondConfirm = confirm(isCancelled 
+        ? 'This will change the order status back to pending. Continue?' 
+        : 'This action cannot be undone. Are you absolutely sure?');
+      if (!secondConfirm) return;
+
+      try {
+        button.disabled = true;
+        button.textContent = '...';
+
+        const orderRef = doc(db, 'orders', orderId);
+        await updateDoc(orderRef, {
+          status: isCancelled ? 'pending' : 'cancelled',
+          updatedAt: new Date()
+        });
+
+        // Refresh orders
+        allOrders = await viewOrders();
+        const activeOrders = allOrders.filter(order => order.status !== 'delivered');
+        const deliveredOrders = allOrders.filter(order => order.status === 'delivered');
+        
+        document.getElementById('activeOrdersContainer').innerHTML = activeOrders.length === 0 
+          ? '<p class="text-center text-gray-500 py-8">No active orders found.</p>'
+          : await generateOrdersHTML(activeOrders);
+          
+        document.getElementById('deliveredOrdersContainer').innerHTML = deliveredOrders.length === 0 
+          ? '<p class="text-center text-gray-500 py-8">No delivered orders found.</p>'
+          : await generateOrdersHTML(deliveredOrders);
+          
+        // Update counts
+        document.getElementById('activeCount').textContent = activeOrders.length;
+        document.getElementById('deliveredCount').textContent = deliveredOrders.length;
+
+      } catch (error) {
+        console.error(`Error updating order ${orderId}:`, error);
+        alert('Failed to update order. Please try again.');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    /**
+     * Fetches orders for a specific customer
+     */
+    async function viewOrders() {
+      try {
+        const customerId = localStorage.getItem('customerId');
+        if (!customerId) {
+          console.error('Customer ID not found in localStorage');
+          return [];
+        }
+
+        const ordersRef = collection(db, 'orders');
+        const q = query(ordersRef, where('customerId', '==', customerId));
+        const querySnapshot = await getDocs(q);
+        
+        const orders = [];
+        querySnapshot.forEach((doc) => {
+          orders.push({
+            id: doc.id,
+            ...doc.data()
+          });
+        });
+
+        return orders.sort((a, b) => {
+          if (a.status === 'pending' && b.status !== 'pending') return -1;
+          if (a.status !== 'pending' && b.status === 'pending') return 1;
+          const dateA = new Date(a.createdAt);
+          const dateB = new Date(b.createdAt);
+          return dateB - dateA;
+        });
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+        throw error;
+      }
+    }
+
+    /**
+     * Format timestamp for display
+     */
+    function formatTimestamp(timestamp) {
+      if (!timestamp) return null;
+      let date;
+      if (timestamp.seconds) {
+        date = new Date(timestamp.seconds * 1000);
+      } else if (typeof timestamp === 'string') {
+        date = new Date(timestamp);
+      } else {
+        return null;
+      }
+      return date.toLocaleDateString('en-IN', { 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    /**
+     * Generate status timeline HTML
+     */
+  function generateStatusTimeline(order) {
+  const timeline = [
+    { key: 'createdAt', label: 'Ordered', icon: '📋' },
+    { key: 'verifiedAt', label: 'Verified', icon: '✅', condition: order.paymentMethod === 'UPI' },
+    { key: 'packedAt', label: 'Packed', icon: '📦' },
+    { key: 'assignedAt', label: 'Assigned', icon: '🚚' },
+    { key: 'pickedAt', label: 'Picked', icon: '🚛' },
+    { key: 'deliveredAt', label: 'Delivered', icon: '🏠' }
+  ].filter(step => step.condition !== false);
+
+  return `
+    <div class="w-fit px-1"> <!-- changed w-full → w-fit -->
+      <div class="relative mx-auto"> <!-- removed max-w-[180px] -->
+        <!-- Vertical connecting line -->
+        <div class="absolute left-2.5 top-2.5 bottom-2.5 w-0.5 bg-gray-300"></div>
+        
+        <!-- Timeline Steps -->
+        <div class="space-y-1.5">
+          ${timeline.map((step, index) => {
+            const timestamp = order[step.key];
+            const isCompleted = !!timestamp;
+            const formattedDate = formatTimestamp(timestamp);
+            
+            return `
+              <div class="relative flex items-center">
+                <!-- Timeline dot -->
+                <div class="relative z-10 w-5 h-5 rounded-full flex items-center justify-center ${
+                  isCompleted 
+                    ? 'bg-green-500 shadow-sm' 
+                    : 'bg-gray-200'
+                }">
+                  <span class="text-[10px] ${isCompleted ? 'filter brightness-0 invert' : ''}">${step.icon}</span>
+                </div>
+
+                <!-- Content -->
+                <div class="ml-1.5 flex-1 min-h-5">
+                  <div class="flex justify-between items-center">
+                    <h3 class="text-[10px] font-medium ${isCompleted ? 'text-green-700' : 'text-gray-500'}">
+                      ${step.label}
+                    </h3>
+                    ${formattedDate ? `
+                      <span class="text-[8px] ${isCompleted ? 'text-green-600' : 'text-gray-400'} ml-0.5">
+                        ${formattedDate}
+                      </span>
+                    ` : ''}
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        
+        <!-- Compact Progress Bar-->
+        <div class="mt-1.5 bg-gray-100 rounded-full p-0.5">  
+          <div class="flex justify-between items-center mb-0.5">
+            <span class="text-[8px] text-gray-600">Progress</span>
+            <span class="text-[8px] font-medium text-blue-600">
+              ${Math.round((timeline.filter(step => order[step.key]).length / timeline.length) * 100)}%
+            </span>
+          </div>
+          <div class="bg-gray-200 rounded-full h-0.75">
+            <div class="bg-blue-500 h-0.75 rounded-full transition-all duration-300" 
+                 style="width: ${(timeline.filter(step => order[step.key]).length / timeline.length) * 100}%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+
+
+
+
+   async function generateOrdersHTML(orders) {
+      return await Promise.all(orders.map(async order => {
+        const itemsWithDetails = await Promise.all(order.items.map(async item => {
+          const product = await fetchProductDetails(item.productId);
+          return { ...item, product };
+        }));
+
+        const isCancelled = order.status === 'cancelled';
+        const isPending = order.status === 'pending';
+        const isDelivered = order.status === 'delivered';
+        const showCancelButton = isPending || isCancelled;
+        const buttonLabel = isCancelled ? 'Revoke' : 'Cancel';
+        const buttonColor = isCancelled ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600';
+
+        // Check if delivered order is within 7 days for return eligibility
+        const isReturnEligible = isDelivered && order.deliveredAt && 
+          (new Date() - (order.deliveredAt.toDate ? order.deliveredAt.toDate() : new Date(order.deliveredAt))) <= (7 * 24 * 60 * 60 * 1000);
+
+        return `
+          <div class="bg-white border border-gray-200 rounded-lg p-4 mb-4 shadow-sm hover:shadow-md transition-shadow">
+            <!-- Order Header -->
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <div class="font-semibold text-gray-900">Order #${order.id.substring(0, 8)}</div>
+                <div class="text-xs text-gray-500">
+                  ${(order.createdAt.toDate ? order.createdAt.toDate() : new Date(order.createdAt)).toLocaleDateString('en-IN', { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric'
+                  })}
+                </div>
+              </div>
+              
+              <div class="flex items-center gap-2">
+                <!-- Status Button with Timeline -->
+                <div class="relative group">
+                  <button class="px-2 py-1 text-xs font-medium rounded-full ${
+                    order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                    order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                    'bg-blue-100 text-blue-800'
+                  }">show status</button>
+                  
+                  <!-- Timeline Tooltip -->
+                  <div class="absolute bottom-full right-0 mb-2 hidden group-hover:block group-focus:block z-50">
+                    <div class="bg-white border border-gray-200 rounded-lg shadow-lg p-4 w-48">
+                      <div class="text-xs font-medium text-gray-900 mb-3">Order Timeline</div>
+                      <div class="flex items-start justify-between gap-2">
+                        ${generateStatusTimeline(order)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Cancel/Revoke Button -->
+                ${showCancelButton ? `
+                  <button id="cancel-${order.id}" 
+                          onclick="toggleOrderStatus('${order.id}')"
+                          class="px-2 py-1 text-xs text-white rounded ${buttonColor} transition-colors">
+                    ${buttonLabel}
+                  </button>
+                ` : ''}
+                
+                <!-- Return Button for eligible delivered orders -->
+                ${isReturnEligible ? `
+                  <button id="return-${order.id}" 
+                          onclick="initiateReturn('${order.id}')"
+                          class="px-2 py-1 text-xs text-white rounded bg-orange-500 hover:bg-orange-600 transition-colors">
+                    Return
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+
+            <!-- Order Details -->
+            <div class="grid grid-cols-2 gap-4 text-sm mb-3">
+              <div>
+                <span class="font-medium text-green-600">₹${order.totalAmount}</span>
+                <span class="text-gray-500 ml-2">${order.paymentMethod}</span>
+              </div>
+              <div class="text-right">
+                <span class="text-xs ${order.paymentStatus === 'paid' ? 'text-green-600' : 'text-yellow-600'}">
+                  ${order.paymentStatus}
+                </span>
+                ${isDelivered && order.deliveredAt ? `
+                  <div class="text-xs text-gray-500">
+                    Delivered: ${(order.deliveredAt.toDate ? order.deliveredAt.toDate() : new Date(order.deliveredAt)).toLocaleDateString('en-IN', { 
+                      month: 'short', 
+                      day: 'numeric'
+                    })}
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+
+            <!-- Shipping Address -->
+            <div class="text-xs text-gray-600 mb-3 bg-gray-50 p-2 rounded">
+              <strong>Ship to:</strong> ${order.shippingDetails?.address || 'N/A'} - ${order.shippingDetails?.pincode || 'N/A'}
+            </div>
+
+            <!-- Items -->
+            <div class="space-y-2">
+              ${itemsWithDetails.map(item => `
+                <div class="flex justify-between items-center text-sm">
+                  <div class="flex-1">
+                    <div class="font-medium">${item.product?.name || `Product #${item.productId}`}</div>
+                    <div class="text-xs text-gray-500">Qty: ${item.quantity}</div>
+                  </div>
+                  <div class="font-medium">₹${item.product?.price || item.price}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      })).then(results => results.join(''));
+    }
+
+    // Tab switching
+    window.switchTab = function(tab) {
+      const activeTab = document.getElementById('activeTab');
+      const deliveredTab = document.getElementById('deliveredTab');
+      const activeContainer = document.getElementById('activeOrdersContainer');
+      const deliveredContainer = document.getElementById('deliveredOrdersContainer');
+
+      if (tab === 'active') {
+        activeTab.classList.add('border-blue-500', 'text-blue-600');
+        activeTab.classList.remove('border-transparent', 'text-gray-500');
+        deliveredTab.classList.remove('border-blue-500', 'text-blue-600');
+        deliveredTab.classList.add('border-transparent', 'text-gray-500');
+        activeContainer.classList.remove('hidden');
+        deliveredContainer.classList.add('hidden');
+      } else {
+        deliveredTab.classList.add('border-blue-500', 'text-blue-600');
+        deliveredTab.classList.remove('border-transparent', 'text-gray-500');
+        activeTab.classList.remove('border-blue-500', 'text-blue-600');
+        activeTab.classList.add('border-transparent', 'text-gray-500');
+        deliveredContainer.classList.remove('hidden');
+        activeContainer.classList.add('hidden');
+      }
+    };
+
+   
+
+
+
+
+// Function to update order status to 'returned' in Firebase
+async function updateOrderReturnStatus(orderId) {
+  try {
+    console.log('Starting return process for order:', orderId);
+    
+    // Check if Firebase is properly initialized
+    if (typeof db === 'undefined') {
+      throw new Error('Firebase database not initialized. Make sure db is properly configured.');
+    }
+
+    // Check if required Firebase functions are available
+    if (typeof doc === 'undefined' || typeof updateDoc === 'undefined') {
+      throw new Error('Firebase Firestore functions not imported. Make sure to import doc and updateDoc from firebase/firestore.');
+    }
+
+    // Reference to the specific order document
+    const orderRef = doc(db, 'orders', orderId);
+    console.log('Order reference created:', orderRef.path);
+    
+    // Prepare update data
+    const updateData = {
+      status: 'returned'
+    };
+
+    // Add timestamp if serverTimestamp is available
+    if (typeof serverTimestamp !== 'undefined') {
+      updateData.returnedAt = serverTimestamp();
+    } else {
+      updateData.returnedAt = new Date(); // Fallback to regular Date
+      console.warn('serverTimestamp not available, using regular Date');
+    }
+
+    console.log('Updating order with data:', updateData);
+    
+    // Update the status field to 'returned'
+    await updateDoc(orderRef, updateData);
+
+    console.log(`Order ${orderId} status updated to 'returned' successfully`);
+    
+    // Remove the order from the current display by hiding its element
+    const orderElement = document.querySelector(`[id*="${orderId}"]`)?.closest('.bg-white.border.border-gray-200');
+    if (orderElement) {
+      orderElement.style.transition = 'opacity 0.3s ease-out';
+      orderElement.style.opacity = '0';
+      setTimeout(() => {
+        orderElement.remove();
+      }, 300);
+    } else {
+      console.warn('Order element not found in DOM');
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Detailed error updating order return status:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+      orderId: orderId
+    });
+    
+    // More specific error messages
+    let errorMessage = 'Failed to process return request. ';
+    if (error.code === 'permission-denied') {
+      errorMessage += 'You do not have permission to update this order.';
+    } else if (error.code === 'not-found') {
+      errorMessage += 'Order not found.';
+    } else if (error.code === 'unavailable') {
+      errorMessage += 'Service temporarily unavailable. Please check your internet connection.';
+    } else {
+      errorMessage += `Error: ${error.message}`;
+    }
+    
+    alert(errorMessage);
+    return false;
+  }
+}
+
+// Updated initiateReturn function with better UX
+window.initiateReturn = async function(orderId) {
+  // Show confirmation dialog
+  if (!confirm('Are you sure you want to initiate a return for this order?')) {
+    return;
+  }
+  
+  // Disable the return button to prevent double clicks
+  const returnButton = document.getElementById(`return-${orderId}`);
+  const originalText = returnButton.textContent;
+  returnButton.disabled = true;
+  returnButton.textContent = 'Processing...';
+  returnButton.classList.add('opacity-50', 'cursor-not-allowed');
+  
+  try {
+    // Call the update function
+    const success = await updateOrderReturnStatus(orderId);
+    
+    if (success) {
+      alert('Return request initiated successfully! The order will be processed for return.');
+    }
+  } catch (error) {
+    console.error('Return initiation failed:', error);
+    // Re-enable button on error
+    returnButton.disabled = false;
+    returnButton.textContent = originalText;
+    returnButton.classList.remove('opacity-50', 'cursor-not-allowed');
+  }
+};
+
+// Alternative function if you want to refresh the entire orders list instead of just hiding
+async function refreshOrdersList() {
+  try {
+    // Assuming you have functions to reload active and delivered orders
+    // Replace these with your actual functions
+    
+    // For active orders
+    const activeOrdersQuery = query(
+      collection(db, 'orders'),
+      where('status', 'in', ['pending', 'processing', 'shipped'])
+    );
+    const activeOrdersSnapshot = await getDocs(activeOrdersQuery);
+    const activeOrders = activeOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // For delivered orders (excluding returned ones)
+    const deliveredOrdersQuery = query(
+      collection(db, 'orders'),
+      where('status', '==', 'delivered')
+    );
+    const deliveredOrdersSnapshot = await getDocs(deliveredOrdersQuery);
+    const deliveredOrders = deliveredOrdersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Update the HTML containers
+    document.getElementById('activeOrdersContainer').innerHTML = await generateOrdersHTML(activeOrders);
+    document.getElementById('deliveredOrdersContainer').innerHTML = await generateOrdersHTML(deliveredOrders);
+    
+  } catch (error) {
+    console.error('Error refreshing orders list:', error);
+  }
+}
+
+
+
+
+
+    // Make toggleOrderStatus globally available
+    window.toggleOrderStatus = toggleOrderStatus;
+
+
+/**
+ * Fetch and display customer name
+ */
+async function loadCustomerName() {
+  try {
+    const customerId = localStorage.getItem('customerId');
+    if (!customerId) return;
+    
+    const customerRef = doc(db, 'customers', customerId);
+    const customerSnap = await getDoc(customerRef);
+    
+    if (customerSnap.exists()) {
+      const customerData = customerSnap.data();
+      const fullName = customerData.fullName || 'Customer';
+      document.getElementById('customerName').textContent = fullName;
+    }
+  } catch (error) {
+    console.error('Error fetching customer name:', error);
+  }
+}
+
+
+  </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+      <div class="flex items-center justify-between relative py-4 px-4">
+  <!-- Back Button -->
+  <a href="javascript:history.back()" class="flex items-center text-sm text-blue-600 hover:underline">
+    <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16" class="mr-1">
+      <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+    </svg>
+    Back
+  </a>
+  
+  <!-- Centered Title -->
+  <h1 class="text-lg font-semibold absolute left-1/2 transform -translate-x-1/2">My Orders</h1>
+  
+  <!-- Customer Name -->
+  <span id="customerName" class="text-sm text-green-600 font-medium"></span>
+</div>
+
+      <!-- Tabs -->
+      <div class="flex border-b border-gray-200">
+        <button id="activeTab" onclick="switchTab('active')" 
+                class="flex-1 py-3 px-4 text-center border-b-2 border-blue-500 text-blue-600 font-medium">
+          Active Orders (<span id="activeCount">0</span>)
+        </button>
+        <button id="deliveredTab" onclick="switchTab('delivered')" 
+                class="flex-1 py-3 px-4 text-center border-b-2 border-transparent text-gray-500 font-medium hover:text-gray-700">
+          Delivered (<span id="deliveredCount">0</span>)
+        </button>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <div class="p-4">
+      <!-- Active Orders -->
+      <div id="activeOrdersContainer">
+        <div class="text-center py-8">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p class="text-gray-500">Loading orders...</p>
+        </div>
+      </div>
+
+      <!-- Delivered Orders -->
+      <div id="deliveredOrdersContainer" class="hidden">
+        <div class="text-center py-8">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p class="text-gray-500">Loading orders...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

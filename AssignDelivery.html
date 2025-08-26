@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.min.js"></script>
+</head>
+<body class="min-h-screen transition-all duration-300" id="bodyElement">
+    <div class="container mx-auto px-4 py-6">
+        <!-- Header Section -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h1 class="text-2xl lg:text-3xl font-bold transition-colors duration-300" id="pageTitle">Orders Management</h1>
+                <div class="flex items-center space-x-3">
+                    <div id="orderCounter" class="px-3 py-1 rounded-full text-sm font-medium"></div>
+                    <button onclick="refreshOrders()" class="px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105" id="refreshBtn">
+                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+            <div id="breadcrumb" class="text-sm opacity-75"></div>
+        </div>
+        
+        <!-- Orders Grid Container -->
+        <div id="ordersContainer" class="grid gap-4 lg:gap-6">
+            <!-- Orders will be loaded here -->
+        </div>
+        
+        <!-- Loading State -->
+        <div id="loading" class="flex flex-col items-center justify-center py-12">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 mb-4" id="loadingSpinner"></div>
+            <p class="text-lg font-medium" id="loadingText">Loading orders...</p>
+        </div>
+    </div>
+
+    <!-- Staff Assignment Modal -->
+    <div id="staffModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[80vh] flex flex-col">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-semibold text-gray-800">Assign Delivery Staff</h3>
+                    <button onclick="closeStaffModal()" class="text-gray-400 hover:text-gray-600 transition-colors duration-200">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="flex-1 overflow-hidden">
+                <div id="staffList" class="p-6 space-y-3 max-h-96 overflow-y-auto">
+                    <!-- Staff list will be loaded here -->
+                </div>
+                
+                <div id="staffLoading" class="flex flex-col items-center justify-center py-8">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-3"></div>
+                    <p class="text-gray-600">Loading staff...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+            authDomain: "sjpss-f504b.firebaseapp.com",
+            projectId: "sjpss-f504b",
+            storageBucket: "sjpss-f504b.firebasestorage.app",
+            messagingSenderId: "227402980311",
+            appId: "1:227402980311:web:56b580456ab6b9c6758992",
+            measurementId: "G-LZ4YP9YPN6"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        let currentOrderId = null;
+        let products = {};
+        let singleOrderMode = false;
+        let targetOrderId = null;
+        
+        // Get URL parameters
+        function getUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('orderId');
+        }
+        
+        // Initialize theme based on URL params
+        function initializeTheme() {
+            const orderId = getUrlParams();
+            const body = document.getElementById('bodyElement');
+            const title = document.getElementById('pageTitle');
+            const refreshBtn = document.getElementById('refreshBtn');
+            const breadcrumb = document.getElementById('breadcrumb');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const loadingText = document.getElementById('loadingText');
+            
+            if (orderId) {
+                // Single order theme - Purple/Indigo
+                singleOrderMode = true;
+                targetOrderId = orderId;
+                body.className = 'min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 transition-all duration-300';
+                title.className = 'text-2xl lg:text-3xl font-bold text-indigo-800 transition-colors duration-300';
+                title.textContent = 'Order Details';
+                refreshBtn.className = 'px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium transition-all duration-200 hover:bg-indigo-700 hover:scale-105 shadow-lg';
+                breadcrumb.innerHTML = `<span class="text-indigo-600">Orders</span> <span class="mx-2 text-indigo-400">›</span> <span class="text-indigo-800 font-medium">#${orderId.slice(-8)}</span>`;
+                loadingSpinner.className = 'animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-4';
+                loadingText.className = 'text-lg font-medium text-indigo-700';
+            } else {
+                // All orders theme - Blue/Teal
+                singleOrderMode = false;
+                body.className = 'min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 transition-all duration-300';
+                title.className = 'text-2xl lg:text-3xl font-bold text-blue-800 transition-colors duration-300';
+                title.textContent = 'Orders To Be Assigned';
+                refreshBtn.className = 'px-4 py-2 bg-blue-600 text-white rounded-lg font-medium transition-all duration-200 hover:bg-blue-700 hover:scale-105 shadow-lg';
+                breadcrumb.innerHTML = '<span class="text-blue-600 font-medium">All Pending Orders</span>';
+                loadingSpinner.className = 'animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4';
+                loadingText.className = 'text-lg font-medium text-blue-700';
+            }
+        }
+        
+        // Load products first
+        async function loadProducts() {
+            try {
+                const productsSnapshot = await db.collection('products').get();
+                productsSnapshot.forEach(doc => {
+                    products[doc.id] = doc.data();
+                });
+            } catch (error) {
+                console.error('Error loading products:', error);
+            }
+        }
+        
+        // Load orders
+        async function loadOrders() {
+            try {
+                await loadProducts();
+                
+                let ordersQuery;
+                let filteredOrders = [];
+                
+                if (singleOrderMode && targetOrderId) {
+                    // Load specific order
+                    const orderDoc = await db.collection('orders').doc(targetOrderId).get();
+                    if (orderDoc.exists) {
+                        filteredOrders = [orderDoc];
+                    }
+                } else {
+                    // Load all packed orders without delivery staff
+                    const ordersSnapshot = await db.collection('orders')
+                        .where('status', '==', 'packed')
+                        .orderBy('createdAt', 'desc')
+                        .get();
+                    filteredOrders = ordersSnapshot.docs.filter(doc => doc.data().deliveryStaff == null);
+                }
+                
+                const ordersContainer = document.getElementById('ordersContainer');
+                const loading = document.getElementById('loading');
+                const orderCounter = document.getElementById('orderCounter');
+                
+                ordersContainer.innerHTML = '';
+                
+                if (filteredOrders.length === 0) {
+                    const emptyMessage = singleOrderMode ? 'Order not found' : 'No orders to assign';
+                    ordersContainer.innerHTML = `<div class="col-span-full text-center py-16">
+                        <div class="text-6xl mb-4">${singleOrderMode ? '🔍' : '📦'}</div>
+                        <p class="text-xl font-medium ${singleOrderMode ? 'text-indigo-700' : 'text-blue-700'} mb-2">${emptyMessage}</p>
+                        <p class="text-gray-600">${singleOrderMode ? 'The specified order could not be found.' : 'All orders have been assigned to delivery staff.'}</p>
+                    </div>`;
+                    loading.style.display = 'none';
+                    return;
+                }
+                
+                // Set grid layout based on mode
+                if (singleOrderMode) {
+                    ordersContainer.className = 'max-w-4xl mx-auto';
+                } else {
+                    ordersContainer.className = 'grid gap-4 lg:gap-6 grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3';
+                }
+                
+                // Update counter
+                const counterTheme = singleOrderMode ? 'bg-indigo-100 text-indigo-800' : 'bg-blue-100 text-blue-800';
+                orderCounter.className = `px-3 py-1 rounded-full text-sm font-medium ${counterTheme}`;
+                orderCounter.textContent = `${filteredOrders.length} ${filteredOrders.length === 1 ? 'order' : 'orders'}`;
+                
+                filteredOrders.forEach(doc => {
+                    const order = doc.data();
+                    const orderElement = createOrderElement(doc.id, order);
+                    ordersContainer.appendChild(orderElement);
+                });
+                
+                loading.style.display = 'none';
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                const loading = document.getElementById('loading');
+                loading.innerHTML = `<div class="text-center py-12">
+                    <div class="text-4xl mb-4">⚠️</div>
+                    <p class="text-red-600 text-lg font-medium">Error loading orders</p>
+                    <button onclick="loadOrders()" class="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200">
+                        Try Again
+                    </button>
+                </div>`;
+            }
+        }
+        
+        // Create order element
+        function createOrderElement(orderId, order) {
+            const orderDiv = document.createElement('div');
+            
+            const baseClasses = 'rounded-xl shadow-lg border-2 transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1';
+            const themeClasses = singleOrderMode 
+                ? 'bg-white border-indigo-200 hover:border-indigo-300' 
+                : 'bg-white border-blue-200 hover:border-blue-300';
+            
+            orderDiv.className = `${baseClasses} ${themeClasses} ${singleOrderMode ? 'p-8' : 'p-6'}`;
+            
+            const createdAt = new Date(order.createdAt).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            const itemsHtml = order.items.map(item => {
+                const productName = products[item.productId]?.name || `Product ${item.productId}`;
+                return `
+                    <div class="flex justify-between items-center py-2 px-3 rounded-lg bg-gray-50 mb-2 last:mb-0">
+                        <div class="flex-1">
+                            <span class="font-medium text-gray-800 block">${productName}</span>
+                            <span class="text-sm text-gray-600">Quantity: ${item.quantity}</span>
+                        </div>
+                        <span class="font-bold text-lg ${singleOrderMode ? 'text-indigo-600' : 'text-blue-600'}">₹${item.price}</span>
+                    </div>
+                `;
+            }).join('');
+            
+            const statusColor = order.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' : 
+                               order.status === 'processing' ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                               order.status === 'shipped' ? 'bg-purple-100 text-purple-800 border-purple-300' :
+                               'bg-green-100 text-green-800 border-green-300';
+            
+            const paymentStatusColor = order.paymentStatus === 'pending' ? 'bg-red-100 text-red-800 border-red-300' : 'bg-green-100 text-green-800 border-green-300';
+            
+            const deliveryStaffInfo = order.deliveryStaff ? 
+                `<div class="p-4 bg-green-50 rounded-xl border-2 border-green-200 mb-6">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                        <span class="font-semibold text-green-800">Assigned to: ${order.deliveryStaff}</span>
+                    </div>
+                </div>` : '';
+            
+            const buttonTheme = singleOrderMode ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-blue-600 hover:bg-blue-700';
+            
+            orderDiv.innerHTML = `
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h3 class="text-xl font-bold ${singleOrderMode ? 'text-indigo-800' : 'text-blue-800'} mb-1">
+                            Order #${orderId.slice(-8)}
+                        </h3>
+                        <p class="text-gray-600 flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            ${createdAt}
+                        </p>
+                    </div>
+                    <div class="flex flex-col space-y-2">
+                        <span class="px-3 py-1 rounded-full text-xs font-bold border-2 ${statusColor}">${order.status.toUpperCase()}</span>
+                        <span class="px-3 py-1 rounded-full text-xs font-bold border-2 ${paymentStatusColor}">${order.paymentStatus.toUpperCase()}</span>
+                    </div>
+                </div>
+                
+                <div class="${singleOrderMode ? 'grid lg:grid-cols-2 gap-8' : 'space-y-6'}">
+                    <div>
+                        <h4 class="font-bold text-gray-800 mb-4 text-lg flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                            </svg>
+                            Order Items
+                        </h4>
+                        <div class="space-y-2 mb-4">
+                            ${itemsHtml}
+                        </div>
+                        <div class="pt-4 border-t-2 border-gray-200">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xl font-bold text-gray-800">Total Amount:</span>
+                                <span class="text-2xl font-bold ${singleOrderMode ? 'text-indigo-600' : 'text-blue-600'}">₹${order.totalAmount}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-bold text-gray-800 mb-4 text-lg flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            Delivery Details
+                        </h4>
+                        <div class="bg-gray-50 rounded-xl p-4 space-y-3">
+                            <div>
+                                <span class="font-semibold text-gray-700 block">Address:</span>
+                                <span class="text-gray-600">${order.shippingDetails.address}</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <span class="font-semibold text-gray-700 block">Pincode:</span>
+                                    <span class="text-gray-600">${order.shippingDetails.pincode}</span>
+                                </div>
+                                <div>
+                                    <span class="font-semibold text-gray-700 block">Method:</span>
+                                    <span class="text-gray-600">${order.shippingDetails.method}</span>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 pt-2 border-t border-gray-200">
+                                <div>
+                                    <span class="font-semibold text-gray-700 block">Payment:</span>
+                                    <span class="text-gray-600">${order.paymentMethod}</span>
+                                </div>
+                                <div>
+                                    <span class="font-semibold text-gray-700 block">Customer:</span>
+                                    <span class="text-gray-600">${order.customerId}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                ${deliveryStaffInfo}
+                
+                <div class="mt-6 pt-6 border-t-2 border-gray-200">
+                    <button 
+                        onclick="openStaffModal('${orderId}')" 
+                        class="w-full px-6 py-3 ${buttonTheme} text-white rounded-xl font-bold text-lg transition-all duration-200 transform hover:scale-105 shadow-lg ${order.deliveryStaff ? 'opacity-50 cursor-not-allowed' : ''}"
+                        ${order.deliveryStaff ? 'disabled' : ''}
+                    >
+                        ${order.deliveryStaff ? '✓ Staff Already Assigned' : '👤 Assign Delivery Staff'}
+                    </button>
+                </div>
+            `;
+            
+            return orderDiv;
+        }
+        
+        // Refresh orders
+        function refreshOrders() {
+            const loading = document.getElementById('loading');
+            loading.style.display = 'flex';
+            document.getElementById('ordersContainer').innerHTML = '';
+            loadOrders();
+        }
+        
+        // Open staff modal
+        async function openStaffModal(orderId) {
+            currentOrderId = orderId;
+            const modal = document.getElementById('staffModal');
+            const staffList = document.getElementById('staffList');
+            const staffLoading = document.getElementById('staffLoading');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            staffList.innerHTML = '';
+            staffLoading.style.display = 'flex';
+            
+            try {
+                const staffSnapshot = await db.collection('users')
+                    .where('role', '==', 'deliveryStaff')
+                    .get();
+                
+                staffLoading.style.display = 'none';
+                
+                if (staffSnapshot.empty) {
+                    staffList.innerHTML = '<div class="text-center py-8"><div class="text-4xl mb-4">👥</div><p class="text-gray-500">No delivery staff available</p></div>';
+                    return;
+                }
+                
+                staffSnapshot.forEach(doc => {
+                    const staff = doc.data();
+                    const staffElement = document.createElement('div');
+                    staffElement.className = 'flex justify-between items-center p-4 border-2 border-gray-200 rounded-xl hover:border-green-300 hover:bg-green-50 transition-all duration-200';
+                    
+                    staffElement.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-green-500 rounded-full flex items-center justify-center text-white font-bold">
+                                ${(staff.name || 'U').charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <p class="font-bold text-gray-800">${staff.name || 'Unnamed Staff'}</p>
+                                <p class="text-sm text-gray-600">${staff.email || doc.id}</p>
+                            </div>
+                        </div>
+                        <button 
+                            onclick="assignStaff('${doc.id}')" 
+                            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 font-bold shadow-lg transform hover:scale-105"
+                        >
+                            Assign
+                        </button>
+                    `;
+                    
+                    staffList.appendChild(staffElement);
+                });
+                
+            } catch (error) {
+                console.error('Error loading staff:', error);
+                staffLoading.innerHTML = '<div class="text-center py-8"><div class="text-4xl mb-4">⚠️</div><p class="text-red-500">Error loading staff</p></div>';
+            }
+        }
+        
+        // Close staff modal
+        function closeStaffModal() {
+            const modal = document.getElementById('staffModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            currentOrderId = null;
+        }
+
+/*
+
+ // Assign staff to order
+        async function assignStaff(staffId) {
+            if (!currentOrderId) return;
+            try {
+               await db.collection('orders').doc(currentOrderId).update({
+                    deliveryStaff: staffId
+                });
+                closeStaffModal();
+                loadOrders(); // Reload orders to show updated assignment
+            } catch (error) {
+                console.error('Error assigning staff:', error);
+                alert('Error assigning staff. Please try again.');
+            }
+        }
+*/
+        
+// Assign staff to order and create log
+async function assignStaff(staffId) {
+    if (!currentOrderId) return;
+    const userId = sessionStorage.getItem('userId');
+    try {  
+        // Update the order
+        await db.collection('orders').doc(currentOrderId).update({
+            deliveryStaff: staffId,
+	    assignedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            status: "deliveryStaffAssigned"
+        });
+
+        // Create log entry
+        await db.collection('logs').add({
+            action: "create",
+            changes: null,
+            entityId: staffId.toString(),
+            entityType: "staff",
+            note: `Assigned to Delivery staff ID. No. ${staffId} in the order No. ${currentOrderId} done by User id No. ${userId}`,
+            sessionId: "true", // same as your existing logs
+            timestamp: new Date(),
+            url: window.location.href,
+            userAgent: navigator.userAgent
+        });
+
+        closeStaffModal();
+        loadOrders();
+
+    } catch (error) {
+        console.error('Error assigning staff:', error);
+        alert('Error assigning staff. Please try again.');
+    }
+}
+
+        
+        // Initialize page
+        window.addEventListener('load', function() {
+            initializeTheme();
+            loadOrders();
+        });
+        
+        // Close modal when clicking outside
+        document.getElementById('staffModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeStaffModal();
+            }
+        });
+    </script>
+</body>
+</html>

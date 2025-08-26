@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'fade-in': 'fadeIn 0.6s ease-out',
+                        'slide-up': 'slideUp 0.4s ease-out',
+                        'bounce-in': 'bounceIn 0.6s ease-out',
+                        'pulse-slow': 'pulse 3s ease-in-out infinite',
+                        'gradient': 'gradient 6s ease infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' }
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(30px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' }
+                        },
+                        bounceIn: {
+                            '0%': { opacity: '0', transform: 'scale(0.3)' },
+                            '50%': { opacity: '1', transform: 'scale(1.05)' },
+                            '70%': { transform: 'scale(0.9)' },
+                            '100%': { opacity: '1', transform: 'scale(1)' }
+                        },
+                        gradient: {
+                            '0%, 100%': { backgroundPosition: '0% 50%' },
+                            '50%': { backgroundPosition: '100% 50%' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="fixed inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 z-50 flex items-center justify-center">
+        <div class="text-center text-white">
+            <div class="relative mb-8">
+                <div class="w-20 h-20 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <i class="fas fa-store absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-2xl"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-2">Loading Vendor Dashboard</h2>
+            <p class="text-blue-100 animate-pulse">Please wait while we fetch your data...</p>
+        </div>
+    </div>
+
+    <!-- Error Screen -->
+    <div id="errorScreen" class="hidden fixed inset-0 bg-gradient-to-br from-red-500 to-red-700 z-50 flex items-center justify-center">
+        <div class="text-center text-white max-w-md mx-4">
+            <i class="fas fa-exclamation-triangle text-6xl mb-6 animate-bounce-in"></i>
+            <h2 class="text-3xl font-bold mb-4">Vendor Not Found</h2>
+            <p class="text-red-100 mb-6" id="errorMessage">The vendor ID provided is invalid or the vendor doesn't exist.</p>
+            <button onclick="window.history.back()" class="px-6 py-3 bg-white text-red-600 rounded-lg font-semibold hover:bg-red-50 transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>Go Back
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="mainContent" class="hidden min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-lg border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-20">
+                    <div class="flex items-center space-x-4">
+                        <div class="flex-shrink-0">
+                        <!-- <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-store text-white text-xl"></i>
+                            </div>
+			-->
+<div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center cursor-pointer"
+     onclick="window.location='loginPage.html'"
+     title="Logout">
+    <i class="fas fa-store text-white text-xl"></i>
+</div>
+
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900" id="vendorName">Vendor Dashboard</h1>
+                            <p class="text-sm text-gray-500" id="vendorId">Loading...</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="hidden md:flex items-center space-x-2">
+                            <span class="px-3 py-1 rounded-full text-sm font-medium" id="statusBadge">
+                                <i class="fas fa-circle text-xs mr-1"></i>Status
+                            </span>
+                            <span class="px-3 py-1 rounded-full text-sm font-medium" id="verificationBadge">
+                                <i class="fas fa-check-circle text-xs mr-1"></i>Verification
+                            </span>
+                        </div>
+                        <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                            <i class="fas fa-bell text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Dashboard -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+                <!-- Total Products Card -->
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-6 text-white transform hover:scale-105 transition-all duration-300 animate-fade-in">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-blue-100 text-sm font-medium">Total Products</p>
+                            <p class="text-3xl font-bold" id="totalProducts">0</p>
+                        </div>
+                        <div class="p-3 bg-white/20 rounded-xl">
+                            <i class="fas fa-box text-2xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-center">
+                        <i class="fas fa-arrow-up text-green-300 text-sm mr-1"></i>
+                        <span class="text-green-300 text-sm">Active catalog</span>
+                    </div>
+                </div>
+
+                <!-- Rating Card -->
+                <div class="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-2xl p-6 text-white transform hover:scale-105 transition-all duration-300 animate-fade-in" style="animation-delay: 0.1s">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-yellow-100 text-sm font-medium">Vendor Rating</p>
+                            <div class="flex items-center space-x-2">
+                                <p class="text-3xl font-bold" id="vendorRating">0.0</p>
+                                <div class="flex text-yellow-200" id="ratingStars">
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                    <i class="fas fa-star text-sm"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-white/20 rounded-xl">
+                            <i class="fas fa-star text-2xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-center">
+                        <span class="text-yellow-200 text-sm">Customer feedback</span>
+                    </div>
+                </div>
+
+                <!-- Orders Card -->
+                <div class="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-6 text-white transform hover:scale-105 transition-all duration-300 animate-fade-in" style="animation-delay: 0.2s">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-green-100 text-sm font-medium">Active Orders</p>
+                            <p class="text-3xl font-bold" id="activeOrders">0</p>
+                        </div>
+                        <div class="p-3 bg-white/20 rounded-xl">
+                            <i class="fas fa-shopping-cart text-2xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-center">
+                        <i class="fas fa-clock text-green-300 text-sm mr-1"></i>
+                        <span class="text-green-300 text-sm">Pending fulfillment</span>
+                    </div>
+                </div>
+
+                <!-- Revenue Card -->
+                <div class="bg-gradient-to-r from-purple-500 to-indigo-600 rounded-2xl p-6 text-white transform hover:scale-105 transition-all duration-300 animate-fade-in" style="animation-delay: 0.3s">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-purple-100 text-sm font-medium">Monthly Revenue</p>
+                            <p class="text-3xl font-bold" id="monthlyRevenue">₹0</p>
+                        </div>
+                        <div class="p-3 bg-white/20 rounded-xl">
+                            <i class="fas fa-rupee-sign text-2xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex items-center">
+                        <i class="fas fa-chart-line text-purple-300 text-sm mr-1"></i>
+                        <span class="text-purple-300 text-sm">This month</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                <!-- Vendor Profile Card -->
+                <div class="xl:col-span-2">
+                    <div class="bg-white rounded-2xl shadow-xl p-8 animate-slide-up">
+                        <div class="flex items-center justify-between mb-8">
+                            <h2 class="text-2xl font-bold text-gray-900 flex items-center">
+                                <i class="fas fa-user-circle mr-3 text-blue-500"></i>Vendor Profile
+                            </h2>
+                            <button class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                                <i class="fas fa-edit mr-2"></i>Edit Profile
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <!-- Basic Info -->
+                            <div class="space-y-6">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                        <i class="fas fa-info-circle mr-2 text-blue-500"></i>Basic Information
+                                    </h3>
+                                    <div class="space-y-3">
+                                        <div class="flex items-center justify-between py-2 border-b border-gray-100">
+                                            <span class="text-gray-600">Company Name</span>
+                                            <span class="font-medium text-gray-900" id="companyName">-</span>
+                                        </div>
+                                        <div class="flex items-center justify-between py-2 border-b border-gray-100">
+                                            <span class="text-gray-600">Email</span>
+                                            <span class="font-medium text-gray-900" id="vendorEmail">-</span>
+                                        </div>
+                                        <div class="flex items-center justify-between py-2 border-b border-gray-100">
+                                            <span class="text-gray-600">Phone</span>
+                                            <span class="font-medium text-gray-900" id="vendorPhone">-</span>
+                                        </div>
+                                        <div class="flex items-center justify-between py-2 border-b border-gray-100">
+                                            <span class="text-gray-600">Business Type</span>
+                                            <span class="font-medium text-gray-900" id="businessType">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Business Details -->
+                            <div class="space-y-6">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                        <i class="fas fa-building mr-2 text-green-500"></i>Business Details
+                                    </h3>
+                                    <div class="space-y-3">
+                                        <div class="flex items-center justify-between py-2 border-b border-gray-100">
+                                            <span class="text-gray-600">GST Number</span>
+                                            <span class="font-mono text-sm text-gray-900" id="gstNumber">-</span>
+                                        </div>
+                                        <div class="flex items-center justify-between py-2 border-b border-gray-100">
+                                            <span class="text-gray-600">PAN Number</span>
+                                            <span class="font-mono text-sm text-gray-900" id="panNumber">-</span>
+                                        </div>
+                                        <div class="flex items-center justify-between py-2 border-b border-gray-100">
+                                            <span class="text-gray-600">Location</span>
+                                            <span class="font-medium text-gray-900" id="location">-</span>
+                                        </div>
+                                        <div class="flex items-center justify-between py-2">
+                                            <span class="text-gray-600">Registration Date</span>
+                                            <span class="font-medium text-gray-900" id="registrationDate">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Address Section -->
+                        <div class="mt-8 pt-8 border-t border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                <i class="fas fa-map-marker-alt mr-2 text-purple-500"></i>Address Information
+                            </h3>
+                            <div class="bg-gray-50 rounded-xl p-6">
+                                <p class="text-gray-900" id="fullAddress">Loading address...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions & Analytics -->
+                <div class="space-y-8">
+                    <!-- Quick Actions -->
+                    <div class="bg-white rounded-2xl shadow-xl p-6 animate-slide-up" style="animation-delay: 0.2s">
+                        <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                            <i class="fas fa-bolt mr-3 text-yellow-500"></i>Quick Actions
+                        </h2>
+                        <div class="grid grid-cols-1 gap-3">
+                            <button class="w-full p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 transform hover:scale-105 flex items-center justify-center">
+                                <i class="fas fa-plus mr-3"></i>Add New Product
+                            </button>
+                            <button class="w-full p-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-200 transform hover:scale-105 flex items-center justify-center">
+                                <i class="fas fa-list mr-3"></i>Manage Orders
+                            </button>
+                            <button class="w-full p-4 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl hover:from-purple-600 hover:to-indigo-700 transition-all duration-200 transform hover:scale-105 flex items-center justify-center">
+                                <i class="fas fa-chart-bar mr-3"></i>View Analytics
+                            </button>
+                            <button class="w-full p-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl hover:from-orange-600 hover:to-red-600 transition-all duration-200 transform hover:scale-105 flex items-center justify-center">
+                                <i class="fas fa-headset mr-3"></i>Support Center
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Payment Information -->
+                    <div class="bg-white rounded-2xl shadow-xl p-6 animate-slide-up" style="animation-delay: 0.4s">
+                        <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                            <i class="fas fa-credit-card mr-3 text-green-500"></i>Payment Details
+                        </h2>
+                        <div class="space-y-4">
+                            <div class="p-4 bg-green-50 rounded-xl">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm text-gray-600">Bank Account</span>
+                                    <span class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full" id="paymentStatus">Verified</span>
+                                </div>
+                                <p class="font-mono text-sm text-gray-900" id="bankAccount">**** **** ****</p>
+                            </div>
+                            <div class="p-4 bg-blue-50 rounded-xl">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm text-gray-600">UPI ID</span>
+                                    <i class="fas fa-mobile-alt text-blue-500"></i>
+                                </div>
+                                <p class="font-mono text-sm text-gray-900" id="upiId">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="bg-white rounded-2xl shadow-xl p-6 animate-slide-up" style="animation-delay: 0.6s">
+                        <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                            <i class="fas fa-clock mr-3 text-blue-500"></i>Recent Activity
+                        </h2>
+                        <div class="space-y-4" id="recentActivity">
+                            <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+                                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user text-blue-500 text-sm"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-900">Profile updated</p>
+                                    <p class="text-xs text-gray-500">2 hours ago</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+                                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-plus text-green-500 text-sm"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-900">New product added</p>
+                                    <p class="text-xs text-gray-500">1 day ago</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+                                <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-star text-yellow-500 text-sm"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-900">Received 5-star rating</p>
+                                    <p class="text-xs text-gray-500">3 days ago</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer" class="fixed top-4 right-4 z-40 space-y-2"></div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+            authDomain: "sjpss-f504b.firebaseapp.com",
+            projectId: "sjpss-f504b",
+            storageBucket: "sjpss-f504b.firebasestorage.app",
+            messagingSenderId: "227402980311",
+            appId: "1:227402980311:web:56b580456ab6b9c6758992",
+            measurementId: "G-LZ4YP9YPN6"
+        };
+
+        // Global Variables
+        let db;
+        let vendorData = null;
+        let vendorId = null;
+
+        // Initialize Firebase
+        function initializeFirebase() {
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                db = firebase.firestore();
+                return true;
+            } catch (error) {
+                console.error('Firebase initialization failed:', error);
+                return false;
+            }
+        }
+
+        // Utility Functions
+        const utils = {
+            showNotification: (message, type = 'success') => {
+                const container = document.getElementById('notificationContainer');
+                if (!container) return;
+
+                const notification = document.createElement('div');
+                const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+                const icon = type === 'success' ? 'check-circle' : 'exclamation-circle';
+
+                notification.className = `${bgColor} text-white px-6 py-4 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 flex items-center space-x-3 max-w-sm`;
+                notification.innerHTML = `
+                    <i class="fas fa-${icon}"></i>
+                    <span class="font-medium">${message}</span>
+                    <button onclick="this.parentElement.remove()" class="ml-auto text-white hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+
+                container.appendChild(notification);
+                setTimeout(() => notification.classList.remove('translate-x-full'), 100);
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.classList.add('translate-x-full');
+                        setTimeout(() => notification.remove(), 300);
+                    }
+                }, 5000);
+            },
+
+            formatCurrency: (amount) => {
+                return new Intl.NumberFormat('en-IN', {
+                    style: 'currency',
+                    currency: 'INR',
+                    minimumFractionDigits: 0
+                }).format(amount);
+            },
+
+            formatDate: (timestamp) => {
+                if (!timestamp) return '-';
+                const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+                return new Intl.DateTimeFormat('en-IN', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                }).format(date);
+            },
+
+            getVendorIdFromUrl: () => {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get('vendorId');
+            },
+
+            hideLoadingScreen: () => {
+                const loadingScreen = document.getElementById('loadingScreen');
+                if (loadingScreen) {
+                    loadingScreen.style.opacity = '0';
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                    }, 300);
+                }
+            },
+
+            showErrorScreen: (message = null) => {
+                const loadingScreen = document.getElementById('loadingScreen');
+                const errorScreen = document.getElementById('errorScreen');
+                const errorMessage = document.getElementById('errorMessage');
+                
+                if (loadingScreen) loadingScreen.style.display = 'none';
+                if (errorScreen) {
+                    if (message && errorMessage) {
+                        errorMessage.textContent = message;
+                    }
+                    errorScreen.classList.remove('hidden');
+                }
+            },
+
+            showMainContent: () => {
+                utils.hideLoadingScreen();
+                const mainContent = document.getElementById('mainContent');
+                if (mainContent) {
+                    mainContent.classList.remove('hidden');
+                }
+            }
+        };
+
+        // Vendor Data Management
+        const vendorManager = {
+            loadVendorData: async (vendorId) => {
+                try {
+                const doc = await db.collection('vendors').doc(vendorId).get();
+                   
+		//const doc = await db.collection('vendors').where('vendorId', '==', vendorId).get();
+
+                    if (!doc.exists) {
+                        throw new Error('Vendor not found');
+                    }
+
+                    vendorData = doc.data();
+                     vendorData.id = doc.id;
+	
+                    
+                    vendorManager.populateVendorInfo();
+                    utils.showMainContent();
+                    utils.showNotification('Vendor data loaded successfully');
+                    
+                } catch (error) {
+                    console.error('Error loading vendor data:', error);
+                    utils.showErrorScreen(error.message);
+                }
+            },
+
+            populateVendorInfo: () => {
+                if (!vendorData) return;
+
+                // Header Information
+                document.getElementById('vendorName').textContent = vendorData.name || 'Unknown Vendor';
+                document.getElementById('vendorId').textContent = `ID: ${vendorData.vendorId || vendorData.id}`;
+
+                // Status Badges
+                const statusBadge = document.getElementById('statusBadge');
+                const verificationBadge = document.getElementById('verificationBadge');
+
+                if (statusBadge) {
+                    statusBadge.className = `px-3 py-1 rounded-full text-sm font-medium ${
+                        vendorData.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`;
+                    statusBadge.innerHTML = `<i class="fas fa-circle text-xs mr-1"></i>${vendorData.isActive ? 'Active' : 'Inactive'}`;
+                }
+
+                if (verificationBadge) {
+                    verificationBadge.className = `px-3 py-1 rounded-full text-sm font-medium ${
+                        vendorData.isVerified ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
+                    }`;
+                    verificationBadge.innerHTML = `<i class="fas fa-${vendorData.isVerified ? 'check-circle' : 'clock'} text-xs mr-1"></i>${vendorData.isVerified ? 'Verified' : 'Unverified'}`;
+                }
+
+                // Stats Cards
+                document.getElementById('totalProducts').textContent = vendorData.totalProducts || 0;
+                document.getElementById('vendorRating').textContent = (vendorData.rating || 0).toFixed(1);
+                document.getElementById('activeOrders').textContent = Math.floor(Math.random() * 50); // Mock data
+                document.getElementById('monthlyRevenue').textContent = utils.formatCurrency(Math.floor(Math.random() * 100000)); // Mock data
+
+                // Rating Stars
+                vendorManager.updateRatingStars(vendorData.rating || 0);
+
+                // Profile Information
+                document.getElementById('companyName').textContent = vendorData.companyName || '-';
+                document.getElementById('vendorEmail').textContent = vendorData.email || '-';
+                document.getElementById('vendorPhone').textContent = vendorData.phone || '-';
+                document.getElementById('businessType').textContent = vendorManager.formatBusinessType(vendorData.businessType) || '-';
+                document.getElementById('gstNumber').textContent = vendorData.gstNumber || '-';
+                document.getElementById('panNumber').textContent = vendorData.panNumber || '-';
+                document.getElementById('location').textContent = `${vendorData.city || ''}, ${vendorData.state || ''}`.replace(', ,', '').trim() || '-';
+                document.getElementById('registrationDate').textContent = utils.formatDate(vendorData.createdAt);
+
+                // Full Address
+                const addressParts = [
+                    vendorData.addressLine1,
+                    vendorData.addressLine2,
+                    vendorData.city,
+                    vendorData.state,
+                    vendorData.postalCode,
+                    vendorData.country
+                ].filter(part => part && part.trim());
+                
+                document.getElementById('fullAddress').textContent = addressParts.join(', ') || 'Address not provided';
+
+                // Payment Information
+                document.getElementById('paymentStatus').textContent = vendorData.paymentVerified ? 'Verified' : 'Unverified';
+                document.getElementById('paymentStatus').className = `text-xs px-2 py-1 rounded-full ${
+                    vendorData.paymentVerified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                }`;
+
+                // Mask bank account number for security
+                if (vendorData.bankAccountNumber) {
+                    const masked = '**** **** ' + vendorData.bankAccountNumber.slice(-4);
+                    document.getElementById('bankAccount').textContent = masked;
+                } else {
+                    document.getElementById('bankAccount').textContent = 'Not provided';
+                }
+
+                document.getElementById('upiId').textContent = vendorData.upiId || 'Not provided';
+            },
+
+            updateRatingStars: (rating) => {
+                const starsContainer = document.getElementById('ratingStars');
+                if (!starsContainer) return;
+
+                const fullStars = Math.floor(rating);
+                const hasHalfStar = rating % 1 >= 0.5;
+                
+                let starsHtml = '';
+                
+                for (let i = 0; i < 5; i++) {
+                    if (i < fullStars) {
+                        starsHtml += '<i class="fas fa-star text-sm"></i>';
+                    } else if (i === fullStars && hasHalfStar) {
+                        starsHtml += '<i class="fas fa-star-half-alt text-sm"></i>';
+                    } else {
+                        starsHtml += '<i class="far fa-star text-sm"></i>';
+                    }
+                }
+                
+                starsContainer.innerHTML = starsHtml;
+            },
+
+            formatBusinessType: (type) => {
+                const types = {
+                    'sole_proprietorship': 'Sole Proprietorship',
+                    'partnership': 'Partnership',
+                    'llp': 'Limited Liability Partnership',
+                    'private_limited': 'Private Limited Company',
+                    'public_limited': 'Public Limited Company'
+                };
+                return types[type] || type;
+            },
+
+            generateMockAnalytics: () => {
+                // Generate some realistic mock data for demonstration
+                const baseRevenue = Math.floor(Math.random() * 80000) + 20000;
+                document.getElementById('monthlyRevenue').textContent = utils.formatCurrency(baseRevenue);
+                
+                const orders = Math.floor(Math.random() * 30) + 5;
+                document.getElementById('activeOrders').textContent = orders;
+                
+                // Add some dynamic activity updates
+                setTimeout(() => {
+                    vendorManager.updateRecentActivity();
+                }, 2000);
+            },
+
+            updateRecentActivity: () => {
+                const activities = [
+                    {
+                        icon: 'fas fa-shopping-cart',
+                        color: 'green',
+                        text: 'New order received',
+                        time: 'Just now'
+                    },
+                    {
+                        icon: 'fas fa-star',
+                        color: 'yellow',
+                        text: 'Customer review posted',
+                        time: '15 minutes ago'
+                    },
+                    {
+                        icon: 'fas fa-box',
+                        color: 'blue',
+                        text: 'Product stock updated',
+                        time: '1 hour ago'
+                    }
+                ];
+
+                const activityContainer = document.getElementById('recentActivity');
+                if (activityContainer) {
+                    let activityHtml = '';
+                    activities.forEach(activity => {
+                        activityHtml += `
+                            <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl animate-fade-in">
+                                <div class="w-8 h-8 bg-${activity.color}-100 rounded-full flex items-center justify-center">
+                                    <i class="${activity.icon} text-${activity.color}-500 text-sm"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-900">${activity.text}</p>
+                                    <p class="text-xs text-gray-500">${activity.time}</p>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    activityContainer.innerHTML = activityHtml;
+                }
+            }
+        };
+
+        // Animation Controller
+        const animationController = {
+            init: () => {
+                // Add staggered animations to cards
+                const cards = document.querySelectorAll('.animate-fade-in');
+                cards.forEach((card, index) => {
+                    card.style.animationDelay = `${index * 0.1}s`;
+                });
+
+                // Add hover effects to interactive elements
+                animationController.addHoverEffects();
+            },
+
+            addHoverEffects: () => {
+                // Add ripple effects to buttons
+                const buttons = document.querySelectorAll('button');
+                buttons.forEach(button => {
+                    button.addEventListener('click', animationController.createRipple);
+                });
+            },
+
+            createRipple: function(e) {
+                const button = e.currentTarget;
+                const ripple = document.createElement('span');
+                const rect = button.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
+                
+                ripple.style.cssText = `
+                    position: absolute;
+                    width: ${size}px;
+                    height: ${size}px;
+                    background: rgba(255, 255, 255, 0.4);
+                    border-radius: 50%;
+                    transform: scale(0);
+                    animation: ripple 0.6s linear;
+                    left: ${x}px;
+                    top: ${y}px;
+                    pointer-events: none;
+                `;
+                
+                button.style.position = 'relative';
+                button.style.overflow = 'hidden';
+                button.appendChild(ripple);
+                
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+            }
+        };
+
+        // Page Initialization
+        const pageController = {
+            init: async () => {
+                // Initialize Firebase
+                if (!initializeFirebase()) {
+                    utils.showErrorScreen('Failed to initialize the application. Please refresh and try again.');
+                    return;
+                }
+
+                // Get vendor ID from URL
+                vendorId = utils.getVendorIdFromUrl();
+                
+                if (!vendorId) {
+                    utils.showErrorScreen('Invalid or tampered link?. For security, this attempt has been logged.');
+                    return;
+                }
+
+                // Load vendor data
+                await vendorManager.loadVendorData(vendorId);
+                
+                // Generate mock analytics data
+                vendorManager.generateMockAnalytics();
+                
+                // Initialize animations
+                setTimeout(() => {
+                    animationController.init();
+                }, 500);
+
+                // Set up periodic data updates
+                pageController.setupPeriodicUpdates();
+            },
+
+            setupPeriodicUpdates: () => {
+                // Update analytics every 30 seconds for demo purposes
+                setInterval(() => {
+                    const activeOrdersEl = document.getElementById('activeOrders');
+                    const currentOrders = parseInt(activeOrdersEl.textContent);
+                    
+                    // Randomly update orders count (simulate real-time updates)
+                    if (Math.random() > 0.7) {
+                        const newOrders = Math.max(0, currentOrders + (Math.random() > 0.5 ? 1 : -1));
+                        activeOrdersEl.textContent = newOrders;
+                        
+                        if (newOrders > currentOrders) {
+                            utils.showNotification('New order received!', 'success');
+                        }
+                    }
+                }, 30000);
+            }
+        };
+
+        // Error Handling
+        window.addEventListener('error', (event) => {
+            console.error('Application error:', event.error);
+            utils.showNotification('An error occurred. Please refresh the page.', 'error');
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Unhandled promise rejection:', event.reason);
+            utils.showNotification('An error occurred while loading data.', 'error');
+        });
+
+        // Add ripple animation keyframes
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes ripple {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
+            }
+            
+            .animate-gradient {
+                background-size: 400% 400%;
+                animation: gradient 6s ease infinite;
+            }
+            
+            .hover-lift {
+                transition: all 0.3s ease;
+            }
+            
+            .hover-lift:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            }
+            
+            .pulse-border {
+                animation: pulse-border 2s infinite;
+            }
+            
+            @keyframes pulse-border {
+                0% {
+                    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+                }
+                70% {
+                    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+                }
+                100% {
+                    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+                }
+            }
+            
+            .text-gradient {
+                background: linear-gradient(45deg, #3B82F6, #8B5CF6, #EF4444);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize the page when DOM is loaded
+        document.addEventListener('DOMContentLoaded', pageController.init);
+
+        // Handle browser back button
+        window.addEventListener('popstate', () => {
+            const newVendorId = utils.getVendorIdFromUrl();
+            if (newVendorId && newVendorId !== vendorId) {
+                window.location.reload();
+            }
+        });
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl + R to refresh vendor data
+            if (e.ctrlKey && e.key === 'r') {
+                e.preventDefault();
+                if (vendorId) {
+                    window.location.reload();
+                }
+            }
+            
+            // Escape key to go back
+            if (e.key === 'Escape') {
+                window.history.back();
+            }
+        });
+
+        // Export utilities for potential external use
+        window.vendorDashboard = {
+            utils,
+            vendorManager,
+            vendorData: () => vendorData,
+            refreshData: () => {
+                if (vendorId) {
+                    vendorManager.loadVendorData(vendorId);
+                }
+            }
+        };
+    </script>
+</body>
+</html>

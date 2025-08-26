@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Reconciliation System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+        import { getFirestore, collection, getDocs, doc, updateDoc, addDoc, query, where, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+         const firebaseConfig = {
+  apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+  authDomain: "sjpss-f504b.firebaseapp.com",
+  projectId: "sjpss-f504b",
+  storageBucket: "sjpss-f504b.firebasestorage.app",
+  messagingSenderId: "227402980311",
+  appId: "1:227402980311:web:56b580456ab6b9c6758992",
+  measurementId: "G-LZ4YP9YPN6"
+};
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // Global variables
+        let orders = [];
+        let dailyReconciliation = null;
+        
+        // Load orders for today
+        async function loadTodaysOrders() {
+            const today = new Date().toISOString().split('T')[0];
+            const ordersRef = collection(db, 'orders');
+            const q = query(ordersRef, where('status', '==', 'delivered'));
+            
+            try {
+                const snapshot = await getDocs(q);
+                orders = [];
+                snapshot.forEach((doc) => {
+                    const orderData = { id: doc.id, ...doc.data() };
+                    orders.push(orderData);
+                });
+                updateOrdersTable();
+                updateSummary();
+            } catch (error) {
+                showMessage('Error loading orders: ' + error.message, 'error');
+            }
+        }
+        
+        // Load daily reconciliation
+        async function loadDailyReconciliation() {
+            const today = new Date().toISOString().split('T')[0];
+            const reconciliationRef = collection(db, 'daily_reconciliation');
+            const q = query(reconciliationRef, where('date', '==', today));
+            
+            try {
+                const snapshot = await getDocs(q);
+                if (!snapshot.empty) {
+                    dailyReconciliation = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+                } else {
+                    // Create new daily reconciliation record
+                    await createDailyReconciliation();
+                }
+                updateReconciliationSummary();
+            } catch (error) {
+                showMessage('Error loading reconciliation data: ' + error.message, 'error');
+            }
+        }
+        
+        // Create daily reconciliation record
+        async function createDailyReconciliation() {
+            const today = new Date().toISOString().split('T')[0];
+            const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+            
+            // Get yesterday's carry forward
+            let carryForward = 0;
+            const yesterdayRef = collection(db, 'daily_reconciliation');
+            const yesterdayQuery = query(yesterdayRef, where('date', '==', yesterday));
+            const yesterdaySnapshot = await getDocs(yesterdayQuery);
+            
+            if (!yesterdaySnapshot.empty) {
+                carryForward = yesterdaySnapshot.docs[0].data().unadjustedAmount || 0;
+            }
+            
+            const newReconciliation = {
+                date: today,
+                totalOrdersAmount: 0,
+                totalReconciled: 0,
+                unadjustedAmount: 0,
+                carryForwardFromYesterday: carryForward,
+                status: 'pending'
+            };
+            
+            const docRef = await addDoc(collection(db, 'daily_reconciliation'), newReconciliation);
+            dailyReconciliation = { id: docRef.id, ...newReconciliation };
+        }
+        
+        // Update orders table
+        function updateOrdersTable() {
+            const tbody = document.getElementById('ordersTableBody');
+            tbody.innerHTML = '';
+            
+            orders.forEach(order => {
+                const row = document.createElement('tr');
+                row.className = 'border-b hover:bg-gray-50';
+                
+                const statusClass = order.reconciled ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+                const statusText = order.reconciled ? 'Reconciled' : 'Pending';
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${order.orderId}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹${order.totalAmount}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${order.paymentMethod || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${order.codPaymentMethod || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                            ${statusText}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${order.carryForwardDays || 0} days</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        ${!order.reconciled ? 
+                            `<button onclick="markAsReconciled('${order.id}')" class="text-indigo-600 hover:text-indigo-900">Mark Reconciled</button>` :
+                            '<span class="text-gray-500">Completed</span>'
+                        }
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        // Update summary
+        function updateSummary() {
+            const totalOrders = orders.length;
+            const totalAmount = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+            const reconciledOrders = orders.filter(order => order.reconciled).length;
+            const pendingOrders = totalOrders - reconciledOrders;
+            
+            document.getElementById('totalOrders').textContent = totalOrders;
+            document.getElementById('totalAmount').textContent = `₹${totalAmount.toLocaleString()}`;
+            document.getElementById('reconciledOrders').textContent = reconciledOrders;
+            document.getElementById('pendingOrders').textContent = pendingOrders;
+        }
+        
+        // Update reconciliation summary
+        function updateReconciliationSummary() {
+            if (!dailyReconciliation) return;
+            
+            document.getElementById('carryForward').textContent = `₹${dailyReconciliation.carryForwardFromYesterday.toLocaleString()}`;
+            document.getElementById('todayReconciled').textContent = `₹${dailyReconciliation.totalReconciled.toLocaleString()}`;
+            document.getElementById('unadjustedAmount').textContent = `₹${dailyReconciliation.unadjustedAmount.toLocaleString()}`;
+        }
+        
+        // Mark order as reconciled
+        window.markAsReconciled = async function(orderId) {
+            try {
+                const orderRef = doc(db, 'orders', orderId);
+                await updateDoc(orderRef, {
+                    reconciled: true,
+                    reconciliationDate: new Date().toISOString().split('T')[0]
+                });
+                
+                // Update local data
+                const order = orders.find(o => o.id === orderId);
+                if (order) {
+                    order.reconciled = true;
+                    order.reconciliationDate = new Date().toISOString().split('T')[0];
+                }
+                
+                updateOrdersTable();
+                updateSummary();
+                showMessage('Order marked as reconciled successfully!', 'success');
+                
+            } catch (error) {
+                showMessage('Error updating order: ' + error.message, 'error');
+            }
+        };
+        
+        // Process daily reconciliation
+        window.processDailyReconciliation = async function() {
+            if (!dailyReconciliation) return;
+            
+            try {
+                const totalOrdersAmount = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+                const reconciledAmount = orders.filter(order => order.reconciled)
+                    .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+                const unadjustedAmount = totalOrdersAmount - reconciledAmount + dailyReconciliation.carryForwardFromYesterday;
+                
+                // Update carry forward days for unreconciled orders
+                const unReconciledOrders = orders.filter(order => !order.reconciled);
+                for (const order of unReconciledOrders) {
+                    const orderRef = doc(db, 'orders', order.id);
+                    await updateDoc(orderRef, {
+                        carryForwardDays: (order.carryForwardDays || 0) + 1
+                    });
+                }
+                
+                // Update daily reconciliation
+                const reconciliationRef = doc(db, 'daily_reconciliation', dailyReconciliation.id);
+                await updateDoc(reconciliationRef, {
+                    totalOrdersAmount: totalOrdersAmount,
+                    totalReconciled: reconciledAmount,
+                    unadjustedAmount: unadjustedAmount,
+                    status: 'completed'
+                });
+                
+                dailyReconciliation.totalOrdersAmount = totalOrdersAmount;
+                dailyReconciliation.totalReconciled = reconciledAmount;
+                dailyReconciliation.unadjustedAmount = unadjustedAmount;
+                dailyReconciliation.status = 'completed';
+                
+                updateReconciliationSummary();
+                showMessage('Daily reconciliation completed successfully!', 'success');
+                
+            } catch (error) {
+                showMessage('Error processing reconciliation: ' + error.message, 'error');
+            }
+        };
+        
+        // Filter orders
+        window.filterOrders = function(status) {
+            const buttons = document.querySelectorAll('[data-filter]');
+            buttons.forEach(btn => btn.classList.remove('bg-indigo-600', 'text-white'));
+            buttons.forEach(btn => btn.classList.add('bg-white', 'text-gray-700'));
+            
+            event.target.classList.remove('bg-white', 'text-gray-700');
+            event.target.classList.add('bg-indigo-600', 'text-white');
+            
+            let filteredOrders = orders;
+            if (status === 'reconciled') {
+                filteredOrders = orders.filter(order => order.reconciled);
+            } else if (status === 'pending') {
+                filteredOrders = orders.filter(order => !order.reconciled);
+            }
+            
+            // Update table with filtered orders
+            const tbody = document.getElementById('ordersTableBody');
+            tbody.innerHTML = '';
+            
+            filteredOrders.forEach(order => {
+                const row = document.createElement('tr');
+                row.className = 'border-b hover:bg-gray-50';
+                
+                const statusClass = order.reconciled ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+                const statusText = order.reconciled ? 'Reconciled' : 'Pending';
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${order.orderId}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹${order.totalAmount}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${order.paymentMethod || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${order.codPaymentMethod || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                            ${statusText}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${order.carryForwardDays || 0} days</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        ${!order.reconciled ? 
+                            `<button onclick="markAsReconciled('${order.id}')" class="text-indigo-600 hover:text-indigo-900">Mark Reconciled</button>` :
+                            '<span class="text-gray-500">Completed</span>'
+                        }
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        };
+        
+        // Show message
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('messageDiv');
+            const bgColor = type === 'success' ? 'bg-green-100 border-green-500 text-green-700' : 'bg-red-100 border-red-500 text-red-700';
+            
+            messageDiv.className = `border-l-4 p-4 mb-4 ${bgColor}`;
+            messageDiv.textContent = message;
+            messageDiv.classList.remove('hidden');
+            
+            setTimeout(() => {
+                messageDiv.classList.add('hidden');
+            }, 5000);
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTodaysOrders();
+            loadDailyReconciliation();
+        });
+        
+        // Refresh data
+        window.refreshData = function() {
+            loadTodaysOrders();
+            loadDailyReconciliation();
+            showMessage('Data refreshed successfully!', 'success');
+        };
+    </script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Payment Reconciliation System</h1>
+            <p class="text-gray-600">Manage daily payment reconciliation and carry-forward processing</p>
+        </div>
+        
+        <!-- Message Area -->
+        <div id="messageDiv" class="hidden border-l-4 p-4 mb-4"></div>
+        
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-600">Total Orders</p>
+                        <p id="totalOrders" class="text-2xl font-semibold text-gray-900">0</p>
+                    </div>
+                    <div class="ml-4">
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-600">Total Amount</p>
+                        <p id="totalAmount" class="text-2xl font-semibold text-gray-900">₹0</p>
+                    </div>
+                    <div class="ml-4">
+                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-600">Reconciled</p>
+                        <p id="reconciledOrders" class="text-2xl font-semibold text-green-600">0</p>
+                    </div>
+                    <div class="ml-4">
+                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-600">Pending</p>
+                        <p id="pendingOrders" class="text-2xl font-semibold text-yellow-600">0</p>
+                    </div>
+                    <div class="ml-4">
+                        <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Reconciliation Summary -->
+        <div class="bg-white rounded-lg shadow mb-8">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Daily Reconciliation Summary</h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600">Carry Forward from Yesterday</p>
+                        <p id="carryForward" class="text-xl font-semibold text-blue-600">₹0</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600">Today's Reconciled</p>
+                        <p id="todayReconciled" class="text-xl font-semibold text-green-600">₹0</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600">Unadjusted Amount</p>
+                        <p id="unadjustedAmount" class="text-xl font-semibold text-red-600">₹0</p>
+                    </div>
+                </div>
+                <div class="flex justify-center space-x-4">
+                    <button onclick="processDailyReconciliation()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg">
+                        Process Daily Reconciliation
+                    </button>
+                    <button onclick="refreshData()" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg">
+                        Refresh Data
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Orders Table -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-lg font-semibold text-gray-900">Orders</h2>
+                    <div class="flex space-x-2">
+                        <button data-filter onclick="filterOrders('all')" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm">All</button>
+                        <button data-filter onclick="filterOrders('pending')" class="bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded-lg text-sm">Pending</button>
+                        <button data-filter onclick="filterOrders('reconciled')" class="bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded-lg text-sm">Reconciled</button>
+                    </div>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">COD Method</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Carry Forward</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Orders will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

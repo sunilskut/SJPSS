@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To Be Packed Orders - Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"></script>
+    <style>
+        .theme-all {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .theme-single {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .gradient-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        .hover-lift {
+            transition: all 0.3s ease;
+        }
+        .hover-lift:hover {
+            transform: translateY(-3px);
+        }
+        .late-badge {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: slideIn 0.5s ease-out;
+        }
+        .grid-pattern {
+            background-image: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        /* A6 Print Label Styles */
+        @media print {
+            body * { visibility: hidden; }
+            .print-label, .print-label * { visibility: visible; }
+            .print-label { 
+                position: absolute !important; 
+                left: 0 !important; 
+                top: 0 !important; 
+                width: 148mm !important;
+                height: 105mm !important;
+                background: white !important;
+                backdrop-filter: none !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                margin: 0 !important;
+                padding: 5mm !important;
+                font-size: 10px !important;
+                page-break-after: always;
+            }
+            .print-label .no-print { display: none !important; }
+            .print-label .print-header { 
+                font-size: 14px !important; 
+                margin-bottom: 3mm !important;
+            }
+            .print-label .print-section { 
+                margin-bottom: 2mm !important;
+                font-size: 9px !important;
+            }
+            .print-label .print-qr { 
+                width: 20mm !important;
+                height: 20mm !important;
+            }
+            #printAllContainer .print-label:last-child {
+                page-break-after: avoid;
+            }
+        }
+        
+        .spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 sm:p-6 lg:p-8 theme-all" oncontextmenu="return false;" onkeydown="if(event.keyCode==123) return false;">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div id="headerCard" class="gradient-card rounded-3xl shadow-2xl mb-8 overflow-hidden">
+            <div class="bg-gradient-to-r from-slate-800 to-slate-600 p-8 grid-pattern relative">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center">
+                    <div>
+                        <h1 id="headerTitle" class="text-4xl lg:text-5xl font-bold text-white mb-3 flex items-center gap-4">
+                            <span class="text-5xl">📦</span>
+                            To Be Packed Orders
+                        </h1>
+                        <p id="headerSubtitle" class="text-slate-200 text-lg">
+                            Manage to be packed orders efficiently with label printing (only 10 at a time)
+                        </p>
+                    </div>
+                    <div class="mt-6 lg:mt-0 flex gap-3 flex-wrap">
+                        <button onclick="showAllOrders()" 
+                                class="px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl transition-all duration-300 backdrop-blur-sm border border-white/20 flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                            </svg>
+                            Show All Orders
+                        </button>
+                        <button id="printAllBtn" onclick="printAllLabels()" 
+                                class="px-6 py-3 bg-purple-500/20 hover:bg-purple-500/30 text-white rounded-xl transition-all duration-300 backdrop-blur-sm border border-purple-400/20 flex items-center gap-2 hidden">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2 2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                            </svg>
+                            Print All Labels
+                        </button>
+                        <button onclick="loadOrders()" 
+                                class="px-6 py-3 bg-green-500/20 hover:bg-green-500/30 text-white rounded-xl transition-all duration-300 backdrop-blur-sm border border-green-400/20 flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stats Bar -->
+            <div id="statsBar" class="px-8 py-6 bg-gradient-to-r from-slate-50 to-slate-100 border-t border-slate-200">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-xl p-6 shadow-lg hover-lift">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                                <span class="text-2xl">📋</span>
+                            </div>
+                            <div>
+                                <div id="totalOrders" class="text-3xl font-bold text-slate-800">0</div>
+                                <div class="text-slate-600">Total Orders</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl p-6 shadow-lg hover-lift">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+                                <span class="text-2xl">💰</span>
+                            </div>
+                            <div>
+                                <div id="codOrders" class="text-3xl font-bold text-slate-800">0</div>
+                                <div class="text-slate-600">COD Orders</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl p-6 shadow-lg hover-lift">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                                <span class="text-2xl">⚠️</span>
+                            </div>
+                            <div>
+                                <div id="lateOrders" class="text-3xl font-bold text-slate-800">0</div>
+                                <div class="text-slate-600">Late Orders</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading" class="gradient-card rounded-2xl shadow-xl p-12 text-center">
+            <div class="w-16 h-16 border-4 border-slate-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-6"></div>
+            <p class="text-xl text-slate-700 mb-2">Loading orders...</p>
+            <p class="text-slate-600">Please wait while we fetch pending orders</p>
+        </div>
+
+        <!-- Orders Grid -->
+        <div id="ordersContainer" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8 hidden">
+        </div>
+
+        <!-- No Orders State -->
+        <div id="noOrders" class="gradient-card rounded-2xl shadow-xl p-12 text-center hidden">
+            <div class="text-8xl mb-6">✅</div>
+            <h2 id="noOrdersTitle" class="text-3xl font-bold text-slate-800 mb-4">All caught up!</h2>
+            <p id="noOrdersMessage" class="text-slate-600 text-lg mb-6">No pending orders to pack at the moment.</p>
+            <button onclick="loadOrders()" 
+                    class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors duration-300 flex items-center gap-2 mx-auto">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Refresh Orders
+            </button>
+        </div>
+    </div>
+
+    <!-- Print All Labels Container -->
+    <div id="printAllContainer" class="hidden"></div>
+
+    <!-- Print Label Modal -->
+    <div id="printLabel" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+        <div class="print-label bg-white rounded-2xl shadow-2xl w-full max-w-2xl relative">
+            <button class="no-print absolute top-4 right-4 w-10 h-10 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors duration-200 z-10" 
+                    onclick="closePrintLabel()">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+
+            <div class="p-6">
+                <!-- Label Header -->
+                <div class="print-header text-center mb-4 border-b border-slate-200 pb-3">
+                    <div class="flex items-center justify-center gap-2 mb-2">
+                        <span class="text-2xl">🚚</span>
+                        <h2 class="text-xl font-bold text-slate-800">SJPSS Delivery Label</h2>
+                    </div>
+                    <div id="labelOrderId" class="text-lg text-slate-600 font-medium"></div>
+                </div>
+
+                <!-- Label Content -->
+                <div class="grid grid-cols-12 gap-4 text-xs">
+                    <!-- Left Column - Order Details -->
+                    <div class="col-span-7 space-y-3">
+                        <!-- Shipping Address -->
+                        <div class="print-section bg-slate-50 rounded-lg p-3">
+                            <h3 class="text-sm font-semibold text-slate-800 mb-2 flex items-center gap-1">
+                                <span>📍</span> Ship To
+                            </h3>
+                            <div id="labelAddress" class="text-slate-700 mb-1"></div>
+                            <div class="text-slate-600"><strong>PIN:</strong> <span id="labelPincode"></span></div>
+                        </div>
+
+                        <!-- Customer & Payment -->
+                        <div class="print-section bg-slate-50 rounded-lg p-3">
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div><strong>Customer:</strong> <span id="labelCustomerId"></span></div>
+                                <div><strong>Payment:</strong> <span id="labelPayment"></span></div>
+                                <div class="col-span-2"><strong>Amount:</strong> ₹<span id="labelTotal"></span></div>
+                            </div>
+                        </div>
+
+                        <!-- Items -->
+                        <div class="print-section bg-slate-50 rounded-lg p-3">
+                            <h3 class="text-sm font-semibold text-slate-800 mb-2">📦 Items</h3>
+                            <div id="labelItems" class="space-y-1"></div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column - Codes -->
+                    <div class="col-span-5 space-y-3">
+                        <!-- UPI QR Code (if UPI payment) -->
+                        <div id="upiQRSection" class="text-center bg-blue-50 rounded-lg p-2 hidden">
+                            <h3 class="text-xs font-semibold mb-1 text-blue-800">UPI Payment</h3>
+                            <canvas id="upiQRCanvas" class="print-qr mx-auto rounded border"></canvas>
+                        </div>
+
+                        <!-- Order QR -->
+                        <div class="text-center bg-slate-50 rounded-lg p-2">
+                            <h3 class="text-xs font-semibold mb-1">Order ID</h3>
+                            <canvas id="orderQR" class="print-qr mx-auto rounded border"></canvas>
+                        </div>
+
+                        <!-- Print Button -->
+                        <button class="no-print w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-300 flex items-center justify-center gap-1 text-sm" 
+                                onclick="window.print()">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2 2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                            </svg>
+                            Print
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+            authDomain: "sjpss-f504b.firebaseapp.com",
+            projectId: "sjpss-f504b",
+            storageBucket: "sjpss-f504b.firebasestorage.app",
+            messagingSenderId: "227402980311",
+            appId: "1:227402980311:web:56b580456ab6b9c6758992",
+            measurementId: "G-LZ4YP9YPN6"
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+
+        // Enable offline persistence
+        db.enablePersistence().catch((err) => {
+            console.log('Persistence error:', err.code);
+        });
+
+        let ordersData = [];
+        let productsCache = {};
+        let currentOrderId = null;
+
+        // Get URL parameters
+        function getURLParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                orderId: params.get('orderId')
+            };
+        }
+
+        // Update theme and button visibility
+        function updateTheme(orderId) {
+            const body = document.body;
+            const headerTitle = document.getElementById('headerTitle');
+            const headerSubtitle = document.getElementById('headerSubtitle');
+            const noOrdersTitle = document.getElementById('noOrdersTitle');
+            const noOrdersMessage = document.getElementById('noOrdersMessage');
+            const printAllBtn = document.getElementById('printAllBtn');
+            
+            if (orderId) {
+                body.className = body.className.replace('theme-all', 'theme-single');
+                headerTitle.innerHTML = `<span class="text-5xl">📦</span>Order Details - ${orderId}`;
+                headerSubtitle.textContent = 'Specific order packing details and management';
+                noOrdersTitle.textContent = 'Order Not Found';
+                noOrdersMessage.textContent = `Order ${orderId} was not found or doesn't need packing.`;
+                printAllBtn.classList.add('hidden');
+            } else {
+                body.className = body.className.replace('theme-single', 'theme-all');
+                headerTitle.innerHTML = `<span class="text-5xl">📦</span>To Be Packed Orders`;
+                headerSubtitle.textContent = 'Manage pending orders efficiently with label printing (only 10 at a time)';
+                noOrdersTitle.textContent = 'All caught up!';
+                noOrdersMessage.textContent = 'No pending orders to pack at the moment.';
+                printAllBtn.classList.remove('hidden');
+            }
+        }
+
+        // Show all orders
+        function showAllOrders() {
+            window.history.pushState({}, '', window.location.pathname);
+            currentOrderId = null;
+            updateTheme(null);
+            loadOrders();
+        }
+
+        // Optimized product details fetch with immediate return for cached items
+        async function getProductDetails(productId) {
+            if (productsCache[productId]) {
+                return productsCache[productId];
+            }
+
+            try {
+                const productDoc = await db.collection('products').doc(productId).get();
+                if (productDoc.exists) {
+                    const productData = productDoc.data();
+                    productsCache[productId] = {
+                        name: productData.name || 'Unknown Product'
+                    };
+                } else {
+                    productsCache[productId] = {
+                        name: `Product ID: ${productId}`
+                    };
+                }
+            } catch (error) {
+                console.error('Error fetching product details:', error);
+                productsCache[productId] = {
+                    name: `Product ID: ${productId}`
+                };
+            }
+            
+            return productsCache[productId];
+        }
+
+        // Load orders from Firestore with improved performance
+        async function loadOrders() {
+            try {
+                const params = getURLParams();
+                currentOrderId = params.orderId;
+                updateTheme(currentOrderId);
+
+                // Show loading
+                document.getElementById('loading').classList.remove('hidden');
+                document.getElementById('ordersContainer').classList.add('hidden');
+                document.getElementById('noOrders').classList.add('hidden');
+
+                let query;
+                if (currentOrderId) {
+                    // Query for specific order
+                    query = db.collection('orders').doc(currentOrderId);
+                    const doc = await query.get();
+                    ordersData = [];
+                    if (doc.exists && doc.data().status === 'pending') {
+                        ordersData = [{ id: doc.id, ...doc.data() }];
+                    }
+                } else {
+                    // Query for all pending orders - limit to 10 for performance
+                    query = db.collection('orders')
+                        .where('status', '==', 'pending')
+                        .limit(10);
+                    const snapshot = await query.get();
+                    ordersData = [];
+                    snapshot.forEach(doc => {
+                        ordersData.push({ id: doc.id, ...doc.data() });
+                    });
+                }
+
+                // Batch process product details for better performance
+                const uniqueProductIds = [...new Set(ordersData.flatMap(order => 
+                    order.items.map(item => item.productId)
+                ))];
+
+                // Fetch products concurrently with limited batch size
+                const batchSize = 5;
+                for (let i = 0; i < uniqueProductIds.length; i += batchSize) {
+                    const batch = uniqueProductIds.slice(i, i + batchSize);
+                    await Promise.all(batch.map(productId => getProductDetails(productId)));
+                }
+
+                // Process orders and sort by creation date (oldest first) if available
+                ordersData.forEach(order => {
+                    order.items = order.items.map(item => ({
+                        ...item,
+                        productName: productsCache[item.productId]?.name || `Product ID: ${item.productId}`
+                    }));
+                });
+
+                // Sort by creation date if available (oldest first)
+                ordersData.sort((a, b) => {
+                    if (a.createdAt && b.createdAt) {
+                        const dateA = new Date(a.createdAt);
+                        const dateB = new Date(b.createdAt);
+                        return dateA - dateB;
+                    }
+                    return 0;
+                });
+
+                updateStats();
+                renderOrders();
+                
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                document.getElementById('loading').innerHTML = `
+                    <div class="text-center">
+                        <div class="text-red-500 text-6xl mb-4">❌</div>
+                        <h3 class="text-xl font-bold text-red-600 mb-2">Error Loading Orders</h3>
+                        <p class="text-red-500 mb-4">${error.message}</p>
+                        <button onclick="loadOrders()" class="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-colors">
+                            Try Again
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function updateStats() {
+            const totalOrders = ordersData.length;
+            const codOrders = ordersData.filter(order => order.paymentMethod === 'COD').length;
+            const today = new Date();
+            const lateOrders = ordersData.filter(order => {
+                const orderDate = new Date(order.createdAt);
+                const diffTime = today - orderDate;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays > 1;
+            }).length;
+
+            document.getElementById('totalOrders').textContent = totalOrders;
+            document.getElementById('codOrders').textContent = codOrders;
+            document.getElementById('lateOrders').textContent = lateOrders;
+        }
+
+        function renderOrders() {
+            const container = document.getElementById('ordersContainer');
+            const loading = document.getElementById('loading');
+            const noOrders = document.getElementById('noOrders');
+
+            loading.classList.add('hidden');
+
+            if (ordersData.length === 0) {
+                container.classList.add('hidden');
+                noOrders.classList.remove('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+            noOrders.classList.add('hidden');
+            container.innerHTML = '';
+
+            // Use document fragment for better performance
+            const fragment = document.createDocumentFragment();
+            
+            ordersData.forEach(order => {
+                const orderCard = createOrderCard(order);
+                fragment.appendChild(orderCard);
+            });
+            
+            container.appendChild(fragment);
+        }
+
+        function createOrderCard(order) {
+            const card = document.createElement('div');
+            card.className = 'gradient-card rounded-2xl shadow-xl overflow-hidden hover-lift fade-in';
+
+            const orderDate = new Date(order.createdAt);
+            const today = new Date();
+            const diffTime = today - orderDate;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const isLate = diffDays > 1;
+            const isCOD = order.paymentMethod === 'COD';
+
+            const itemsHtml = order.items.map(item => `
+                <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                    <div class="flex-1 min-w-0">
+                        <div class="font-medium text-slate-800 truncate">${item.productName}</div>
+                        <div class="text-sm text-slate-600">ID: ${item.productId} | Qty: ${item.quantity} × ₹${item.price}</div>
+                    </div>
+                    <div class="font-bold text-green-600">₹${(item.quantity * item.price).toFixed(2)}</div>
+                </div>
+            `).join('');
+
+            card.innerHTML = `
+                <div class="bg-gradient-to-r ${isCOD ? 'from-amber-500 to-orange-500' : 'from-red-500 to-pink-500'} p-6 text-white relative">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-xl font-bold mb-2">Order #${order.id}</div>
+                            <div class="text-sm opacity-90">${orderDate.toLocaleDateString()} ${orderDate.toLocaleTimeString()}</div>
+                        </div>
+                        ${isLate ? `<div class="bg-white/20 px-3 py-1 rounded-full text-sm font-medium late-badge">⚠️ ${diffDays} days old</div>` : ''}
+                    </div>
+                </div>
+
+                <div class="p-6 space-y-6">
+                    <!-- Customer Info -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                        <div class="flex items-center gap-2 text-blue-800 font-semibold mb-2">
+                            <span class="text-lg">👤</span>
+                            Customer ID: ${order.customerId}
+                        </div>
+                        <div class="text-slate-700 mb-2 flex items-start gap-2">
+                            <span class="text-blue-500 mt-1">📍</span>
+                            <span class="flex-1">${order.shippingDetails.address}</span>
+                        </div>
+                        <div class="text-slate-600 text-sm"><strong>Pincode:</strong> ${order.shippingDetails.pincode}</div>
+                    </div>
+
+                    <!-- Items -->
+                    <div>
+                        <div class="flex items-center gap-2 font-semibold text-slate-800 mb-4">
+                            <span class="text-xl">📦</span>
+                            Order Items
+                        </div>
+                        <div class="space-y-2">${itemsHtml}</div>
+                    </div>
+
+                    <!-- Payment Info -->
+                    <div class="bg-green-50 border border-green-200 rounded-xl p-4 flex justify-between items-center">
+                        <div class="flex items-center gap-2 font-semibold text-green-800">
+                            <span class="text-lg">💳</span>
+                            ${order.paymentMethod} ${isCOD ? '(Cash on Delivery)' : ''}
+                        </div>
+                        <div class="text-2xl font-bold text-green-600">₹${order.totalAmount}</div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <button onclick="printLabel('${order.id}')" 
+                                class="flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-xl transition-colors duration-300 font-medium">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2 2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                            </svg>
+                            Print Label
+                        </button>
+                        <button onclick="markAsPacked('${order.id}')" 
+                                class="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-xl transition-colors duration-300 font-medium">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Mark Packed
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            return card;
+        }
+
+        // Generate UPI QR Code
+        function generateUPIQR(amount, orderId) {
+            const upiData = `upi://pay?pa=sjpss@oksbi&pn=SJPSS&am=${amount}&cu=INR&tn=Order ${orderId}`;
+            return upiData;
+        }
+
+        // Print all labels function
+        async function printAllLabels() {
+            if (ordersData.length === 0) {
+                showNotification('❌ No orders to print', 'error');
+                return;
+            }
+
+            const printBtn = document.getElementById('printAllBtn');
+            const originalContent = printBtn.innerHTML;
+            printBtn.innerHTML = '<div class="spinner"></div> Generating...';
+            printBtn.disabled = true;
+
+            try {
+                const printContainer = document.getElementById('printAllContainer');
+                printContainer.innerHTML = '';
+
+                // Generate all labels
+                const promises = ordersData.map((order, index) => 
+                    createPrintableLabel(order, index === ordersData.length - 1)
+                );
+                const labels = await Promise.all(promises);
+                labels.forEach(label => printContainer.appendChild(label));
+
+                // Show print container and trigger print
+                printContainer.classList.remove('hidden');
+                setTimeout(() => {
+                    window.print();
+                    printContainer.classList.add('hidden');
+                    printContainer.innerHTML = '';
+                }, 50);
+
+                showNotification('✅ All labels prepared for printing', 'success');
+                
+            } catch (error) {
+                console.error('Error generating labels:', error);
+                showNotification('❌ Error generating labels: ' + error.message, 'error');
+            } finally {
+                printBtn.innerHTML = originalContent;
+                printBtn.disabled = false;
+            }
+        }
+
+        // Create printable label
+        async function createPrintableLabel(order, isLast = false) {
+            const labelDiv = document.createElement('div');
+            labelDiv.className = `print-label bg-white ${isLast ? '' : 'mb-4'}`;
+            labelDiv.style.pageBreakAfter = isLast ? 'auto' : 'always';
+
+            const itemsHtml = order.items.map(item => `
+                <div class="text-xs mb-1">
+                    <strong>${item.productName}</strong> - Qty: ${item.quantity} × ₹${item.price} = ₹${(item.quantity * item.price).toFixed(2)}
+                </div>
+            `).join('');
+
+            labelDiv.innerHTML = `
+                <div class="p-6">
+                    <!-- Label Header -->
+                    <div class="print-header text-center mb-4 border-b border-slate-200 pb-3">
+                        <div class="flex items-center justify-center gap-2 mb-2">
+                            <span class="text-2xl">🚚</span>
+                            <h2 class="text-xl font-bold text-slate-800">SJPSS Delivery Label</h2>
+                        </div>
+                        <div class="text-lg text-slate-600 font-medium">Order #${order.id}</div>
+                    </div>
+
+                    <!-- Label Content -->
+                    <div class="grid grid-cols-12 gap-4 text-xs">
+                        <!-- Left Column -->
+                        <div class="col-span-7 space-y-3">
+                            <div class="print-section bg-slate-50 rounded-lg p-3">
+                                <h3 class="text-sm font-semibold text-slate-800 mb-2">📍 Ship To</h3>
+                                <div class="text-slate-700 mb-1">${order.shippingDetails.address}</div>
+                                <div class="text-slate-600"><strong>PIN:</strong> ${order.shippingDetails.pincode}</div>
+                            </div>
+
+                            <div class="print-section bg-slate-50 rounded-lg p-3">
+                                <div class="grid grid-cols-2 gap-2 text-xs">
+                                    <div><strong>Customer:</strong> ${order.customerId}</div>
+                                    <div><strong>Payment:</strong> ${order.paymentMethod}</div>
+                                    <div class="col-span-2"><strong>Amount:</strong> ₹${order.totalAmount}</div>
+                                </div>
+                            </div>
+
+                            <div class="print-section bg-slate-50 rounded-lg p-3">
+                                <h3 class="text-sm font-semibold text-slate-800 mb-2">📦 Items</h3>
+                                <div>${itemsHtml}</div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column -->
+                        <div class="col-span-5 space-y-3">
+                            ${order.paymentMethod === 'UPI' ? `
+                            <div class="text-center bg-blue-50 rounded-lg p-2">
+                                <h3 class="text-xs font-semibold mb-1 text-blue-800">UPI Payment</h3>
+                                <canvas class="upi-qr-canvas print-qr mx-auto rounded border" width="80" height="80"></canvas>
+                            </div>
+                            ` : ''}
+
+                            <div class="text-center bg-slate-50 rounded-lg p-2">
+                                <h3 class="text-xs font-semibold mb-1">Order ID</h3>
+                                <canvas class="order-qr-canvas print-qr mx-auto rounded border" width="80" height="80"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Generate codes after DOM insertion
+            setTimeout(() => {
+                try {
+                    // Generate UPI QR if UPI payment
+                    if (order.paymentMethod === 'UPI') {
+                        const upiCanvas = labelDiv.querySelector('.upi-qr-canvas');
+                        if (upiCanvas && typeof QRCode !== 'undefined') {
+                            const upiData = generateUPIQR(order.totalAmount, order.id);
+                            QRCode.toCanvas(upiCanvas, upiData, {
+                                width: 80,
+                                height: 80,
+                                colorDark: "#000000",
+                                colorLight: "#ffffff",
+                                correctLevel: QRCode.CorrectLevel.H
+                            });
+                        }
+                    }
+
+                    // Generate Order QR
+                    const orderQrCanvas = labelDiv.querySelector('.order-qr-canvas');
+                    if (orderQrCanvas && typeof QRCode !== 'undefined') {
+                        QRCode.toCanvas(orderQrCanvas, `SJPSS-${order.id}`, {
+                            width: 80,
+                            height: 80,
+                            colorDark: "#000000",
+                            colorLight: "#ffffff",
+                            correctLevel: QRCode.CorrectLevel.H
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error generating codes for label:', error);
+                }
+            }, 0);
+
+            return labelDiv;
+        }
+
+        function printLabel(orderId) {
+            const order = ordersData.find(o => o.id === orderId);
+            if (!order) {
+                showNotification('Order not found!', 'error');
+                return;
+            }
+
+            try {
+                // Populate label details
+                document.getElementById('labelOrderId').textContent = `Order #${orderId}`;
+                document.getElementById('labelAddress').textContent = order.shippingDetails.address;
+                document.getElementById('labelPincode').textContent = order.shippingDetails.pincode;
+                document.getElementById('labelCustomerId').textContent = order.customerId;
+                document.getElementById('labelPayment').textContent = order.paymentMethod;
+                document.getElementById('labelTotal').textContent = order.totalAmount;
+
+                // Populate items
+                const itemsHtml = order.items.map(item => `
+                    <div class="text-xs border border-slate-200 rounded p-2 mb-1">
+                        <div class="font-semibold text-slate-800">${item.productName}</div>
+                        <div class="text-slate-600">
+                            ID: ${item.productId} | Qty: ${item.quantity} | Price: ₹${item.price} | Total: ₹${(item.quantity * item.price).toFixed(2)}
+                        </div>
+                    </div>
+                `).join('');
+                document.getElementById('labelItems').innerHTML = itemsHtml;
+
+                // Show/hide UPI QR section
+                const upiSection = document.getElementById('upiQRSection');
+                if (order.paymentMethod === 'COD') {
+                    upiSection.classList.remove('hidden');
+                } else {
+                    upiSection.classList.add('hidden');
+                }
+
+                // Show modal
+                const modal = document.getElementById('printLabel');
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                modal.classList.add('opacity-100');
+
+                // Generate codes
+                setTimeout(() => {
+                    try {
+                        // Generate UPI QR if needed
+                        if (order.paymentMethod === 'UPI') {
+                            const upiCanvas = document.getElementById('upiQRCanvas');
+                            if (typeof QRCode !== 'undefined') {
+                                const upiData = generateUPIQR(order.totalAmount, orderId);
+                                QRCode.toCanvas(upiCanvas, upiData, {
+                                    width: 100,
+                                    height: 100,
+                                    margin: 2,
+                                    colorDark: "#000000",
+                                    colorLight: "#ffffff",
+                                    correctLevel: QRCode.CorrectLevel.H
+                                });
+                            }
+                        }
+
+                        // Generate Order QR
+                        const orderQr = document.getElementById('orderQR');
+                        if (typeof QRCode !== 'undefined') {
+                            QRCode.toCanvas(orderQr, `SJPSS-${orderId}`, {
+                                width: 100,
+                                height: 100,
+                                margin: 2,
+                                colorDark: "#000000",
+                                colorLight: "#ffffff",
+                                correctLevel: QRCode.CorrectLevel.H
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Error generating codes:', error);
+                    }
+                }, 0);
+
+            } catch (error) {
+                console.error('Error in printLabel:', error);
+                showNotification('Error generating label: ' + error.message, 'error');
+            }
+        }
+
+        function closePrintLabel() {
+            const modal = document.getElementById('printLabel');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modal.classList.remove('opacity-100');
+        }
+
+        async function markAsPacked(orderId) {
+            try {
+                const button = event.target.closest('button');
+                button.disabled = true;
+                button.innerHTML = `<div class="spinner"></div> Updating...`;
+
+                await db.collection('orders').doc(orderId).update({
+                    status: 'packed',
+                    packedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Remove from current view
+                ordersData = ordersData.filter(order => order.id !== orderId);
+                updateStats();
+
+                // Animate card removal
+                const card = button.closest('.gradient-card');
+                card.style.transform = 'scale(0.8)';
+                card.style.opacity = '0';
+
+                setTimeout(() => {
+                    renderOrders();
+                    showNotification('✅ Order marked as packed successfully!', 'success');
+                }, 300);
+
+            } catch (error) {
+                console.error('Error updating order:', error);
+                const button = event.target.closest('button');
+                button.disabled = false;
+                button.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Mark Packed
+                `;
+                
+                showNotification('❌ Error updating order: ' + error.message, 'error');
+            }
+        }
+
+        // Show notification
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300 ${
+                type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+            }`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Handle keyboard shortcuts
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closePrintLabel();
+            }
+        });
+
+        // Initialize page
+        function init() {
+            loadOrders();
+        }
+
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', init);
+
+        // Update when URL changes
+        window.addEventListener('popstate', init);
+
+        // Auto-refresh every 30 seconds (only when showing all orders)
+        setInterval(() => {
+            if (!currentOrderId) {
+                loadOrders();
+            }
+        }, 30000);
+
+        // Enhanced print styles for A6 labels and batch printing
+        const printStyles = `
+            <style>
+                @media print {
+                    @page { 
+                        size: A6;
+                        margin: 5mm;
+                    }
+                    body * { visibility: hidden; }
+                    .print-label, .print-label *, 
+                    #printAllContainer, #printAllContainer * { 
+                        visibility: visible; 
+                    }
+                    .print-label { 
+                        position: relative !important; 
+                        left: 0 !important; 
+                        top: 0 !important; 
+                        width: 100% !important;
+                        height: 100% !important;
+                        background: white !important;
+                        backdrop-filter: none !important;
+                        box-shadow: none !important;
+                        border-radius: 0 !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        font-size: 8px !important;
+                        page-break-inside: avoid;
+                    }
+                    .no-print { display: none !important; }
+                    .print-header { 
+                        font-size: 12px !important; 
+                        margin-bottom: 2mm !important;
+                        text-align: center;
+                        border-bottom: 1px solid #ccc;
+                        padding-bottom: 2mm;
+                    }
+                    .print-section { 
+                        margin-bottom: 1.5mm !important;
+                        font-size: 7px !important;
+                        background: #f8f9fa !important;
+                        padding: 1mm !important;
+                        border-radius: 1mm !important;
+                    }
+                    .print-qr { 
+                        width: 15mm !important;
+                        height: 15mm !important;
+                    }
+                    #printAllContainer .print-label {
+                        page-break-after: always;
+                    }
+                    #printAllContainer .print-label:last-child {
+                        page-break-after: avoid;
+                    }
+                }
+            </style>
+        `;
+        document.head.insertAdjacentHTML('beforeend', printStyles);
+    </script>
+</body>
+</html>

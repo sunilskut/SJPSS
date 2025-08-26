@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Categories Manager</title>
+    <!-- Add Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- Add Animate.css for animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+<!--    <style>
+        /* Basic CSS for better UI */
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f4f4f4;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .section-title {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .form-control {
+            width: 100%;
+            padding: 8px;
+            margin: 8px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn-danger {
+            background: #dc3545;
+        }
+        .btn-danger:hover {
+            background: #b02a37;
+        }
+        .connection-status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .connection-status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        .connection-status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status-message {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status-message.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .category-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            background: #fff;
+        }
+        .subcategory {
+            margin-left: 20px;
+            padding: 10px;
+            border-left: 2px solid #007bff;
+        }
+        .item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 5px 0;
+            padding: 5px;
+            background: #f9f9f9;
+        }
+        .item-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+    </style>
+-->
+
+
+
+
+
+<style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .form-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .form-section:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .section-title {
+            color: #333;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            color: #4facfe;
+            font-size: 1.3rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4facfe;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .items-list {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            grid-column: 1 / -1;
+            margin-top: 20px;
+        }
+
+        .category-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            color: white;
+            animation: slideInUp 0.6s ease;
+        }
+
+        .category-card h3 {
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .subcategory {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .subcategory h4 {
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+      
+
+        .status-message {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: 600;
+            animation: pulse 2s infinite;
+        }
+
+        .success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .error {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .connected {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .disconnected {
+            background: #f44336;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes slideInUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+
+
+
+
+
+
+
+
+
+</head>
+<body oncontextmenu="return false;" onkeydown="if(event.keyCode==123) return false;">
+    <div id="connectionStatus" class="connection-status disconnected">
+        <i class="fas fa-wifi"></i> Connecting...
+    </div>
+
+    <div class="container animate__animated animate__fadeIn">
+        <div class="header">
+            <h1><i class="fas fa-layer-group"></i> Categories Manager</h1>
+            <p>Manage your Products Categories and subcategories</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Add Category -->
+            <div class="form-section">
+                <h2 class="section-title">
+                    <i class="fas fa-plus-circle"></i>
+                    Add Category
+                </h2>
+                <div class="form-group">
+                    <label for="categoryName">Category Name</label>
+                    <input type="text" id="categoryName" class="form-control" placeholder="e.g., Groceries & Essentials" required>
+                </div>
+                <div class="form-group">
+                    <label for="categoryImage">Category Image URL</label>
+                    <input type="url" id="categoryImage" class="form-control" placeholder="https://example.com/image.jpg">
+                </div>
+                <div class="form-group">
+                    <label for="categoryDescription">Description</label>
+                    <input type="text" id="categoryDescription" class="form-control" placeholder="Category description">
+                </div>
+                <button onclick="addCategory()" class="btn" disabled id="addCategoryBtn">
+                    <i class="fas fa-save"></i> Add Category
+                </button>
+            </div>
+
+            <!-- Add Subcategory -->
+            <div class="form-section">
+                <h2 class="section-title">
+                    <i class="fas fa-layer-group"></i>
+                    Add Subcategory
+                </h2>
+                <div class="form-group">
+                    <label for="parentCategory">Parent Category</label>
+                    <select id="parentCategory" class="form-control" required>
+                        <option value="">Select a category</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="subcategoryName">Subcategory Name</label>
+                    <input type="text" id="subcategoryName" class="form-control" placeholder="e.g., Fresh Produce" required>
+                </div>
+                <div class="form-group">
+                    <label for="subcategoryImage">Subcategory Image URL</label>
+                    <input type="url" id="subcategoryImage" class="form-control" placeholder="https://example.com/image.jpg">
+                </div>
+                <button onclick="addSubcategory()" class="btn" disabled id="addSubcategoryBtn">
+                    <i class="fas fa-save"></i> Add Subcategory
+                </button>
+            </div>
+
+         
+
+        <!-- Display Categories -->
+        <div class="items-list">
+            <h2 class="section-title">
+                <i class="fas fa-list"></i>
+                Current Categories
+            </h2>
+            <button onclick="loadCategories()" class="btn" style="margin-bottom: 20px;" id="refreshCategoriesBtn" disabled>
+                <i class="fas fa-sync-alt"></i> Refresh Categories
+            </button>
+            <div id="categoriesList"></div>
+        </div>
+
+        <div id="statusMessage"></div>
+    </div>
+
+    <!-- Include the Database script -->
+    <script type="module" >
+
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, arrayUnion, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+let db;
+let isConnected = false;
+const maxRetries = 3;
+const retryDelay = 2000; // 2 seconds
+
+async function initializeFirebaseApp(attempt = 1) {
+    try {
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+            authDomain: "sjpss-f504b.firebaseapp.com",
+            projectId: "sjpss-f504b",
+            storageBucket: "sjpss-f504b.firebasestorage.app",
+            messagingSenderId: "227402980311",
+            appId: "1:227402980311:web:56b580456ab6b9c6758992",
+            measurementId: "G-LZ4YP9YPN6"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+
+        // Test connection with a lightweight operation
+        await getDocs(collection(db, 'categories')).catch(error => {
+            throw new Error('Initial connection test failed: ' + error.message);
+        });
+
+        isConnected = true;
+        updateConnectionStatus(true);
+        enableFormButtons(true);
+        showMessage('Successfully connected to Database!', 'success');
+        setupRealtimeListener();
+        loadCategories();
+        loadCategoriesForDropdown();
+    } catch (error) {
+        console.error(`Database connection error (attempt ${attempt}):`, error);
+        if (attempt < maxRetries) {
+            showMessage(`Connection attempt ${attempt} failed. Retrying in ${retryDelay / 1000} seconds...`, 'warning');
+            setTimeout(() => initializeFirebaseApp(attempt + 1), retryDelay);
+        } else {
+            showMessage('Failed to connect to Database after multiple attempts. Please check your configuration and Firestore rules.', 'error');
+            updateConnectionStatus(false);
+            enableFormButtons(false);
+        }
+    }
+}
+
+function setupRealtimeListener() {
+    const categoriesRef = collection(db, 'categories');
+    onSnapshot(categoriesRef, (snapshot) => {
+        isConnected = true;
+        updateConnectionStatus(true);
+        enableFormButtons(true);
+        loadCategories(); // Update UI in real-time
+        loadCategoriesForDropdown();
+    }, (error) => {
+        isConnected = false;
+        updateConnectionStatus(false);
+        enableFormButtons(false);
+        console.error('Connection lost:', error);
+        showMessage('Lost connection to Database. Attempting to reconnect...', 'warning');
+        initializeFirebaseApp();
+    });
+}
+
+function enableFormButtons(enabled) {
+    const buttons = [
+        document.getElementById('addCategoryBtn'),
+        document.getElementById('addSubcategoryBtn'),
+        document.getElementById('addItemBtn'),
+        document.getElementById('refreshCategoriesBtn')
+    ];
+    buttons.forEach(button => {
+        if (button) button.disabled = !enabled;
+    });
+}
+
+window.addCategory = async function() {
+    if (!isConnected || !db) {
+        showMessage('Not connected to Database. Please wait and try again.', 'error');
+        return;
+    }
+
+    const name = document.getElementById('categoryName').value;
+    const imageUrl = document.getElementById('categoryImage').value;
+    const description = document.getElementById('categoryDescription').value;
+
+    if (!name) {
+        showMessage('Please enter a category name', 'error');
+        return;
+    }
+
+    try {
+        const categoryData = {
+            name: name,
+            imageUrl: imageUrl || '',
+            description: description || '',
+            subcategories: [],
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
+
+        await addDoc(collection(db, 'categories'), categoryData);
+        showMessage('Category added successfully!', 'success');
+        document.getElementById('categoryName').value = '';
+        document.getElementById('categoryImage').value = '';
+        document.getElementById('categoryDescription').value = '';
+    } catch (error) {
+        console.error('Error adding category:', error);
+        showMessage(`Error adding category: ${error.message}`, 'error');
+    }
+};
+
+window.addSubcategory = async function() {
+    if (!isConnected || !db) {
+        showMessage('Not connected to Database. Please wait and try again.', 'error');
+        return;
+    }
+
+    const parentCategoryId = document.getElementById('parentCategory').value;
+    const name = document.getElementById('subcategoryName').value;
+    const imageUrl = document.getElementById('subcategoryImage').value;
+
+    if (!parentCategoryId || !name) {
+        showMessage('Please select a parent category and enter subcategory name', 'error');
+        return;
+    }
+
+    try {
+        const subcategoryData = {
+            id: Date.now().toString(),
+            name: name,
+            imageUrl: imageUrl || '',
+            createdAt: new Date()
+        };
+
+        const categoryRef = doc(db, 'categories', parentCategoryId);
+        await updateDoc(categoryRef, {
+            subcategories: arrayUnion(subcategoryData),
+            updatedAt: new Date()
+        });
+
+        showMessage('Subcategory added successfully!', 'success');
+        document.getElementById('subcategoryName').value = '';
+        document.getElementById('subcategoryImage').value = '';
+    } catch (error) {
+        console.error('Error adding subcategory:', error);
+        showMessage(`Error adding subcategory: ${error.message}`, 'error');
+    }
+};
+
+
+
+window.loadCategories = async function() {
+    if (!isConnected || !db) {
+        showMessage('Not connected to Database. Please wait and try again.', 'error');
+        return;
+    }
+
+    try {
+        const querySnapshot = await getDocs(collection(db, 'categories'));
+        const categoriesList = document.getElementById('categoriesList');
+        categoriesList.innerHTML = '';
+
+        if (querySnapshot.empty) {
+            categoriesList.innerHTML = '<p style="text-align: center; color: #666; font-style: italic;">No categories found. Add some categories to get started!</p>';
+            return;
+        }
+
+        querySnapshot.forEach((doc) => {
+            const category = doc.data();
+            const categoryCard = createCategoryCard(doc.id, category);
+            categoriesList.appendChild(categoryCard);
+        });
+    } catch (error) {
+        console.error('Error loading categories:', error);
+        showMessage(`Error loading categories: ${error.message}`, 'error');
+    }
+};
+
+window.loadCategoriesForDropdown = async function() {
+    if (!isConnected || !db) return;
+
+    try {
+        const querySnapshot = await getDocs(collection(db, 'categories'));
+        const parentCategorySelect = document.getElementById('parentCategory');
+     //   const itemCategorySelect = document.getElementById('itemCategory');
+
+        parentCategorySelect.innerHTML = '<option value="">Select a category</option>';
+    //    itemCategorySelect.innerHTML = '<option value="">Select a category</option>';
+
+        querySnapshot.forEach((doc) => {
+            const category = doc.data();
+            const option1 = new Option(category.name, doc.id);
+         //   const option2 = new Option(category.name, doc.id);
+            parentCategorySelect.add(option1);
+           // itemCategorySelect.add(option2);
+        });
+    } catch (error) {
+        console.error('Error loading categories for dropdown:', error);
+        showMessage(`Error loading categories: ${error.message}`, 'error');
+    }
+};
+
+
+
+function createCategoryCard(categoryId, category) {
+    const card = document.createElement('div');
+    card.className = 'category-card';
+
+    const categoryImage = category.imageUrl ?
+        `<img src="${category.imageUrl}" alt="${category.name}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; float: right; margin-left: 15px;" onerror="this.src='https://via.placeholder.com/60';">` :
+        '';
+
+    card.innerHTML = `
+        ${categoryImage}
+        <h3><i class="fas fa-folder"></i> ${category.name}</h3>
+        <p style="opacity: 0.9; margin-bottom: 15px;">${category.description || 'No description'}</p>
+        <button onclick="deleteCategory('${categoryId}')" class="btn btn-danger" style="font-size: 0.9rem; padding: 8px 15px;">
+            <i class="fas fa-trash"></i> Delete Category
+        </button>
+    `;
+
+    if (category.subcategories && category.subcategories.length > 0) {
+        category.subcategories.forEach(subcategory => {
+            const subcategoryDiv = document.createElement('div');
+            subcategoryDiv.className = 'subcategory';
+
+            const subcategoryImage = subcategory.imageUrl ?
+                `<img src="${subcategory.imageUrl}" alt="${subcategory.name}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; float: right;" onerror="this.src='https://via.placeholder.com/40';">` :
+                '';
+
+            subcategoryDiv.innerHTML = `
+                ${subcategoryImage}
+                <h4><i class="fas fa-layer-group"></i> ${subcategory.name}</h4>
+            `;
+
+            if (subcategory.items && subcategory.items.length > 0) {
+                subcategory.items.forEach(item => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'item';
+
+                    const itemImage = item.imageUrl ?
+                        `<img src="${item.imageUrl}" alt="${item.name}" class="item-image" onerror="this.src='https://via.placeholder.com/40';">` :
+                        '<div class="item-image" style="background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center;"><i class="fas fa-cube"></i></div>';
+
+                    itemDiv.innerHTML = `
+                        <div style="display: flex; align-items: center;">
+                            ${itemImage}
+                            <span>${item.name}</span>
+                        </div>
+                        <span style="font-weight: 600;">$${item.price?.toFixed(2) || '0.00'}</span>
+                    `;
+                    subcategoryDiv.appendChild(itemDiv);
+                });
+            } else {
+                subcategoryDiv.innerHTML += '<p style="opacity: 0.7; font-style: italic; margin-top: 10px;">This is s subcategory</p>';
+            }
+
+            card.appendChild(subcategoryDiv);
+        });
+    } else {
+        card.innerHTML += '<p style="opacity: 0.7; font-style: italic; margin-top: 15px;">No subcategories in this category</p>';
+    }
+
+    return card;
+}
+
+window.deleteCategory = async function(categoryId) {
+    if (!isConnected || !db || !confirm('Are you sure you want to delete this category? This action cannot be undone.')) {
+        return;
+    }
+
+    try {
+        await deleteDoc(doc(db, 'categories', categoryId));
+        showMessage('Category deleted successfully!', 'success');
+    } catch (error) {
+        console.error('Error deleting category:', error);
+        showMessage(`Error deleting category: ${error.message}`, 'error');
+    }
+};
+
+function updateConnectionStatus(connected) {
+    const statusElement = document.getElementById('connectionStatus');
+    if (connected) {
+        statusElement.className = 'connection-status connected';
+        statusElement.innerHTML = '<i class="fas fa-wifi"></i> Connected';
+    } else {
+        statusElement.className = 'connection-status disconnected';
+        statusElement.innerHTML = '<i class="fas fa-wifi"></i> Disconnected';
+    }
+}
+
+function showMessage(message, type) {
+    const statusDiv = document.getElementById('statusMessage');
+    statusDiv.innerHTML = `<div class="status-message ${type}">${message}</div>`;
+    setTimeout(() => {
+        statusDiv.innerHTML = '';
+    }, 5000);
+}
+
+window.addSampleData = async function() {
+    if (!isConnected || !db) {
+        showMessage('Not connected to Database. Please wait and try again.', 'error');
+        return;
+    }
+
+   
+
+    try {
+        await addDoc(collection(db, 'categories'), sampleCategory);
+        showMessage('Sample data added successfully!', 'success');
+    } catch (error) {
+        console.error('Error adding sample data:', error);
+        showMessage(`Error adding sample data: ${error.message}`, 'error');
+    }
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeFirebaseApp();
+
+    const header = document.querySelector('.header');
+    const sampleButton = document.createElement('button');
+    sampleButton.className = 'btn';
+    sampleButton.id = 'addSampleDataBtn';
+    sampleButton.style.cssText = 'margin-top: 15px; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px);';
+    sampleButton.innerHTML = '<i class="fas fa-database"></i> Add Sample Data';
+    sampleButton.onclick = addSampleData;
+    sampleButton.disabled = true; // Initially disabled
+    header.appendChild(sampleButton);
+});
+
+</script>
+</body>
+</html>

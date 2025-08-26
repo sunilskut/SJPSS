@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logs Table</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <style>
+        .tooltip-container {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #374151;
+            color: white;
+            text-align: left;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 12px;
+            white-space: nowrap;
+            max-width: 300px;
+            word-wrap: break-word;
+            white-space: normal;
+            transition: opacity 0.3s;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .tooltip::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #374151 transparent transparent transparent;
+        }
+        .tooltip-container:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+        .clickable {
+            cursor: pointer;
+            text-decoration: underline;
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 p-4">
+    <div class="container mx-auto">
+        <h1 class="text-2xl font-bold mb-4 text-gray-800">Logs Table</h1>
+        
+        <div class="overflow-x-auto bg-white rounded-lg shadow">
+            <table class="min-w-full table-auto border-collapse">
+                <thead>
+                    <tr class="bg-gray-100 border-b">
+                        <th class="text-xs px-1 py-1 text-center font-medium text-gray-700 border-r w-12">#</th>
+                        <th class="text-xs px-2 py-1 text-left font-medium text-gray-700 border-r w-32">Timestamp</th>
+                        <th class="text-xs px-2 py-1 text-left font-medium text-gray-700 border-r">Note</th>
+                        <th class="text-xs px-2 py-1 text-left font-medium text-gray-700 border-r w-16">Action</th>
+                        <th class="text-xs px-2 py-1 text-left font-medium text-gray-700 border-r w-20">Changes</th>
+                        <th class="text-xs px-2 py-1 text-left font-medium text-gray-700 border-r w-20">Entity ID</th>
+                        <th class="text-xs px-2 py-1 text-left font-medium text-gray-700 border-r w-20">Entity Type</th>
+                        <th class="text-xs px-2 py-1 text-left font-medium text-gray-700 border-r w-24">Session ID</th>
+                        <th class="text-xs px-2 py-1 text-left font-medium text-gray-700 border-r w-24">URL</th>
+                        <th class="text-xs px-2 py-1 text-left font-medium text-gray-700 w-32">User Agent</th>
+                    </tr>
+                </thead>
+                <tbody id="logsTableBody">
+                    <!-- Sample log entries -->
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="text-xs px-1 py-1 border-r text-center">1</td>
+                        <td class="text-xs px-2 py-1 border-r">
+                            <div class="tooltip-container">
+                                <span class="clickable">08/08/25 12:36</span>
+                                <div class="tooltip">Timestamp: 8 August 2025 at 12:36:27 UTC+5:30</div>
+                            </div>
+                        </td>
+                        <td class="text-xs px-2 py-1 border-r">
+                            <div class="truncate">
+                                Assigned to Delivery staff ID. No. 
+                                <div class="tooltip-container inline">
+                                    <span class="clickable">3</span>
+                                    <div class="tooltip">Staff Name: John Doe<br>Phone: +91 9876543210</div>
+                                </div>
+                                in the order No. 
+                                <div class="tooltip-container inline">
+                                    <span class="clickable">40</span>
+                                    <div class="tooltip">Shipping Address: 123 Main Street, Thrissur, Kerala 680001, India</div>
+                                </div>
+                                done by User id No. 
+                                <div class="tooltip-container inline">
+                                    <span class="clickable">2</span>
+                                    <div class="tooltip">User Name: Admin User<br>Phone: +91 9123456789</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-xs px-2 py-1 border-r">
+                            <div class="tooltip-container">
+                                <span class="clickable">create</span>
+                                <div class="tooltip">Action: create</div>
+                            </div>
+                        </td>
+                        <td class="text-xs px-2 py-1 border-r">
+                            <div class="tooltip-container">
+                                <span class="text-gray-400">null</span>
+                                <div class="tooltip">Changes: null</div>
+                            </div>
+                        </td>
+                        <td class="text-xs px-2 py-1 border-r">
+                            <div class="tooltip-container">
+                                <span class="clickable">3</span>
+                                <div class="tooltip">Staff Name: John Doe<br>Phone: +91 9876543210</div>
+                            </div>
+                        </td>
+                        <td class="text-xs px-2 py-1 border-r">
+                            <div class="tooltip-container">
+                                <span class="clickable">staff</span>
+                                <div class="tooltip">Entity Type: staff</div>
+                            </div>
+                        </td>
+                        <td class="text-xs px-2 py-1 border-r">
+                            <div class="tooltip-container">
+                                <span class="clickable">true</span>
+                                <div class="tooltip">Session ID: true</div>
+                            </div>
+                        </td>
+                        <td class="text-xs px-1 py-1 border-r">
+                            <div class="tooltip-container">
+                                <span class="clickable truncate block">assign...</span>
+                                <div class="tooltip">URL: file:///D:/Sunivox%20Solutions/SJPSS/assignDelivery.html?orderId=40</div>
+                            </div>
+                        </td>
+                        <td class="text-xs px-1 py-1">
+                            <div class="tooltip-container">
+                                <span class="clickable truncate block">Chrome...</span>
+                                <div class="tooltip">User Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36</div>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="text-xs px-1 py-1 border-r text-center">2</td>
+                        <td class="text-xs px-2 py-1 border-r">
+                            <div class="tooltip-container">
+                                <span class="clickable">08/08/25 14:22</span>
+                                <div class="tooltip">Timestamp: 8 August 2025 at 14:22:15 UTC+5:30</div>
+                            </div>
+                        </td>
+                        <td class="text-xs px-2 py-1 border-r">
+                            <div class="truncate">
+                                Order No. 
+                                <div class="tooltip-container inline">
+                                    <span class="clickable">42</span>
+                                    <div class="tooltip">Shipping Address: 456 Park Avenue, Kochi, Kerala 682001, India</div>
+                                </div>
+                                marked as delivered by User id No. 
+                                <div class="tooltip-container inline">
+                                    <span class="clickable">1</span>
+                                    <div class="tooltip">User Name: Super Admin<br>Phone: +91 9000000001</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-xs px-2 py-1 border-r">
+                            <div class="tooltip-container">
+                                <span class="clickable">update</span>
+                                <div class="tooltip">Action: update</div>
+                            </div>
+                        </td>
+                        <td class="text-xs px-2 py-1 border-r">
+                            <div class="tooltip-container">
+                                <span class="clickable">status</span>
+                                <div class="tooltip">Changes: status changed from pending to completed</div>
+                            </div>
+                        </td>
+                        <td class="text-xs px-2 py-1 border-r">
+                            <div class="tooltip-container">
+                                <span class="clickable">5</span>
+                                <div class="tooltip">Staff Name: Jane Smith<br>Phone: +91 8765432109</div>
+                            </div>
+                        </td>
+                        <td class="text-xs px-2 py-1 border-r">
+                            <div class="tooltip-container">
+                                <span class="clickable">order</span>
+                                <div class="tooltip">Entity Type: order</div>
+                            </div>
+                        </td>
+                        <td class="text-xs px-2 py-1 border-r">
+                            <div class="tooltip-container">
+                                <span class="clickable">sess_123</span>
+                                <div class="tooltip">Session ID: sess_123</div>
+                            </div>
+                        </td>
+                        <td class="text-xs px-1 py-1 border-r">
+                            <div class="tooltip-container">
+                                <span class="clickable truncate block">orders...</span>
+                                <div class="tooltip">URL: file:///D:/Sunivox%20Solutions/SJPSS/orders.html?orderId=42</div>
+                            </div>
+                        </td>
+                        <td class="text-xs px-1 py-1">
+                            <div class="tooltip-container">
+                                <span class="clickable truncate block">Firefox...</span>
+                                <div class="tooltip">User Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:115.0) Gecko/20100101 Firefox/115.0</div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="mt-4 text-xs text-gray-600">
+            <p><strong>Note:</strong> Hover over any field to see full details in tooltip. Order IDs show shipping address, Staff/User IDs show name and phone.</p>
+            <p><strong>Status:</strong> <span id="connectionStatus" class="font-semibold text-red-600">Disconnected</span></p>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+            authDomain: "sjpss-f504b.firebaseapp.com",
+            projectId: "sjpss-f504b",
+            storageBucket: "sjpss-f504b.firebasestorage.app",
+            messagingSenderId: "227402980311",
+            appId: "1:227402980311:web:56b580456ab6b9c6758992",
+            measurementId: "G-LZ4YP9YPN6"
+        };
+
+        // Initialize Firebase
+        let db;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            document.getElementById('connectionStatus').textContent = 'Connected';
+            document.getElementById('connectionStatus').className = 'font-semibold text-green-600';
+            
+            // Load logs from Firebase
+            loadLogs();
+            
+        } catch (error) {
+            console.error('Firebase initialization error:', error);
+            document.getElementById('connectionStatus').textContent = 'Connection Error: ' + error.message;
+            document.getElementById('connectionStatus').className = 'font-semibold text-red-600';
+        }
+
+        // Mock data for demonstration (will be replaced by Firebase data)
+        const mockData = {
+            orders: {
+                40: { shippingDetails: { address: "123 Main Street, Thrissur, Kerala 680001, India" }},
+                42: { shippingDetails: { address: "456 Park Avenue, Kochi, Kerala 682001, India" }}
+            },
+            users: {
+                1: { name: "Super Admin", phone: "+91 9000000001" },
+                2: { name: "Admin User", phone: "+91 9123456789" },
+                3: { name: "John Doe", phone: "+91 9876543210" },
+                5: { name: "Jane Smith", phone: "+91 8765432109" }
+            }
+        };
+
+        // Function to load logs from Firebase
+        async function loadLogs() {
+            try {
+                // Listen for real-time updates
+                db.collection('logs').orderBy('timestamp', 'desc').onSnapshot((snapshot) => {
+                    const logsTableBody = document.getElementById('logsTableBody');
+                    logsTableBody.innerHTML = '';
+                    
+                    let serialNumber = 1;
+                    snapshot.forEach((doc) => {
+                        const logData = doc.data();
+                        const row = createLogRow(logData, serialNumber);
+                        logsTableBody.appendChild(row);
+                        serialNumber++;
+                    });
+                }, (error) => {
+                    console.error('Error loading logs:', error);
+                });
+                
+                // Also load orders and users data for tooltips
+                await loadReferenceData();
+                
+            } catch (error) {
+                console.error('Error setting up log listener:', error);
+            }
+        }
+
+        // Function to load reference data for tooltips
+        async function loadReferenceData() {
+            try {
+                // Load orders data
+                const ordersSnapshot = await db.collection('orders').get();
+                const ordersData = {};
+                ordersSnapshot.forEach((doc) => {
+                    ordersData[doc.id] = doc.data();
+                });
+                
+                // Load users data
+                const usersSnapshot = await db.collection('users').get();
+                const usersData = {};
+                usersSnapshot.forEach((doc) => {
+                    usersData[doc.id] = doc.data();
+                });
+                
+                // Store reference data globally
+                window.ordersData = ordersData;
+                window.usersData = usersData;
+                
+            } catch (error) {
+                console.error('Error loading reference data:', error);
+                // Fallback to mock data
+                window.ordersData = mockData.orders;
+                window.usersData = mockData.users;
+            }
+        }
+
+        // Function to create a log row
+        function createLogRow(logData, serialNumber) {
+            const row = document.createElement('tr');
+            row.className = 'border-b hover:bg-gray-50';
+            
+            const timestamp = logData.timestamp ? 
+                (logData.timestamp.toDate ? logData.timestamp.toDate() : new Date(logData.timestamp)) : 
+                new Date();
+            
+            row.innerHTML = `
+                <td class="text-xs px-1 py-1 border-r text-center">${serialNumber}</td>
+                <td class="text-xs px-2 py-1 border-r">
+                    <div class="tooltip-container">
+                        <span class="clickable">${formatTimestamp(timestamp)}</span>
+                        <div class="tooltip">Timestamp: ${timestamp.toLocaleString()}</div>
+                    </div>
+                </td>
+                <td class="text-xs px-2 py-1 border-r">
+                    <div class="truncate">${parseNoteWithTooltips(logData.note || '')}</div>
+                </td>
+                <td class="text-xs px-2 py-1 border-r">
+                    <div class="tooltip-container">
+                        <span class="clickable">${logData.action || ''}</span>
+                        <div class="tooltip">Action: ${logData.action || ''}</div>
+                    </div>
+                </td>
+                <td class="text-xs px-2 py-1 border-r">
+                    <div class="tooltip-container">
+                        <span class="clickable">${logData.changes ? truncateText(logData.changes, 8) : '<span class="text-gray-400">null</span>'}</span>
+                        <div class="tooltip">Changes: ${logData.changes || 'null'}</div>
+                    </div>
+                </td>
+                <td class="text-xs px-2 py-1 border-r">
+                    <div class="tooltip-container">
+                        <span class="clickable">${logData.entityId || ''}</span>
+                        <div class="tooltip">${getEntityTooltip(logData.entityId, logData.entityType)}</div>
+                    </div>
+                </td>
+                <td class="text-xs px-2 py-1 border-r">
+                    <div class="tooltip-container">
+                        <span class="clickable">${logData.entityType || ''}</span>
+                        <div class="tooltip">Entity Type: ${logData.entityType || ''}</div>
+                    </div>
+                </td>
+                <td class="text-xs px-2 py-1 border-r">
+                    <div class="tooltip-container">
+                        <span class="clickable">${truncateText(logData.sessionId || '', 8)}</span>
+                        <div class="tooltip">Session ID: ${logData.sessionId || ''}</div>
+                    </div>
+                </td>
+                <td class="text-xs px-1 py-1 border-r">
+                    <div class="tooltip-container">
+                        <span class="clickable truncate block">${truncateUrlForDisplay(logData.url || '')}</span>
+                        <div class="tooltip">URL: ${logData.url || ''}</div>
+                    </div>
+                </td>
+                <td class="text-xs px-1 py-1">
+                    <div class="tooltip-container">
+                        <span class="clickable truncate block">${truncateUserAgent(logData.userAgent || '')}</span>
+                        <div class="tooltip">User Agent: ${logData.userAgent || ''}</div>
+                    </div>
+                </td>
+            `;
+            
+            return row;
+        }
+
+        // Helper functions
+        function formatTimestamp(date) {
+            return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear().toString().substr(-2)} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+        }
+
+        function truncateText(text, maxLength = 8) {
+            return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+        }
+
+        function truncateUrlForDisplay(url) {
+            if (!url) return '';
+            const parts = url.split('/');
+            const filename = parts[parts.length - 1] || parts[parts.length - 2] || '';
+            return filename.split('.')[0] + '...' || 'url...';
+        }
+
+        function truncateUserAgent(userAgent) {
+            if (!userAgent) return '';
+            if (userAgent.includes('Chrome')) return 'Chrome...';
+            if (userAgent.includes('Firefox')) return 'Firefox...';
+            if (userAgent.includes('Safari')) return 'Safari...';
+            return 'Browser...';
+        }
+
+        function getEntityTooltip(entityId, entityType) {
+            if (!entityId) return 'Entity ID: N/A';
+            
+            if (entityType === 'staff' || entityType === 'user') {
+                const userData = window.usersData?.[entityId];
+                if (userData) {
+                    return `Name: ${userData.name || 'N/A'}<br>Phone: ${userData.phone || 'N/A'}`;
+                }
+            }
+            
+            return `Entity ID: ${entityId}`;
+        }
+
+        function parseNoteWithTooltips(note) {
+            if (!note) return '';
+            
+            // Replace order IDs with tooltips
+            note = note.replace(/order\s+No\.?\s*(\d+)/gi, (match, orderId) => {
+                const orderData = window.ordersData?.[orderId];
+                const address = orderData?.shippingDetails?.address || 'Address not found';
+                return `order No. <div class="tooltip-container inline"><span class="clickable">${orderId}</span><div class="tooltip">Shipping Address: ${address}</div></div>`;
+            });
+            
+            // Replace user IDs with tooltips
+            note = note.replace(/User\s+id\s+No\.?\s*(\d+)/gi, (match, userId) => {
+                const userData = window.usersData?.[userId];
+                const tooltip = userData ? 
+                    `User Name: ${userData.name || 'N/A'}<br>Phone: ${userData.phone || 'N/A'}` :
+                    'User not found';
+                return `User id No. <div class="tooltip-container inline"><span class="clickable">${userId}</span><div class="tooltip">${tooltip}</div></div>`;
+            });
+            
+            // Replace staff IDs with tooltips
+            note = note.replace(/staff\s+ID\.?\s*No\.?\s*(\d+)/gi, (match, staffId) => {
+                const staffData = window.usersData?.[staffId];
+                const tooltip = staffData ? 
+                    `Staff Name: ${staffData.name || 'N/A'}<br>Phone: ${staffData.phone || 'N/A'}` :
+                    'Staff not found';
+                return `staff ID. No. <div class="tooltip-container inline"><span class="clickable">${staffId}</span><div class="tooltip">${tooltip}</div></div>`;
+            });
+            
+            return note;
+        }
+
+        // Initialize with mock data if Firebase fails
+        if (!window.ordersData) {
+            window.ordersData = mockData.orders;
+            window.usersData = mockData.users;
+        }
+    </script>
+</body>
+</html>

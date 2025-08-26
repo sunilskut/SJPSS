@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Tracking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .slide-in {
+            animation: slideIn 0.5s ease-out forwards;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        .scale-in {
+            animation: scaleIn 0.4s ease-out forwards;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .timeline-step {
+            transition: all 0.3s ease;
+        }
+        .pulse-ring {
+            animation: pulse-ring 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+        .status-updating {
+            position: relative;
+            overflow: hidden;
+        }
+        .status-updating::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Compact Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-4xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-center">
+                <div class="bg-blue-600 p-2 rounded-lg mr-3">
+                    <i class="fas fa-shipping-fast text-white text-lg"></i>
+                </div>
+                <div class="flex items-center justify-between">
+  <!-- Centered Heading -->
+  <div class="flex-1 text-center">
+    <h1 class="text-xl font-bold text-gray-900">Order Tracking</h1>
+    <p class="text-xs text-gray-500">Real-time order updates</p>
+  </div>
+
+  <!-- Back Button (Right End) -->
+  <div class="absolute right-4">
+    <button onclick="window.location='adminPanel.html#orders'" 
+      class="group inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-blue-100 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 shadow-sm">
+      <svg class="w-4 h-4 mr-2 transition-transform duration-200 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+      </svg>
+      Back
+    </button>
+  </div>
+</div>
+
+
+
+
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="max-w-4xl mx-auto px-4 py-6">
+        <!-- Search Section -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-6 slide-in">
+            <div class="flex flex-col sm:flex-row gap-3">
+                <div class="flex-1 relative">
+                    <input 
+                        type="text" 
+                        id="orderIdInput" 
+                        placeholder="Enter order ID..."
+                        class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    >
+                    <i class="fas fa-search absolute left-3 top-3.5 text-gray-400"></i>
+                </div>
+                <button 
+                    onclick="trackOrder()" 
+                    class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
+                >
+                    <i class="fas fa-search mr-2"></i>Track
+                </button>
+            </div>
+            
+            <!-- Auto-refresh toggle -->
+            <div class="mt-4 flex items-center justify-between text-sm">
+                <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" id="autoRefresh" class="sr-only" onchange="toggleAutoRefresh()">
+                    <div class="relative">
+                        <div class="w-10 h-6 bg-gray-300 rounded-full shadow-inner transition-colors duration-200"></div>
+                        <div class="absolute w-4 h-4 bg-white rounded-full shadow-md transform transition-transform duration-200 top-1 left-1"></div>
+                    </div>
+                    <span class="ml-3 text-gray-600">Auto-refresh (30s)</span>
+                </label>
+                <div id="lastUpdated" class="text-gray-400"></div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="hidden">
+            <div class="bg-white rounded-lg shadow-sm p-8 text-center fade-in">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p class="text-gray-600">Loading order details...</p>
+            </div>
+        </div>
+
+        <!-- Order Not Found -->
+        <div id="orderNotFound" class="hidden">
+            <div class="bg-white rounded-lg shadow-sm p-8 text-center scale-in">
+                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
+                </div>
+                <h3 class="font-semibold text-gray-900 mb-2">Order Not Found</h3>
+                <p class="text-gray-600 text-sm">Please check your order ID and try again.</p>
+            </div>
+        </div>
+
+        <!-- Order Details -->
+        <div id="orderDetails" class="hidden space-y-6">
+            <!-- Order Summary -->
+            <div class="bg-white rounded-lg shadow-sm p-6 scale-in">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="font-bold text-gray-900">Order <span id="displayOrderId" class="text-blue-600"></span></h3>
+                        <p class="text-sm text-gray-500" id="orderDate"></p>
+                    </div>
+                    <span id="orderStatusBadge" class="px-3 py-1 rounded-full text-xs font-semibold status-updating"></span>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div class="bg-gray-50 rounded-lg p-3">
+                        <p class="text-xs text-gray-500">Total</p>
+                        <p id="totalAmount" class="font-bold text-gray-900"></p>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-3">
+                        <p class="text-xs text-gray-500">Payment</p>
+                        <p id="paymentMethod" class="font-medium text-gray-700 text-sm"></p>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-3">
+                        <p class="text-xs text-gray-500">Status</p>
+                        <p id="paymentStatus" class="font-medium text-sm"></p>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-3">
+                        <p class="text-xs text-gray-500">Delivery</p>
+                        <p id="shippingMethod" class="font-medium text-gray-700 text-sm capitalize"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compact Timeline -->
+            <div class="bg-white rounded-lg shadow-sm p-6 fade-in">
+                <h3 class="font-bold text-gray-900 mb-4 flex items-center">
+                    <i class="fas fa-route text-blue-600 mr-2"></i>
+                    Tracking Progress
+                </h3>
+                <div id="orderTimeline" class="space-y-3">
+                    <!-- Timeline will be populated here -->
+                </div>
+            </div>
+
+            <!-- Collapsible Details -->
+            <div class="bg-white rounded-lg shadow-sm fade-in">
+                <button onclick="toggleDetails()" class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors duration-200">
+                    <span class="font-medium text-gray-900">Additional Details</span>
+                    <i id="detailsToggle" class="fas fa-chevron-down text-gray-400 transition-transform duration-200"></i>
+                </button>
+                <div id="additionalDetails" class="hidden px-6 pb-6">
+                    <!-- Shipping Address -->
+                    <div class="mb-4">
+                        <h4 class="font-medium text-gray-900 mb-2">Shipping Address</h4>
+                        <div class="bg-gray-50 rounded-lg p-3 text-sm">
+                            <p id="shippingAddress" class="text-gray-700"></p>
+                            <p id="shippingPincode" class="text-gray-600 mt-1"></p>
+                        </div>
+                    </div>
+                    
+                    <!-- Order Items -->
+                    <div>
+                        <h4 class="font-medium text-gray-900 mb-2">Items Ordered</h4>
+                        <div id="orderItems" class="space-y-2">
+                            <!-- Items will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+            authDomain: "sjpss-f504b.firebaseapp.com",
+            projectId: "sjpss-f504b",
+            storageBucket: "sjpss-f504b.firebasestorage.app",
+            messagingSenderId: "227402980311",
+            appId: "1:227402980311:web:56b580456ab6b9c6758992",
+            measurementId: "G-LZ4YP9YPN6"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let currentOrderId = null;
+        let autoRefreshInterval = null;
+        let isAutoRefreshEnabled = false;
+
+        // Track order function
+        async function trackOrder() {
+            const orderId = document.getElementById('orderIdInput').value.trim();
+            if (!orderId) {
+                alert('Please enter an order ID');
+                return;
+            }
+
+            currentOrderId = orderId;
+            await fetchOrderData();
+        }
+
+        async function fetchOrderData() {
+            if (!currentOrderId) return;
+
+            showLoading();
+            hideOrderDetails();
+            hideOrderNotFound();
+
+            try {
+                const orderDoc = await db.collection('orders').doc(currentOrderId).get();
+                
+                if (!orderDoc.exists) {
+                    showOrderNotFound();
+                    return;
+                }
+
+                const orderData = orderDoc.data();
+                displayOrderDetails(orderData, currentOrderId);
+                updateLastUpdatedTime();
+            } catch (error) {
+                console.error('Error fetching order:', error);
+                hideLoading();
+            }
+        }
+
+        // Display order details with transitions
+        function displayOrderDetails(order, orderId) {
+            hideLoading();
+            
+            // Set basic order info
+            document.getElementById('displayOrderId').textContent = orderId;
+            document.getElementById('orderDate').textContent = formatDate(order.createdAt);
+            document.getElementById('totalAmount').textContent = `₹${order.totalAmount}`;
+            document.getElementById('paymentMethod').textContent = order.paymentMethod || 'N/A';
+            
+            // Set order status badge with animation
+            const statusBadge = document.getElementById('orderStatusBadge');
+            const statusInfo = getStatusInfo(order.status);
+            statusBadge.textContent = statusInfo.text;
+            statusBadge.className = `px-3 py-1 rounded-full text-xs font-semibold ${statusInfo.class} transition-all duration-300`;
+            
+            // Set payment status
+            const paymentStatusElement = document.getElementById('paymentStatus');
+            const paymentStatusInfo = getPaymentStatusInfo(order.paymentStatus);
+            paymentStatusElement.textContent = paymentStatusInfo.text;
+            paymentStatusElement.className = `font-medium text-sm ${paymentStatusInfo.class}`;
+            
+            // Set shipping details
+            if (order.shippingDetails) {
+                document.getElementById('shippingAddress').textContent = order.shippingDetails.address || 'N/A';
+                document.getElementById('shippingPincode').textContent = `Pincode: ${order.shippingDetails.pincode || 'N/A'}`;
+                document.getElementById('shippingMethod').textContent = order.shippingDetails.method || 'standard';
+            }
+            
+            // Display order items
+            displayOrderItems(order.items || []);
+            
+            // Display compact timeline
+            displayCompactTimeline(order);
+            
+            document.getElementById('orderDetails').classList.remove('hidden');
+        }
+
+        // Display compact order items
+        function displayOrderItems(items) {
+            const container = document.getElementById('orderItems');
+            container.innerHTML = items.map(item => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg text-sm">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-cube text-blue-600 text-xs"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900">Product #${item.productId}</p>
+                            <p class="text-xs text-gray-500">Qty: ${item.quantity}</p>
+                        </div>
+                    </div>
+                    <p class="font-semibold text-gray-900">₹${item.price * item.quantity}</p>
+                </div>
+            `).join('');
+        }
+
+        // Display vertical timeline with arrow flow
+        function displayCompactTimeline(order) {
+            const timeline = [
+                { key: 'createdAt', title: 'Order Placed', icon: 'fas fa-shopping-cart', color: 'blue' },
+                { key: 'paidAt', title: 'Payment Confirmed', icon: 'fas fa-credit-card', color: 'green' },
+                { key: 'verifiedAt', title: 'Payment Verified', icon: 'fas fa-check-circle', color: 'green', condition: order.paymentMethod === 'UPI' },
+                { key: 'packedAt', title: 'Order Packed', icon: 'fas fa-box', color: 'orange' },
+                { key: 'assignedAt', title: 'Assigned for Delivery', icon: 'fas fa-truck', color: 'purple' },
+                { key: 'pickedAt', title: 'Out for Delivery', icon: 'fas fa-shipping-fast', color: 'indigo' },
+                { key: 'deliveredAt', title: 'Delivered', icon: 'fas fa-check-circle', color: 'green' }
+            ].filter(step => step.condition !== false);
+
+            const container = document.getElementById('orderTimeline');
+            let completedSteps = 0;
+            
+            timeline.forEach(step => {
+                if (order[step.key]) completedSteps++;
+            });
+
+            // Vertical timeline with flowing arrows
+            container.innerHTML = timeline.map((step, index) => {
+                const isCompleted = order[step.key];
+                const isCurrent = !isCompleted && index === completedSteps;
+                const isLast = index === timeline.length - 1;
+                const nextStep = timeline[index + 1];
+                const isNextCompleted = nextStep ? order[nextStep.key] : false;
+                
+                return `
+                    <div class="timeline-step">
+                        <!-- Step Content -->
+                        <div class="flex items-start">
+                            <!-- Icon Section -->
+                            <div class="flex flex-col items-center mr-4">
+                                <div class="w-12 h-12 rounded-full flex items-center justify-center ${
+                                    isCompleted ? `bg-${step.color}-500 text-white shadow-lg transform scale-105` : 
+                                    isCurrent ? `bg-${step.color}-100 text-${step.color}-600 relative shadow-md ring-2 ring-${step.color}-200` : 
+                                    'bg-gray-200 text-gray-400'
+                                } transition-all duration-500">
+                                    ${isCurrent ? '<div class="absolute inset-0 bg-' + step.color + '-200 rounded-full pulse-ring"></div>' : ''}
+                                    <i class="${step.icon} text-lg relative z-10"></i>
+                                </div>
+                                
+                                <!-- Connecting Line and Arrow (if not last) -->
+                                ${!isLast ? `
+                                    <div class="flex flex-col items-center mt-2 mb-2">
+                                        <!-- Top connecting line -->
+                                        <div class="w-1 h-4 ${isCompleted ? `bg-${step.color}-500` : 'bg-gray-300'} transition-all duration-500"></div>
+                                        
+                                        <!-- Flowing Arrow -->
+                                        <div class="relative">
+                                            <div class="w-6 h-6 ${isCompleted ? `bg-${step.color}-500` : isCurrent ? `bg-${step.color}-400` : 'bg-gray-300'} 
+                                                       transform rotate-45 transition-all duration-500 ${isCurrent ? 'animate-pulse' : ''}"></div>
+                                            <div class="absolute inset-0 w-6 h-6 ${isCompleted ? `bg-${step.color}-400` : isCurrent ? `bg-${step.color}-300` : 'bg-gray-200'} 
+                                                       transform rotate-45 transition-all duration-500 opacity-50"></div>
+                                        </div>
+                                        
+                                        <!-- Bottom connecting line -->
+                                        <div class="w-1 h-4 ${isNextCompleted || (isCurrent && nextStep) ? `bg-${nextStep?.color || step.color}-500` : 'bg-gray-300'} transition-all duration-500"></div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            
+                            <!-- Content Section -->
+                            <div class="flex-1 ${!isLast ? 'pb-8' : 'pb-2'}">
+                                <div class="bg-white rounded-lg p-4 border-l-4 ${
+                                    isCompleted ? `border-${step.color}-500 shadow-md` : 
+                                    isCurrent ? `border-${step.color}-400 shadow-lg bg-${step.color}-50` : 
+                                    'border-gray-300 shadow-sm'
+                                } transition-all duration-500">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h4 class="font-semibold text-base ${
+                                            isCompleted ? 'text-gray-900' : 
+                                            isCurrent ? `text-${step.color}-700` : 
+                                            'text-gray-500'
+                                        }">${step.title}</h4>
+                                        
+                                        <!-- Status Badge -->
+                                        <span class="px-2 py-1 rounded-full text-xs font-medium ${
+                                            isCompleted ? `bg-${step.color}-100 text-${step.color}-700` :
+                                            isCurrent ? `bg-${step.color}-200 text-${step.color}-800` :
+                                            'bg-gray-100 text-gray-500'
+                                        }">
+                                            ${isCompleted ? 'Completed' : isCurrent ? 'In Progress' : 'Pending'}
+                                        </span>
+                                    </div>
+                                    
+                                    <!-- Timestamp -->
+                                    <div class="flex items-center text-sm ${
+                                        isCompleted ? 'text-gray-600' : 
+                                        isCurrent ? `text-${step.color}-600` : 
+                                        'text-gray-400'
+                                    }">
+                                        <i class="fas fa-clock mr-2"></i>
+                                        ${isCompleted ? formatDate(order[step.key]) : isCurrent ? 'Processing...' : 'Waiting'}
+                                    </div>
+                                    
+                                    <!-- Progress indicator for current step -->
+                                    ${isCurrent ? `
+                                        <div class="mt-3">
+                                            <div class="flex items-center justify-between text-xs text-${step.color}-600 mb-1">
+                                                <span>Processing</span>
+                                                <span class="animate-pulse">●●●</span>
+                                            </div>
+                                            <div class="w-full bg-${step.color}-200 rounded-full h-1">
+                                                <div class="bg-${step.color}-500 h-1 rounded-full animate-pulse" style="width: 70%"></div>
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Toggle additional details
+        function toggleDetails() {
+            const details = document.getElementById('additionalDetails');
+            const toggle = document.getElementById('detailsToggle');
+            
+            if (details.classList.contains('hidden')) {
+                details.classList.remove('hidden');
+                toggle.style.transform = 'rotate(180deg)';
+            } else {
+                details.classList.add('hidden');
+                toggle.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Auto-refresh functionality
+        function toggleAutoRefresh() {
+            const checkbox = document.getElementById('autoRefresh');
+            const toggleDiv = checkbox.nextElementSibling;
+            const toggleButton = toggleDiv.children[1];
+            
+            isAutoRefreshEnabled = !isAutoRefreshEnabled;
+            
+            if (isAutoRefreshEnabled) {
+                toggleDiv.children[0].classList.remove('bg-gray-300');
+                toggleDiv.children[0].classList.add('bg-blue-500');
+                toggleButton.style.transform = 'translateX(16px)';
+                
+                if (currentOrderId) {
+                    autoRefreshInterval = setInterval(() => {
+                        fetchOrderData();
+                    }, 3000);
+                }
+            } else {
+                toggleDiv.children[0].classList.remove('bg-blue-500');
+                toggleDiv.children[0].classList.add('bg-gray-300');
+                toggleButton.style.transform = 'translateX(0px)';
+                
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                }
+            }
+        }
+
+        // Update last updated time
+        function updateLastUpdatedTime() {
+            const now = new Date();
+            document.getElementById('lastUpdated').textContent = `Updated: ${now.toLocaleTimeString()}`;
+        }
+
+        // Utility functions (same as before)
+        function getStatusInfo(status) {
+            const statusMap = {
+                'pending': { text: 'Pending', class: 'bg-yellow-100 text-yellow-800' },
+                'confirmed': { text: 'Confirmed', class: 'bg-blue-100 text-blue-800' },
+                'packed': { text: 'Packed', class: 'bg-orange-100 text-orange-800' },
+                'shipped': { text: 'Shipped', class: 'bg-purple-100 text-purple-800' },
+                'out_for_delivery': { text: 'Out for Delivery', class: 'bg-indigo-100 text-indigo-800' },
+                'delivered': { text: 'Delivered', class: 'bg-green-100 text-green-800' },
+                'cancelled': { text: 'Cancelled', class: 'bg-red-100 text-red-800' }
+            };
+            return statusMap[status] || { text: status, class: 'bg-gray-100 text-gray-800' };
+        }
+
+        function getPaymentStatusInfo(status) {
+            const statusMap = {
+                'pending': { text: 'Pending', class: 'text-yellow-600' },
+                'paid': { text: 'Confirmed', class: 'text-green-600' },
+                'failed': { text: 'Failed', class: 'text-red-600' },
+                'refunded': { text: 'Refunded', class: 'text-blue-600' }
+            };
+            return statusMap[status] || { text: status, class: 'text-gray-600' };
+        }
+
+        function formatDate(dateValue) {
+            if (!dateValue) return 'N/A';
+            
+            let date;
+            if (dateValue.seconds) {
+                date = new Date(dateValue.seconds * 1000);
+            } else if (typeof dateValue === 'string') {
+                date = new Date(dateValue);
+            } else {
+                return 'Invalid Date';
+            }
+            
+            return date.toLocaleDateString('en-IN', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function showLoading() {
+            document.getElementById('loadingState').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingState').classList.add('hidden');
+        }
+
+        function showOrderNotFound() {
+            hideLoading();
+            document.getElementById('orderNotFound').classList.remove('hidden');
+        }
+
+        function hideOrderNotFound() {
+            document.getElementById('orderNotFound').classList.add('hidden');
+        }
+
+        function hideOrderDetails() {
+            document.getElementById('orderDetails').classList.add('hidden');
+        }
+
+        // Search on Enter key
+        document.getElementById('orderIdInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                trackOrder();
+            }
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+        });
+    </script>
+</body>
+</html>

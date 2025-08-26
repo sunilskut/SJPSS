@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDK -->
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .table-container {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        .theme-pending { background: linear-gradient(135deg, #ffeaa7, #fdcb6e); }
+        .theme-completed { background: linear-gradient(135deg, #55efc4, #00b894); }
+        .theme-cancelled { background: linear-gradient(135deg, #fd79a8, #e84393); }
+        .theme-processing { background: linear-gradient(135deg, #74b9ff, #0984e3); }
+        .theme-upi { background: linear-gradient(135deg, #a29bfe, #6c5ce7); }
+        .theme-cod { background: linear-gradient(135deg, #fd79a8, #fdcb6e); }
+        .theme-card { background: linear-gradient(135deg, #00cec9, #00b894); }
+        .theme-paid { background: linear-gradient(135deg, #00b894, #00cec9); }
+        .theme-unpaid { background: linear-gradient(135deg, #e17055, #d63031); }
+        .theme-refunded { background: linear-gradient(135deg, #636e72, #2d3436); }
+        .theme-cash { background: linear-gradient(135deg, #fdcb6e, #e17055); }
+        .theme-cod-upi { background: linear-gradient(135deg, #74b9ff, #a29bfe); }
+        .loading {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="font-sans">
+    <div class="container mx-auto px-4 py-8">
+        <div id="tableContainer" class="table-container p-6 mx-auto max-w-7xl">
+            <div id="loadingIndicator" class="text-center py-12 loading">
+                <div class="text-gray-600 text-lg">Loading orders...</div>
+                <div class="text-gray-500 text-sm mt-2">Please wait while we fetch your data</div>
+            </div>
+            <div id="tableContent" style="display: none;">
+                <!-- Table will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+        import { getFirestore, collection, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+            authDomain: "sjpss-f504b.firebaseapp.com",
+            projectId: "sjpss-f504b",
+            storageBucket: "sjpss-f504b.firebasestorage.app",
+            messagingSenderId: "227402980311",
+            appId: "1:227402980311:web:56b580456ab6b9c6758992",
+            measurementId: "G-LZ4YP9YPN6"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let allOrders = [];
+
+        function getURLParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                status: params.get('status'),
+                paymentMethod: params.get('paymentMethod'),
+                paymentStatus: params.get('paymentStatus'),
+                codPaymentMethod: params.get('codPaymentMethod')
+            };
+        }
+
+        function filterOrders(orders, filters) {
+            console.log('Filtering orders:', { 
+                totalOrders: orders.length, 
+                filters: filters 
+            });
+            
+            // If no filters are applied, return all orders
+            if (!filters.status && !filters.paymentMethod && !filters.paymentStatus && !filters.codPaymentMethod) {
+                console.log('No filters applied, returning all orders');
+                return orders;
+            }
+            
+            const filtered = orders.filter(order => {
+                if (filters.status && order.status !== filters.status) return false;
+                if (filters.paymentMethod && order.paymentMethod !== filters.paymentMethod) return false;
+                if (filters.paymentStatus && order.paymentStatus !== filters.paymentStatus) return false;
+                if (filters.codPaymentMethod && order.codPaymentMethod !== filters.codPaymentMethod) return false;
+                return true;
+            });
+            
+            console.log('Filtered orders:', filtered.length);
+            return filtered;
+        }
+
+        function getThemeClass(filterType, filterValue) {
+            const themeMap = {
+                status: {
+                    pending: 'theme-pending',
+                    completed: 'theme-completed',
+                    cancelled: 'theme-cancelled',
+                    processing: 'theme-processing'
+                },
+                paymentMethod: {
+                    UPI: 'theme-upi',
+                    COD: 'theme-cod',
+                    Card: 'theme-card'
+                },
+                paymentStatus: {
+                    paid: 'theme-paid',
+                    unpaid: 'theme-unpaid',
+                    refunded: 'theme-refunded'
+                },
+                codPaymentMethod: {
+                    CASH: 'theme-cash',
+                    UPI: 'theme-cod-upi'
+                }
+            };
+
+            if (filterType && filterValue && themeMap[filterType] && themeMap[filterType][filterValue]) {
+                return themeMap[filterType][filterValue];
+            }
+            return 'bg-gradient-to-r from-blue-50 to-indigo-100';
+        }
+
+        function generateTitle(filters) {
+            const parts = [];
+            if (filters.status) parts.push(`Status: ${filters.status.charAt(0).toUpperCase() + filters.status.slice(1)}`);
+            if (filters.paymentMethod) parts.push(`Payment: ${filters.paymentMethod}`);
+            if (filters.paymentStatus) parts.push(`Payment Status: ${filters.paymentStatus.charAt(0).toUpperCase() + filters.paymentStatus.slice(1)}`);
+            if (filters.codPaymentMethod) parts.push(`COD Method: ${filters.codPaymentMethod}`);
+            
+            if (parts.length === 0) return 'All Orders';
+            return parts.join(' | ');
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-IN', { 
+                day: '2-digit', 
+                month: 'short', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function truncateText(text, maxLength = 30) {
+            if (!text || text.length <= maxLength) return text || '';
+            return text.substring(0, maxLength) + '...';
+        }
+
+        function formatItems(items) {
+            if (!items || !Array.isArray(items)) return 'N/A';
+            return items.map(item => `P${item.productId || 'N/A'} (${item.quantity || 0})`).join(', ');
+        }
+
+        function showError(message) {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            loadingIndicator.innerHTML = `
+                <div class="text-center py-12">
+                    <div class="text-red-600 text-lg">Error Loading Orders</div>
+                    <div class="text-red-500 text-sm mt-2">${message}</div>
+                    <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-red-100 text-red-800 rounded hover:bg-red-200 transition-colors">
+                        Retry
+                    </button>
+                </div>
+            `;
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingIndicator').style.display = 'none';
+            document.getElementById('tableContent').style.display = 'block';
+        }
+
+        function getActionLink(order) {
+            // Priority 1: UPI payment verification for paid UPI orders in pending status
+            if (order.paymentMethod === 'UPI' && order.paymentStatus === 'paid' && order.status === 'pending') {
+                return `<a href="paymentVerification.html?orderId=${order.id}" class="text-purple-600 hover:text-purple-800 hover:underline font-medium">Verify</a>`;
+            }
+            
+            // Priority 2: COD payment method specific actions
+            if (order.paymentMethod === 'COD' && order.codPaymentMethod) {
+                if (order.codPaymentMethod === 'UPI') {
+                    return `<a href="codPaymentVerification.html?orderId=${order.id}" class="text-blue-600 hover:text-blue-800 hover:underline font-medium">Examine</a>`;
+                } else if (order.codPaymentMethod === 'CASH') {
+                    return `<a href="cashCheck.html?orderId=${order.id}" class="text-orange-600 hover:text-orange-800 hover:underline font-medium">Cross Check</a>`;
+                }
+            }
+            
+            // Priority 3: Regular order processing flow
+            if (order.status === 'pending') {
+                return `<a href="orderPacking.html?orderId=${order.id}" class="text-green-600 hover:text-green-800 hover:underline font-medium">Pack</a>`;
+            } else if (order.status === 'packed') {
+                return `<a href="assignDelivery.html?orderId=${order.id}" class="text-indigo-600 hover:text-indigo-800 hover:underline font-medium">Assign</a>`;
+            }
+            
+            // Default: Show delivery staff or status
+            return `<span class="text-gray-600 text-sm">${order.deliveryStaff || 'Completed'}</span>`;
+        }
+
+        function renderTable(filteredOrders, filters) {
+            const activeFilter = filters.status || filters.paymentMethod || filters.paymentStatus || filters.codPaymentMethod;
+            const filterType = filters.status ? 'status' : 
+                              filters.paymentMethod ? 'paymentMethod' : 
+                              filters.paymentStatus ? 'paymentStatus' : 'codPaymentMethod';
+            const themeClass = getThemeClass(filterType, activeFilter);
+            
+            const title = generateTitle(filters);
+            
+            const tableContainer = document.getElementById('tableContainer');
+            tableContainer.className = `table-container p-6 mx-auto max-w-7xl ${themeClass}`;
+
+            let html = `
+<div class="mb-6">
+    <div class="flex justify-between items-center mb-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">${title}</h1>
+            <p class="text-sm text-gray-600">
+                ${filteredOrders.length} order(s) found 
+                ${allOrders.length > 0 ? `(Total: ${allOrders.length})` : ''}
+            </p>
+        </div>
+        
+        <div class="flex gap-2">
+            <button onclick="showAllOrders()" 
+                class="px-4 py-2 bg-white bg-opacity-80 text-gray-700 rounded-lg hover:bg-opacity-100 transition-all duration-200 text-sm font-medium shadow-sm">
+                Show All Orders
+            </button>
+
+            <button onclick="window.location.href='adminPanel.html#order-processing'" 
+                class="group inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white bg-opacity-80 border border-gray-300 rounded-lg hover:bg-opacity-100 transition-all duration-200 shadow-sm">
+                <svg class="w-4 h-4 mr-2 transition-transform duration-200 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                <span>Back to Order Processing</span>
+            </button>
+        </div>
+    </div>
+</div>
+`;
+
+            if (filteredOrders.length === 0) {
+                html += `
+                    <div class="text-center py-12">
+                        <div class="text-gray-400 text-lg">No orders found matching the criteria</div>
+                        <div class="text-gray-500 text-sm mt-2">Try adjusting your filters</div>
+                    </div>
+                `;
+            } else { 
+                html += `
+<div class="overflow-x-auto">
+    <table class="w-full text-xs">
+        <thead>
+            <tr class="bg-black bg-opacity-10 text-gray-700">
+                <th class="px-2 py-2 text-left font-semibold">Order ID</th>
+                <th class="px-2 py-2 text-left font-semibold">Date</th>
+                <th class="px-2 py-2 text-left font-semibold">Customer</th>
+                <th class="px-2 py-2 text-left font-semibold">Items</th>
+                <th class="px-2 py-2 text-left font-semibold">Amount</th>
+                <th class="px-2 py-2 text-left font-semibold">Payment</th>
+                <th class="px-2 py-2 text-left font-semibold">COD Method</th>
+                <th class="px-2 py-2 text-left font-semibold">Status</th>
+                <th class="px-2 py-2 text-left font-semibold">Address</th>
+                <th class="px-2 py-2 text-left font-semibold">Action</th>
+            </tr>
+        </thead>
+        <tbody class="bg-white bg-opacity-50">
+`;
+
+                filteredOrders.forEach((order, index) => {
+                    const rowClass = index % 2 === 0 ? 'bg-white bg-opacity-30' : 'bg-black bg-opacity-5';
+                    const address = order.shippingDetails?.address || 'N/A';
+                    
+                    html += `
+<tr class="${rowClass} hover:bg-white hover:bg-opacity-60 transition-colors">
+    <td class="px-2 py-2 font-medium text-gray-800">${order.id || 'N/A'}</td>
+    <td class="px-2 py-2 text-gray-700">${order.createdAt ? formatDate(order.createdAt) : 'N/A'}</td>
+    <td class="px-2 py-2 text-gray-700">${order.customerId || 'N/A'}</td>
+    <td class="px-2 py-2 text-gray-700" title="${formatItems(order.items)}">${truncateText(formatItems(order.items), 15)}</td>
+    <td class="px-2 py-2 font-semibold text-gray-800">₹${order.totalAmount || 0}</td>
+    <td class="px-2 py-2">
+        <span class="px-1 py-1 text-xs rounded ${
+            order.paymentMethod === 'UPI' ? 'bg-purple-100 text-purple-700' :
+            order.paymentMethod === 'COD' ? 'bg-yellow-100 text-yellow-700' :
+            order.paymentMethod === 'Card' ? 'bg-blue-100 text-blue-700' :
+            'bg-gray-100 text-gray-700'
+        }">${order.paymentMethod || 'N/A'}</span>
+        <div class="text-xs mt-1 ${
+            order.paymentStatus === 'paid' ? 'text-green-600' : 
+            order.paymentStatus === 'pending' ? 'text-red-600' : 
+            'text-gray-600'
+        }">${order.paymentStatus || 'N/A'}</div>
+    </td>
+    <td class="px-2 py-2">
+        ${order.paymentMethod === 'COD' && order.codPaymentMethod ? 
+            `<span class="px-2 py-1 text-xs rounded font-medium ${
+                order.codPaymentMethod === 'UPI' ? 'bg-blue-100 text-blue-800' :
+                order.codPaymentMethod === 'CASH' ? 'bg-orange-100 text-orange-800' :
+                'bg-gray-100 text-gray-800'
+            }">${order.codPaymentMethod}</span>` : 
+            '<span class="text-gray-400 text-xs">N/A</span>'
+        }
+    </td>
+    <td class="px-2 py-2">
+        <span class="px-2 py-1 text-xs rounded font-medium ${
+            order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+            order.status === 'completed' ? 'bg-green-100 text-green-800' :
+            order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+            order.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+            order.status === 'packed' ? 'bg-indigo-100 text-indigo-800' :
+            'bg-gray-100 text-gray-800'
+        }">${order.status || 'N/A'}</span>
+    </td>
+    <td class="px-2 py-2 text-gray-600" title="${address}">${truncateText(address, 25)}</td>
+    <td class="px-2 py-2">
+        ${getActionLink(order)}
+    </td>
+</tr>
+`;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            document.getElementById('tableContent').innerHTML = html;
+            hideLoading();
+        }
+
+        // Fetch orders from Firebase
+        async function fetchOrders() {
+            try {
+                console.log('Fetching orders from Firestore...');
+                const ordersRef = collection(db, 'orders');
+                const snapshot = await getDocs(ordersRef);
+                
+                allOrders = [];
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    console.log('Order data:', { id: doc.id, ...data });
+                    allOrders.push({
+                        id: doc.id,
+                        ...data
+                    });
+                });
+
+                console.log(`Fetched ${allOrders.length} orders from Firestore`);
+                console.log('All orders:', allOrders);
+                
+                // Apply filters and render
+                const filters = getURLParams();
+                console.log('URL filters:', filters);
+                const filteredOrders = filterOrders(allOrders, filters);
+                renderTable(filteredOrders, filters);
+
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+                showError(error.message || 'Failed to fetch orders from database');
+            }
+        }
+
+        // Initialize the page
+        async function init() {
+            console.log('Initializing order table viewer...');
+            await fetchOrders();
+        }
+
+        // Run on page load
+        init();
+
+        // Update when URL changes (for SPA behavior)
+        window.addEventListener('popstate', () => {
+            if (allOrders.length > 0) {
+                const filters = getURLParams();
+                const filteredOrders = filterOrders(allOrders, filters);
+                renderTable(filteredOrders, filters);
+            }
+        });
+
+        // Make functions available globally for debugging and UI interactions
+        window.fetchOrders = fetchOrders;
+        window.allOrders = allOrders;
+        window.showAllOrders = function() {
+            console.log('Show all orders clicked');
+            // Clear URL parameters and show all orders
+            window.history.pushState({}, '', window.location.pathname);
+            const filters = getURLParams(); // Will be empty now
+            console.log('Cleared filters:', filters);
+            const filteredOrders = filterOrders(allOrders, filters);
+            console.log('Orders to show:', filteredOrders.length);
+            renderTable(filteredOrders, filters);
+        };
+    </script>
+</body>
+</html>

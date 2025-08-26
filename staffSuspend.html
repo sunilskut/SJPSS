@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <i class="fas fa-users text-blue-600 text-2xl mr-3"></i>
+                    <h1 class="text-2xl font-bold text-gray-900">User Management</h1>
+                </div>
+               <div class="text-sm text-gray-500 cursor-pointer hover:text-gray-700"
+     onclick="window.location.href='adminPanel.html#settings'">
+    <i class="fas fa-user-shield mr-2"></i>
+    Admin Dashboard
+</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Search Section -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Search Users</h2>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-1">
+                    <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-2">Search by ID, Name, Username, or Phone</label>
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            placeholder="Enter user ID, name, username, or phone..."
+                            class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        >
+                        <i class="fas fa-search absolute left-3 top-3.5 text-gray-400"></i>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button 
+                        onclick="searchUsers()" 
+                        class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    >
+                        <i class="fas fa-search mr-2"></i>Search
+                    </button>
+                    <button 
+                        onclick="loadAllUsers()" 
+                        class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                    >
+                        <i class="fas fa-list mr-2"></i>All Users
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="hidden">
+            <div class="bg-white rounded-lg shadow-sm p-8 text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p class="text-gray-600">Loading users...</p>
+            </div>
+        </div>
+
+        <!-- No Results -->
+        <div id="noResults" class="hidden">
+            <div class="bg-white rounded-lg shadow-sm p-8 text-center">
+                <i class="fas fa-search text-gray-300 text-4xl mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No Users Found</h3>
+                <p class="text-gray-600">Try searching with different keywords or check all users.</p>
+            </div>
+        </div>
+
+        <!-- Users Grid -->
+        <div id="usersGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Users will be populated here -->
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmationModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md mx-4">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-exclamation-triangle text-yellow-500 text-xl mr-3"></i>
+                <h3 class="text-lg font-semibold text-gray-900">Confirm Action</h3>
+            </div>
+            <p id="confirmationMessage" class="text-gray-600 mb-6"></p>
+            <div class="flex gap-3 justify-end">
+                <button 
+                    onclick="closeModal()" 
+                    class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                    Cancel
+                </button>
+                <button 
+                    id="confirmButton" 
+                    onclick="confirmAction()" 
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+            authDomain: "sjpss-f504b.firebaseapp.com",
+            projectId: "sjpss-f504b",
+            storageBucket: "sjpss-f504b.firebasestorage.app",
+            messagingSenderId: "227402980311",
+            appId: "1:227402980311:web:56b580456ab6b9c6758992",
+            measurementId: "G-LZ4YP9YPN6"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let currentUsers = [];
+        let pendingAction = null;
+
+        // Search functionality
+        async function searchUsers() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            if (!searchTerm) {
+                alert('Please enter a search term');
+                return;
+            }
+
+            showLoading();
+            
+            try {
+                // Search by ID first
+                const idQuery = await db.collection('users').where('id', '==', searchTerm).get();
+                
+                if (!idQuery.empty) {
+                    const users = idQuery.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
+                    displayUsers(users);
+                    return;
+                }
+
+                // Search by phone number
+                const phoneQuery = await db.collection('users').where('phone', '==', searchTerm).get();
+                
+                if (!phoneQuery.empty) {
+                    const users = phoneQuery.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
+                    displayUsers(users);
+                    return;
+                }
+
+                // Search by name or username (case-insensitive partial match)
+                const allQuery = await db.collection('users').get();
+                const filteredUsers = allQuery.docs
+                    .map(doc => ({ docId: doc.id, ...doc.data() }))
+                    .filter(user => 
+                        user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        user.username?.toLowerCase().includes(searchTerm.toLowerCase())
+                    );
+
+                displayUsers(filteredUsers);
+            } catch (error) {
+                console.error('Error searching users:', error);
+                showError('Error searching users. Please try again.');
+            }
+        }
+
+        // Load all users
+        async function loadAllUsers() {
+            showLoading();
+            
+            try {
+                const snapshot = await db.collection('users').get();
+                const users = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
+                displayUsers(users);
+            } catch (error) {
+                console.error('Error loading users:', error);
+                showError('Error loading users. Please try again.');
+            }
+        }
+
+        // Display users in grid
+        function displayUsers(users) {
+            hideLoading();
+            currentUsers = users;
+            const grid = document.getElementById('usersGrid');
+            const noResults = document.getElementById('noResults');
+
+            if (users.length === 0) {
+                grid.innerHTML = '';
+                noResults.classList.remove('hidden');
+                return;
+            }
+
+            noResults.classList.add('hidden');
+            grid.innerHTML = users.map(user => createUserCard(user)).join('');
+        }
+
+        // Create user card HTML
+        function createUserCard(user) {
+            const isActive = user.isActive === 'active' || user.accountStatus === 'active';
+            const buttonText = isActive ? 'Suspend' : 'Revoke';
+            const buttonClass = isActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700';
+            const statusClass = isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+            const statusText = isActive ? 'Active' : 'Suspended';
+            const roleColor = getRoleColor(user.role);
+            
+            // Format dates
+            const createdAt = user.createdAt ? new Date(user.createdAt.seconds * 1000).toLocaleDateString() : 'N/A';
+            
+            return `
+                <div class="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow">
+                    <div class="p-6">
+                        <!-- Header Section -->
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                    <i class="fas fa-user text-blue-600 text-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-gray-900 text-lg">${user.name || 'No Name'}</h3>
+                                    <p class="text-sm text-gray-500">@${user.username || 'no-username'}</p>
+                                </div>
+                            </div>
+                            <div class="flex flex-col items-end gap-1">
+                                <span class="px-2 py-1 rounded-full text-xs font-medium ${statusClass}">
+                                    ${statusText}
+                                </span>
+                                <span class="px-2 py-1 rounded-full text-xs font-medium ${roleColor}">
+                                    ${user.role || 'No Role'}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- User Info -->
+                        <div class="space-y-2 mb-4">
+                            <div class="flex items-center text-sm">
+                                <i class="fas fa-id-card text-gray-400 w-4"></i>
+                                <span class="text-gray-600 ml-2">ID: ${user.id || 'N/A'}</span>
+                            </div>
+                            
+                            <div class="flex items-center text-sm">
+                                <i class="fas fa-phone text-gray-400 w-4"></i>
+                                <span class="text-gray-600 ml-2">${user.phone || 'No Phone'}</span>
+                                ${user.phoneVerified ? '<i class="fas fa-check-circle text-green-500 ml-1" title="Phone Verified"></i>' : '<i class="fas fa-times-circle text-red-500 ml-1" title="Phone Not Verified"></i>'}
+                            </div>
+                            
+                            ${user.email ? `
+                                <div class="flex items-center text-sm">
+                                    <i class="fas fa-envelope text-gray-400 w-4"></i>
+                                    <span class="text-gray-600 ml-2">${user.email}</span>
+                                    ${user.emailVerified ? '<i class="fas fa-check-circle text-green-500 ml-1" title="Email Verified"></i>' : '<i class="fas fa-times-circle text-red-500 ml-1" title="Email Not Verified"></i>'}
+                                </div>
+                            ` : ''}
+                            
+                            ${user.address ? `
+                                <div class="flex items-center text-sm">
+                                    <i class="fas fa-map-marker-alt text-gray-400 w-4"></i>
+                                    <span class="text-gray-600 ml-2">${user.address}</span>
+                                </div>
+                            ` : ''}
+                            
+                            ${user.vendorId ? `
+                                <div class="flex items-center text-sm">
+                                    <i class="fas fa-store text-gray-400 w-4"></i>
+                                    <span class="text-gray-600 ml-2">Vendor: ${user.vendorId}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+                            <div class="text-xs text-gray-500">
+                                <i class="fas fa-calendar mr-1"></i>
+                                Joined: ${createdAt}
+                            </div>
+                            <button 
+                                onclick="showConfirmation('${user.docId}', '${user.id}', '${user.name || 'Unknown'}', '${user.isActive || user.accountStatus}')"
+                                class="px-4 py-2 ${buttonClass} text-white text-sm font-medium rounded-lg transition-colors"
+                            >
+                                <i class="fas fa-${isActive ? 'ban' : 'check'} mr-1"></i>
+                                ${buttonText}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Get role color classes
+        function getRoleColor(role) {
+            switch(role?.toLowerCase()) {
+                case 'admin':
+                    return 'bg-purple-100 text-purple-800';
+                case 'vendor':
+                    return 'bg-orange-100 text-orange-800';
+                case 'user':
+                    return 'bg-blue-100 text-blue-800';
+                default:
+                    return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        // Show confirmation modal
+        function showConfirmation(docId, userId, userName, currentStatus) {
+            const action = (currentStatus === 'active') ? 'suspend' : 'activate';
+            const newStatus = (currentStatus === 'active') ? 'suspended' : 'active';
+            
+            document.getElementById('confirmationMessage').textContent = 
+                `Are you sure you want to ${action} user "${userName}" (ID: ${userId})?`;
+            
+            pendingAction = { docId, userId, newStatus, action };
+            document.getElementById('confirmationModal').classList.remove('hidden');
+            document.getElementById('confirmationModal').classList.add('flex');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('confirmationModal').classList.add('hidden');
+            document.getElementById('confirmationModal').classList.remove('flex');
+            pendingAction = null;
+        }
+
+        // Confirm action
+        async function confirmAction() {
+            if (!pendingAction) return;
+            
+            try {
+                // Find the user in currentUsers array
+                const userIndex = currentUsers.findIndex(u => u.docId === pendingAction.docId);
+                if (userIndex === -1) {
+                    throw new Error('User not found');
+                }
+                
+                // Update Firestore
+                await updateUserStatus(pendingAction.docId, pendingAction.userId, pendingAction.newStatus);
+                
+                // Update local data
+                currentUsers[userIndex].isActive = pendingAction.newStatus;
+                currentUsers[userIndex].accountStatus = pendingAction.newStatus;
+                
+                // Refresh display
+                displayUsers(currentUsers);
+                
+                closeModal();
+                showSuccess(`User ${pendingAction.action}d successfully!`);
+            } catch (error) {
+                console.error('Error updating user:', error);
+                showError('Error updating user status. Please try again.');
+                closeModal();
+            }
+        }
+
+        // Update user status in Firestore
+        async function updateUserStatus(docId, userId, newStatus) {
+            try {
+                const docRef = db.collection('users').doc(docId);
+                await docRef.update({ 
+                    isActive: newStatus,
+                    accountStatus: newStatus,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Create log entry
+                const adminUserId = sessionStorage.getItem('userId') || 'admin';
+                await db.collection('logs').add({
+                    action: "modify",
+                    changes: newStatus,
+                    entityId: userId.toString(),
+                    entityType: "user",
+                    note: `Changed user status for User Id. ${userId} to ${newStatus} by Admin User Id. ${adminUserId}`,
+                    sessionId: localStorage.getItem('sessionId') || null,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    url: window.location.href,
+                    userAgent: navigator.userAgent
+                });
+
+            } catch (error) {
+                console.error('Error updating user status:', error);
+                throw error;
+            }
+        }
+
+        // Utility functions
+        function showLoading() {
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('usersGrid').innerHTML = '';
+            document.getElementById('noResults').classList.add('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingState').classList.add('hidden');
+        }
+
+        function showError(message) {
+            hideLoading();
+            alert(message); // In a real app, you'd use a proper notification system
+        }
+
+        function showSuccess(message) {
+            alert(message); // In a real app, you'd use a proper notification system
+        }
+
+        // Search on Enter key
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchUsers();
+            }
+        });
+
+        // Load initial data
+        document.addEventListener('DOMContentLoaded', function() {
+            // You can uncomment this to load all users on page load
+            // loadAllUsers();
+        });
+    </script>
+</body>
+</html>
