@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cash Remittance Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .animate-pulse-slow {
+            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .details-section {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .details-section.open {
+            max-height: 1000px;
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    <!-- Header -->
+    <header class="glass-card border-0 border-b border-white/20">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                        </svg>
+                    </div>
+                    <h1 class="text-2xl font-bold text-white">Cash Remittance Tracker</h1>
+                </div>
+                <div class="text-white/80 text-sm" id="lastUpdated">
+                    Last updated: <span id="updateTime">--</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Status Panel -->
+        <div class="glass-card rounded-2xl p-6 mb-8">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <h2 class="text-xl font-semibold text-white">DB Connected</h2>
+                </div>
+                <button onclick="loadData()" class="bg-white/20 hover:bg-white/30 transition-all duration-300 text-white font-semibold py-2 px-6 rounded-lg flex items-center space-x-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    <span>Refresh Data</span>
+                </button>
+            </div>
+            <div id="connectionStatus" class="mt-2 text-sm text-green-400">Ready to load cash remittance data</div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="glass-card rounded-2xl p-6 transform hover:scale-105 transition-all duration-300">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white/80 text-sm font-medium">Today's Collections</p>
+                        <p class="text-3xl font-bold text-white" id="todayTotal">₹0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-6 transform hover:scale-105 transition-all duration-300">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white/80 text-sm font-medium">Pending Remittance</p>
+                        <p class="text-3xl font-bold text-white" id="pendingTotal">₹0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-6 transform hover:scale-105 transition-all duration-300">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-white/80 text-sm font-medium">Total Outstanding</p>
+                        <p class="text-3xl font-bold text-white" id="grandTotal">₹0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="glass-card rounded-2xl p-8 text-center hidden">
+            <div class="animate-pulse-slow">
+                <div class="w-16 h-16 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                </div>
+                <p class="text-white/80">Loading cash remittance data...</p>
+            </div>
+        </div>
+
+        <!-- Staff Cards -->
+        <div id="staffContainer" class="space-y-6">
+            <!-- Staff cards will be populated here -->
+        </div>
+
+        <!-- No Data State -->
+        <div id="noDataState" class="glass-card rounded-2xl p-8 text-center hidden">
+            <div class="w-16 h-16 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <svg class="w-8 h-8 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                </svg>
+            </div>
+            <p class="text-white/80">No pending cash collections found</p>
+            <p class="text-white/60 text-sm mt-2">All deliveries have been reconciled or no COD orders match the criteria</p>
+        </div>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+            authDomain: "sjpss-f504b.firebaseapp.com",
+            projectId: "sjpss-f504b",
+            storageBucket: "sjpss-f504b.firebasestorage.app",
+            messagingSenderId: "227402980311",
+            appId: "1:227402980311:web:56b580456ab6b9c6758992",
+            measurementId: "G-LZ4YP9YPN6"
+        };
+
+        let db = null;
+        let isConnected = false;
+        let deliveryStaffUsers = {};
+
+        // Initialize Firebase on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeFirebase();
+        });
+
+        function initializeFirebase() {
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                db = firebase.firestore();
+                isConnected = true;
+                showStatus('Connected to Firebase successfully! Loading delivery staff...', 'success');
+                loadDeliveryStaff();
+            } catch (error) {
+                showStatus('Failed to connect to Firebase: ' + error.message, 'error');
+            }
+        }
+
+        async function loadDeliveryStaff() {
+            try {
+                const usersRef = db.collection('users');
+                const staffQuery = usersRef.where('role', '==', 'deliveryStaff');
+                const staffSnapshot = await staffQuery.get();
+                
+                deliveryStaffUsers = {};
+                staffSnapshot.forEach(doc => {
+                    const userData = doc.data();
+                    deliveryStaffUsers[doc.id] = {
+                        id: doc.id,
+                        name: userData.name || userData.displayName || 'Unknown Staff',
+                        phone: userData.phone || userData.phoneNumber || '',
+                        email: userData.email || '',
+                        ...userData
+                    };
+                });
+
+                showStatus(`Loaded ${Object.keys(deliveryStaffUsers).length} delivery staff. Loading orders...`, 'success');
+                loadData();
+            } catch (error) {
+                showStatus('Error loading delivery staff: ' + error.message, 'error');
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('connectionStatus');
+            statusDiv.className = `mt-2 text-sm ${type === 'success' ? 'text-green-400' : 'text-red-400'}`;
+            statusDiv.textContent = message;
+        }
+
+        async function loadData() {
+            if (!isConnected) {
+                showStatus('Firebase not connected. Attempting to reconnect...', 'error');
+                initializeFirebase();
+                return;
+            }
+
+            if (Object.keys(deliveryStaffUsers).length === 0) {
+                showStatus('No delivery staff found. Please check user roles.', 'error');
+                return;
+            }
+
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('noDataState').classList.add('hidden');
+            document.getElementById('staffContainer').innerHTML = '';
+
+            try {
+                const ordersRef = db.collection('orders');
+                const query = ordersRef.where('codPaymentMethod', '==', 'CASH')
+                                      .where('status', '==', 'delivered')
+                                      .where('paymentMethod', '==', 'COD');
+                
+                const snapshot = await query.get();
+                const orders = [];
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    // Filter out reconciled orders and only include orders from known delivery staff
+                    if ((!data.reconciled || data.reconciled !== true) && 
+                        data.deliveryStaff && 
+                        deliveryStaffUsers[data.deliveryStaff]) {
+                        orders.push({
+                            id: doc.id,
+                            ...data,
+                            deliveredAt: data.deliveredAt ? data.deliveredAt.toDate() : new Date(),
+                            staffInfo: deliveryStaffUsers[data.deliveryStaff]
+                        });
+                    }
+                });
+
+                document.getElementById('loadingState').classList.add('hidden');
+                
+                if (orders.length === 0) {
+                    document.getElementById('noDataState').classList.remove('hidden');
+                    showStatus('No pending cash collections found for registered delivery staff', 'success');
+                    return;
+                }
+
+                processAndDisplayData(orders);
+                showStatus(`Loaded ${orders.length} pending orders from ${Object.keys(deliveryStaffUsers).length} delivery staff`, 'success');
+                
+            } catch (error) {
+                document.getElementById('loadingState').classList.add('hidden');
+                showStatus('Error loading data: ' + error.message, 'error');
+            }
+        }
+
+        function processAndDisplayData(orders) {
+            const staffData = {};
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            let totalToday = 0;
+            let totalPending = 0;
+
+            orders.forEach(order => {
+                const staff = order.deliveryStaff || 'Unknown Staff';
+                const amount = parseFloat(order.totalAmount) || 0;
+                const deliveredDate = new Date(order.deliveredAt);
+                deliveredDate.setHours(0, 0, 0, 0);
+                
+                const isToday = deliveredDate.getTime() === today.getTime();
+
+                if (!staffData[staff]) {
+                    staffData[staff] = {
+                        name: staff,
+                        todayOrders: [],
+                        previousOrders: [],
+                        todayTotal: 0,
+                        previousTotal: 0
+                    };
+                }
+
+                if (isToday) {
+                    staffData[staff].todayOrders.push(order);
+                    staffData[staff].todayTotal += amount;
+                    totalToday += amount;
+                } else {
+                    staffData[staff].previousOrders.push(order);
+                    staffData[staff].previousTotal += amount;
+                    totalPending += amount;
+                }
+            });
+
+            displayStaffData(staffData);
+            updateSummaryCards(totalToday, totalPending);
+        }
+
+        function displayStaffData(staffData) {
+            const container = document.getElementById('staffContainer');
+            container.innerHTML = '';
+
+            Object.values(staffData).forEach(staff => {
+                const staffCard = createStaffCard(staff);
+                container.appendChild(staffCard);
+            });
+
+            document.getElementById('updateTime').textContent = new Date().toLocaleTimeString();
+        }
+
+        function createStaffCard(staff) {
+            const card = document.createElement('div');
+            card.className = 'glass-card rounded-2xl p-6 transform hover:scale-[1.02] transition-all duration-300';
+            
+            card.innerHTML = `
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                            <span class="text-white font-semibold text-lg">${staff.name.charAt(0).toUpperCase()}</span>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold text-white">${staff.name}</h3>
+                            <p class="text-white/60 text-sm">${staff.todayOrders.length + staff.previousOrders.length} pending orders</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-2xl font-bold text-white">₹${(staff.todayTotal + staff.previousTotal).toLocaleString()}</p>
+                        <p class="text-white/60 text-sm">Total Outstanding</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    ${staff.todayTotal > 0 ? `
+                    <div class="bg-green-500/10 rounded-xl p-4 border border-green-500/20">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="font-semibold text-green-400">Today's Collections</h4>
+                            <span class="text-green-400 font-bold">₹${staff.todayTotal.toLocaleString()}</span>
+                        </div>
+                        <div class="space-y-2 max-h-32 overflow-y-auto">
+                            ${staff.todayOrders.map(order => `
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-white/80">#${order.id.substring(0, 8)}</span>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-green-400 font-semibold">₹${parseFloat(order.totalAmount).toLocaleString()}</span>
+                                        <button onclick="markOrderAsReconciled('${order.id}', '${staff.name}')" class="bg-green-500/20 hover:bg-green-500/30 text-green-400 text-xs px-2 py-1 rounded">Reconcile</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    ${staff.previousTotal > 0 ? `
+                    <div class="bg-orange-500/10 rounded-xl p-4 border border-orange-500/20">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="font-semibold text-orange-400">Pending from Previous Days</h4>
+                            <span class="text-orange-400 font-bold">₹${staff.previousTotal.toLocaleString()}</span>
+                        </div>
+                        <div class="space-y-2 max-h-32 overflow-y-auto">
+                            ${staff.previousOrders.map(order => `
+                                <div class="flex justify-between items-center text-sm">
+                                    <div>
+                                        <span class="text-white/80">#${order.id.substring(0, 8)}</span>
+                                        <span class="text-white/50 ml-2">${new Date(order.deliveredAt).toLocaleDateString()}</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-orange-400 font-semibold">₹${parseFloat(order.totalAmount).toLocaleString()}</span>
+                                        <button onclick="markOrderAsReconciled('${order.id}', '${staff.name}')" class="bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 text-xs px-2 py-1 rounded">Reconcile</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-white/10 flex justify-between">
+                    <button onclick="toggleDetails(this, '${staff.name}')" class="bg-blue-500/20 hover:bg-blue-500/30 transition-all duration-300 text-blue-400 font-semibold py-2 px-4 rounded-lg">
+                        Toggle Details
+                    </button>
+                    <button onclick="markAsReconciled('${staff.name}')" class="bg-white/10 hover:bg-white/20 transition-all duration-300 text-white font-semibold py-2 px-4 rounded-lg">
+                        Mark All as Reconciled
+                    </button>
+                </div>
+
+                <div id="details-${staff.name}" class="details-section">
+                    <div class="mt-4 p-4 bg-white/10 rounded-xl">
+                        <h4 class="text-white font-semibold mb-3">Staff Details</h4>
+                        <p class="text-white/80 text-sm">Name: ${staff.name}</p>
+                        <p class="text-white/80 text-sm">Phone: ${deliveryStaffUsers[staff.name].phone || 'N/A'}</p>
+                        <p class="text-white/80 text-sm">Email: ${deliveryStaffUsers[staff.name].email || 'N/A'}</p>
+                        <p class="text-white/80 text-sm">Total Orders: ${staff.todayOrders.length + staff.previousOrders.length}</p>
+                        <p class="text-white/80 text-sm">Total Amount Collected: ₹${(staff.todayTotal + staff.previousTotal).toLocaleString()}</p>
+                    </div>
+                </div>
+            `;
+
+            return card;
+        }
+
+        function toggleDetails(button, staffName) {
+            const detailsSection = document.getElementById(`details-${staffName}`);
+            detailsSection.classList.toggle('open');
+            button.textContent = detailsSection.classList.contains('open') ? 'Hide Details' : 'Show Details';
+        }
+
+        function updateSummaryCards(todayTotal, pendingTotal) {
+            document.getElementById('todayTotal').textContent = `₹${todayTotal.toLocaleString()}`;
+            document.getElementById('pendingTotal').textContent = `₹${pendingTotal.toLocaleString()}`;
+            document.getElementById('grandTotal').textContent = `₹${(todayTotal + pendingTotal).toLocaleString()}`;
+        }
+
+        async function markOrderAsReconciled(orderId, staffName) {
+            if (!isConnected) {
+                showStatus('Firebase not connected. Please refresh the page.', 'error');
+                return;
+            }
+
+            if (!confirm(`Mark order #${orderId.substring(0, 8)} as reconciled for ${staffName}?`)) {
+                return;
+            }
+
+            try {
+                showStatus(`Processing reconciliation for order #${orderId.substring(0, 8)}...`, 'success');
+                const orderRef = db.collection('orders').doc(orderId);
+                await orderRef.update({
+                    reconciled: true,
+                    reconciledAt: new Date()
+                });
+                showStatus(`Order #${orderId.substring(0, 8)} reconciled successfully`, 'success');
+                loadData();
+            } catch (error) {
+                showStatus(`Error reconciling order #${orderId.substring(0, 8)}: ${error.message}`, 'error');
+            }
+        }
+
+        async function markAsReconciled(staffName) {
+            if (!isConnected) {
+                showStatus('Firebase not connected. Please refresh the page.', 'error');
+                return;
+            }
+
+            if (!confirm(`Mark all orders for ${staffName} as reconciled?`)) {
+                return;
+            }
+
+            try {
+                showStatus('Processing reconciliation...', 'success');
+                const ordersRef = db.collection('orders');
+                const query = ordersRef.where('deliveryStaff', '==', staffName)
+                                      .where('codPaymentMethod', '==', 'CASH')
+                                      .where('status', '==', 'delivered')
+                                      .where('paymentMethod', '==', 'COD');
+                
+                const snapshot = await query.get();
+                const batch = db.batch();
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    // Only update orders that are not already reconciled
+                    if (!data.reconciled || data.reconciled !== true) {
+                        batch.update(doc.ref, { reconciled: true, reconciledAt: new Date() });
+                    }
+                });
+
+                await batch.commit();
+                showStatus(`Orders for ${staffName} marked as reconciled successfully`, 'success');
+                loadData();
+            } catch (error) {
+                showStatus('Error updating records: ' + error.message, 'error');
+            }
+        }
+
+        // Auto-refresh every 5 minutes
+        setInterval(() => {
+            if (isConnected) {
+                loadData();
+            }
+        }, 300000);
+    </script>
+</body>
+</html>
