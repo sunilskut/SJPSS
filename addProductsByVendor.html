@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Product - Vendor Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .animate-slideIn { animation: slideIn 0.3s ease-out; }
+        .animate-pulse-custom { animation: pulse 2s ease-in-out infinite; }
+        
+        .glass-morphism {
+            backdrop-filter: blur(16px);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .field-group {
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            background: #fafafa;
+        }
+
+        .required-asterisk {
+            color: #ef4444;
+            font-weight: bold;
+        }
+
+        .tag {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.875rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        .tag-remove {
+            background: rgba(255,255,255,0.3);
+            border: none;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+
+        .tag-remove:hover {
+            background: rgba(255,255,255,0.5);
+        }
+
+        body {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-box text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 id="vendorHeading" class="text-xl font-bold text-gray-800 animate-pulse-custom">
+                            Loading Vendor...
+                        </h1>
+                        <p class="text-sm text-gray-600">Add New Product</p>
+                    </div>
+                </div>
+                
+                <!-- Clear All Button -->
+                <button onclick="clearAll()" class="flex items-center space-x-2 px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium transition-all duration-200 hover:bg-gray-50">
+                    <i class="fas fa-redo"></i>
+                    <span>Clear All</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-6 py-8">
+        <!-- Main Form -->
+        <form id="itemForm" class="glass-morphism rounded-xl p-8 space-y-8">
+            <!-- Page Title -->
+            <div class="text-center pb-6 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">
+                    <i class="fas fa-plus text-blue-600 mr-3"></i>
+                    Add New Product
+                </h2>
+                <p class="text-gray-600">Add your product to the marketplace</p>
+            </div>
+
+            <!-- Basic Product Information -->
+            <div class="field-group p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                    <i class="fas fa-tag text-blue-600"></i>
+                    <span>Basic Information</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md:col-span-2">
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                            Product Name <span class="required-asterisk">*</span>
+                        </label>
+                        <input type="text" id="name" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="e.g., Organic Apples">
+                    </div>
+                    <div>
+                        <label for="brand" class="block text-sm font-medium text-gray-700 mb-2">
+                            Brand <span class="required-asterisk">*</span>
+                        </label>
+                        <input type="text" id="brand" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="e.g., Nature's Best">
+                    </div>
+                    <div>
+                        <label for="category" class="block text-sm font-medium text-gray-700 mb-2">
+                            Category <span class="required-asterisk">*</span>
+                        </label>
+                        <select id="category" required onchange="toggleGroceryFields()" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="subCategory" class="block text-sm font-medium text-gray-700 mb-2">
+                            Sub Category <span class="required-asterisk">*</span>
+                        </label>
+                        <select id="subCategory" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                            <option value="">Select Sub Category</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="productId" class="block text-sm font-medium text-gray-700 mb-2">Product ID</label>
+                        <input type="text" id="productId" readonly class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" placeholder="Auto-generated">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="field-group p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                    <i class="fas fa-file-alt text-blue-600"></i>
+                    <span>Product Description</span>
+                </h3>
+                <div class="space-y-6">
+                    <div>
+                        <label for="shortDescription" class="block text-sm font-medium text-gray-700 mb-2">
+                            Short Description <span class="required-asterisk">*</span>
+                        </label>
+                        <input type="text" id="shortDescription" required maxlength="150" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="Brief product overview (50-150 characters)">
+                    </div>
+                    <div>
+                        <label for="longDescription" class="block text-sm font-medium text-gray-700 mb-2">
+                            Detailed Description <span class="required-asterisk">*</span>
+                        </label>
+                        <textarea id="longDescription" required rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-y" placeholder="Detailed product description..."></textarea>
+                    </div>
+                    <div>
+                        <label for="highlights" class="block text-sm font-medium text-gray-700 mb-2">Key Features</label>
+                        <textarea id="highlights" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-y" placeholder="• Feature 1&#10;• Feature 2&#10;• Feature 3"></textarea>
+                    </div>
+                    <div>
+                        <label for="images" class="block text-sm font-medium text-gray-700 mb-2">
+                            Product Image URL <span class="required-asterisk">*</span>
+                        </label>
+                        <input type="url" id="images" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="https://example.com/image.jpg">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pricing -->
+            <div class="field-group p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                    <i class="fas fa-rupee-sign text-blue-600"></i>
+                    <span>Pricing</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="mrp" class="block text-sm font-medium text-gray-700 mb-2">
+                            MRP (₹) <span class="required-asterisk">*</span>
+                        </label>
+                        <input type="number" id="mrp" step="0.01" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="999">
+                    </div>
+                    <div>
+                        <label for="sellingPrice" class="block text-sm font-medium text-gray-700 mb-2">
+                            Your Price (₹) <span class="required-asterisk">*</span>
+                        </label>
+                        <input type="number" id="sellingPrice" step="0.01" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="849">
+                    </div>
+                    <div>
+                        <label for="discountPercent" class="block text-sm font-medium text-gray-700 mb-2">Discount (%)</label>
+                        <input type="number" id="discountPercent" step="0.01" max="100" readonly class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" placeholder="15">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock Information -->
+            <div class="field-group p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                    <i class="fas fa-warehouse text-blue-600"></i>
+                    <span>Stock & Inventory</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="stockQuantity" class="block text-sm font-medium text-gray-700 mb-2">
+                            Available Quantity <span class="required-asterisk">*</span>
+                        </label>
+                        <input type="number" id="stockQuantity" required min="0" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="100">
+                    </div>
+                    <div>
+                        <label for="stockStatus" class="block text-sm font-medium text-gray-700 mb-2">
+                            Stock Status <span class="required-asterisk">*</span>
+                        </label>
+                        <select id="stockStatus" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                            <option value="in_stock">In Stock</option>
+                            <option value="out_of_stock">Out of Stock</option>
+                            <option value="preorder">Available on Order</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="minOrderQty" class="block text-sm font-medium text-gray-700 mb-2">Minimum Order Quantity</label>
+                        <input type="number" id="minOrderQty" min="1" value="1" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="1">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grocery Details (Conditional) -->
+            <div id="grocerySection" class="hidden field-group p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                    <i class="fas fa-apple-alt text-green-600"></i>
+                    <span>Product Details</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="quantity" class="block text-sm font-medium text-gray-700 mb-2">Net Quantity</label>
+                        <input type="number" id="quantity" step="0.01" min="0" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="500">
+                    </div>
+                    <div>
+                        <label for="unit" class="block text-sm font-medium text-gray-700 mb-2">Unit</label>
+                        <select id="unit" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                            <option value="">Select unit</option>
+                            <option value="kg">Kilograms (kg)</option>
+                            <option value="g">Grams (g)</option>
+                            <option value="l">Liters (l)</option>
+                            <option value="ml">Milliliters (ml)</option>
+                            <option value="pcs">Pieces (pcs)</option>
+                            <option value="pack">Pack</option>
+                            <option value="bottle">Bottle</option>
+                            <option value="can">Can</option>
+                            <option value="box">Box</option>
+                            <option value="bunch">Bunch</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="expiryDate" class="block text-sm font-medium text-gray-700 mb-2">Expiry Date</label>
+                        <input type="date" id="expiryDate" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Specifications -->
+            <div class="field-group p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                    <i class="fas fa-info text-blue-600"></i>
+                    <span>Additional Information</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="weight" class="block text-sm font-medium text-gray-700 mb-2">Weight (kg)</label>
+                        <input type="number" id="weight" step="0.01" min="0" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="0.5">
+                    </div>
+                    <div>
+                        <label for="warranty" class="block text-sm font-medium text-gray-700 mb-2">Warranty</label>
+                        <input type="text" id="warranty" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="e.g., 1 Year">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="specifications" class="block text-sm font-medium text-gray-700 mb-2">Specifications</label>
+                        <textarea id="specifications" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-y" placeholder="Size, Color, Material, etc."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEO & Keywords -->
+            <div class="field-group p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                    <i class="fas fa-tags text-blue-600"></i>
+                    <span>Keywords & Search Tags</span>
+                </h3>
+                <div>
+                    <label for="keywords" class="block text-sm font-medium text-gray-700 mb-2">Keywords (Press Enter to add)</label>
+                    <input type="text" id="keywords" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" placeholder="e.g., organic, fresh, healthy">
+                    <div id="keywordsList" class="mt-2 flex flex-wrap gap-2"></div>
+                </div>
+            </div>
+
+            <!-- Hidden fields for backend -->
+            <input type="hidden" id="vendorId">
+            <input type="hidden" id="status" value="active">
+            <input type="hidden" id="createdBy">
+            <input type="hidden" id="rating" value="0">
+            <input type="hidden" id="reviewCount" value="0">
+
+            <!-- Submit Button -->
+            <div class="text-center">
+                <button type="submit" id="submitBtn" class="px-8 py-3 bg-blue-600 text-white rounded-lg font-medium transition-all duration-200 hover:bg-blue-700 shadow-md">
+                    <i class="fas fa-check mr-2"></i>
+                    <span>Add Product</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+<script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import {
+        getFirestore,
+        collection,
+        query,
+        orderBy,
+        limit,
+        getDocs,
+        doc,
+        setDoc,
+        getDoc,
+        Timestamp
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+        authDomain: "sjpss-f504b.firebaseapp.com",
+        projectId: "sjpss-f504b",
+        storageBucket: "sjpss-f504b.firebasestorage.app",
+        messagingSenderId: "227402980311",
+        appId: "1:227402980311:web:56b580456ab6b9c6758992",
+        measurementId: "G-LZ4YP9YPN6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let keywordTags = [];
+    let currentVendorId = null;
+
+    // Get vendor ID from URL parameters
+    function getVendorIdFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('vendorId');
+    }
+
+    // Load vendor information
+    async function loadVendorInfo() {
+        const vendorId = getVendorIdFromUrl();
+        if (!vendorId) {
+            showMessage('No vendor ID provided. Please access this page with a valid vendor ID.', 'error');
+            return;
+        }
+
+        currentVendorId = vendorId;
+        document.getElementById('vendorId').value = vendorId;
+
+        try {
+            const vendorDoc = doc(db, 'vendors', vendorId);
+            const docSnap = await getDoc(vendorDoc);
+
+            const vendorHeading = document.getElementById('vendorHeading');
+            vendorHeading.classList.remove('animate-pulse-custom');
+
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const vendorName = data.companyName || data.vendorName || data.name || 'Vendor';
+                vendorHeading.textContent = `${vendorName} - Add Product`;
+                document.getElementById('createdBy').value = vendorName;
+            } else {
+                vendorHeading.textContent = 'Add New Product';
+                showMessage('Vendor information not found', 'warning');
+            }
+        } catch (error) {
+            console.error('Error fetching vendor info:', error);
+            document.getElementById('vendorHeading').textContent = 'Add New Product';
+        }
+    }
+
+    // Toggle grocery fields based on category
+    window.toggleGroceryFields = function() {
+        const category = document.getElementById('category').value;
+        const grocerySection = document.getElementById('grocerySection');
+        grocerySection.classList.toggle('hidden', category !== 'Grocery');
+    };
+
+    // Calculate discount percentage
+    function updateDiscount() {
+        const mrp = parseFloat(document.getElementById('mrp').value) || 0;
+        const sellingPrice = parseFloat(document.getElementById('sellingPrice').value) || 0;
+        const discountPercent = mrp > 0 ? ((mrp - sellingPrice) / mrp * 100).toFixed(2) : 0;
+        document.getElementById('discountPercent').value = discountPercent;
+    }
+
+    // Keyword tag management
+    function renderKeywords() {
+        const keywordsList = document.getElementById('keywordsList');
+        keywordsList.innerHTML = '';
+        keywordTags.forEach((keyword, index) => {
+            const tag = document.createElement('div');
+            tag.className = 'tag';
+            tag.innerHTML = `
+                ${keyword}
+                <button type="button" class="tag-remove" onclick="removeKeyword(${index})">×</button>
+            `;
+            keywordsList.appendChild(tag);
+        });
+    }
+
+    window.removeKeyword = function(index) {
+        keywordTags.splice(index, 1);
+        renderKeywords();
+    };
+
+    // Load categories for dropdown
+    async function loadCategoriesForDropdown() {
+        try {
+            const dropdown = document.getElementById('category');
+            const querySnapshot = await getDocs(collection(db, 'categories'));
+
+            dropdown.innerHTML = `<option value="">Select a category</option>`;
+
+            querySnapshot.forEach(doc => {
+                const data = doc.data();
+                const option = document.createElement('option');
+                option.value = doc.id;
+                option.textContent = data.name;
+                dropdown.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading categories:', error);
+        }
+    }
+
+    async function loadSubcategories(selectedCategoryId) {
+        const subCategorySelect = document.getElementById('subCategory');
+        subCategorySelect.innerHTML = `<option value="">Loading...</option>`;
+
+        if (!selectedCategoryId) {
+            subCategorySelect.innerHTML = `<option value="">Select a Sub Category</option>`;
+            return;
+        }
+
+        try {
+            const docRef = doc(db, 'categories', selectedCategoryId);
+            const docSnap = await getDoc(docRef);
+
+            subCategorySelect.innerHTML = `<option value="">Select a Sub Category</option>`;
+
+            if (!docSnap.exists()) {
+                console.warn("Category document not found for ID:", selectedCategoryId);
+                subCategorySelect.innerHTML += `<option value="">No subcategories found</option>`;
+                return;
+            }
+
+            const data = docSnap.data();
+            
+            if (Array.isArray(data.subcategories)) {
+                data.subcategories.forEach(sub => {
+                    if (sub.name) {
+                        const option = document.createElement('option');
+                        option.value = sub.name;
+                        option.textContent = sub.name;
+                        subCategorySelect.appendChild(option);
+                    }
+                });
+            } else {
+                console.warn("No subcategories array found.");
+                subCategorySelect.innerHTML += `<option value="">No subcategories available</option>`;
+            }
+        } catch (error) {
+            console.error('Error loading subcategories:', error);
+            subCategorySelect.innerHTML = `<option value="">Error loading subcategories</option>`;
+        }
+    }
+
+    // Show new product ID
+    async function showNewProductId() {
+        try {
+            const q = query(collection(db, "products"), orderBy("id", "desc"), limit(1));
+            const snapshot = await getDocs(q);
+
+            let newId = 1;
+            if (!snapshot.empty) {
+                const lastItem = snapshot.docs[0].data();
+                newId = parseInt(lastItem.id) + 1;
+            }
+
+            document.getElementById('productId').value = newId.toString();
+        } catch (error) {
+            console.error("Error fetching product ID:", error);
+        }
+    }
+
+    // Clear All fields
+    window.clearAll = function() {
+        document.getElementById('itemForm').reset();
+        keywordTags = [];
+        renderKeywords();
+        document.getElementById('grocerySection').classList.add('hidden');
+        
+        // Reset vendor ID and other hidden fields
+        document.getElementById('vendorId').value = currentVendorId;
+        document.getElementById('status').value = 'active';
+        document.getElementById('rating').value = '0';
+        document.getElementById('reviewCount').value = '0';
+        
+        // Reset discount calculation
+        document.getElementById('discountPercent').value = '';
+        
+        // Clear subcategory dropdown
+        const subCategorySelect = document.getElementById('subCategory');
+        subCategorySelect.innerHTML = '<option value="">Select Sub Category</option>';
+        
+        // Reset product ID
+        showNewProductId();
+    };
+
+    // Form submission
+    document.getElementById('itemForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Adding Product...';
+
+        try {
+            // Build item data for vendor products
+            const itemData = {
+                productId: document.getElementById('productId').value,
+                name: document.getElementById('name').value,
+                brand: document.getElementById('brand').value,
+                category: document.getElementById('category').value,
+                subCategory: document.getElementById('subCategory').value,
+                shortDescription: document.getElementById('shortDescription').value,
+                longDescription: document.getElementById('longDescription').value,
+                highlights: document.getElementById('highlights').value,
+                images: document.getElementById('images').value,
+                mrp: parseFloat(document.getElementById('mrp').value),
+                sellingPrice: parseFloat(document.getElementById('sellingPrice').value),
+                discountPercent: parseFloat(document.getElementById('discountPercent').value) || 0,
+                stockQuantity: parseInt(document.getElementById('stockQuantity').value),
+                stockStatus: document.getElementById('stockStatus').value,
+                minOrderQty: parseInt(document.getElementById('minOrderQty').value) || 1,
+                weight: document.getElementById('weight').value ? parseFloat(document.getElementById('weight').value) : null,
+                warranty: document.getElementById('warranty').value,
+                specifications: document.getElementById('specifications').value,
+                keywords: keywordTags,
+                vendorId: currentVendorId,
+                status: document.getElementById('status').value,
+                createdBy: document.getElementById('createdBy').value,
+                rating: parseFloat(document.getElementById('rating').value) || 0,
+                reviewCount: parseInt(document.getElementById('reviewCount').value) || 0
+            };
+
+            // Add grocery-specific fields if category is Grocery
+            if (document.getElementById('category').value === 'Grocery') {
+                itemData.quantity = document.getElementById('quantity').value ? parseFloat(document.getElementById('quantity').value) : null;
+                itemData.unit = document.getElementById('unit').value;
+                itemData.expiryDate = document.getElementById('expiryDate').value || null;
+            }
+
+            // Get the highest current ID for new products
+            const q = query(collection(db, "products"), orderBy("id", "desc"), limit(1));
+            const snapshot = await getDocs(q);
+
+            let newId = 1;
+            if (!snapshot.empty) {
+                const lastItem = snapshot.docs[0].data();
+                newId = parseInt(lastItem.id) + 1;
+            }
+
+            const newIdStr = newId.toString();
+            itemData.id = newIdStr;
+            itemData.productId = newIdStr;
+            itemData.dateAdded = Timestamp.now();
+
+            // Create new document
+            const docRef = doc(db, 'products', newIdStr);
+            await setDoc(docRef, itemData);
+
+            showMessage('Product added successfully!', 'success');
+            
+            // Reset form and show next product ID
+            clearAll();
+
+        } catch (error) {
+            console.error('Error saving product:', error);
+            showMessage(`Error: ${error.message}`, 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Add Product';
+        }
+    });
+
+    // Show message function
+    function showMessage(message, type) {
+        let statusDiv = document.getElementById('statusMessage');
+        if (!statusDiv) {
+            statusDiv = document.createElement('div');
+            statusDiv.id = 'statusMessage';
+            statusDiv.className = 'fixed top-4 right-4 px-6 py-3 rounded-lg font-medium z-50 transition-all duration-300';
+            document.body.appendChild(statusDiv);
+        }
+
+        statusDiv.textContent = message;
+        statusDiv.className = `fixed top-4 right-4 px-6 py-3 rounded-lg font-medium z-50 transition-all duration-300 ${
+            type === 'success' ? 'bg-green-500 text-white' : 
+            type === 'warning' ? 'bg-yellow-500 text-white' : 'bg-red-500 text-white'
+        }`;
+
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            if (statusDiv && statusDiv.parentNode) {
+                statusDiv.remove();
+            }
+        }, 5000);
+    }
+
+    // Initialize everything when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        loadVendorInfo();
+        loadCategoriesForDropdown();
+        showNewProductId();
+        
+        // Add event listeners
+        document.getElementById('category').addEventListener('change', function() {
+            loadSubcategories(this.value);
+            toggleGroceryFields();
+        });
+
+        document.getElementById('mrp').addEventListener('input', updateDiscount);
+        document.getElementById('sellingPrice').addEventListener('input', updateDiscount);
+
+        // Keywords input handling
+        document.getElementById('keywords').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && this.value.trim()) {
+                e.preventDefault();
+                const keyword = this.value.trim();
+                if (!keywordTags.includes(keyword)) {
+                    keywordTags.push(keyword);
+                    renderKeywords();
+                    this.value = '';
+                }
+            }
+        });
+    });
+</script>
+</body>
+</html>

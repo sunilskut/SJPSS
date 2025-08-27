@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Orders Report</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/date-fns/2.29.3/index.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 min-h-screen">
+    <!-- Header -->
+    <div class="bg-white shadow-lg border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between py-6">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-xl">
+                        <i class="fas fa-chart-line text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Daily Activity Report</h1>
+                        <p class="text-sm text-gray-600">Orders with activity today</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <input type="date" id="reportDate" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <button onclick="generateReport()" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-2 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg">
+                        <i class="fas fa-sync-alt mr-2"></i>Generate Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Loading State -->
+        <div id="loadingState" class="hidden">
+            <div class="flex items-center justify-center py-12">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <span class="ml-3 text-lg font-medium text-gray-700">Generating report...</span>
+            </div>
+        </div>
+
+        <!-- Report Content -->
+        <div id="reportContent" class="space-y-8">
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Active Orders</p>
+                            <p id="totalOrders" class="text-3xl font-bold text-gray-900">0</p>
+                        </div>
+                        <div class="bg-blue-100 p-3 rounded-full">
+                            <i class="fas fa-clipboard-list text-blue-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">New Orders</p>
+                            <p id="newOrders" class="text-3xl font-bold text-green-600">0</p>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-full">
+                            <i class="fas fa-plus-circle text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Packed Today</p>
+                            <p id="packedOrders" class="text-3xl font-bold text-purple-600">0</p>
+                        </div>
+                        <div class="bg-purple-100 p-3 rounded-full">
+                            <i class="fas fa-box text-purple-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Delivered Today</p>
+                            <p id="deliveredOrders" class="text-3xl font-bold text-orange-600">0</p>
+                        </div>
+                        <div class="bg-orange-100 p-3 rounded-full">
+                            <i class="fas fa-truck text-orange-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Value</p>
+                            <p id="totalRevenue" class="text-3xl font-bold text-gray-900">₹0</p>
+                        </div>
+                        <div class="bg-yellow-100 p-3 rounded-full">
+                            <i class="fas fa-rupee-sign text-yellow-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+ 
+      <div class="hidden">   
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Activity Types Today</h3>
+                    <canvas id="activityChart" width="400" height="200"></canvas>
+                </div>
+                <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Order Status Distribution</h3>
+                    <canvas id="statusChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+
+  
+            <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Activity Timeline Today</h3>
+                <canvas id="timelineChart" width="800" height="300"></canvas>
+            </div>
+
+        
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Top Products</h3>
+                    <div id="topProducts" class="space-y-3"></div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Delivery Staff Performance</h3>
+                    <div id="deliveryStaff" class="space-y-3"></div>
+                </div>
+            </div> 
+   </div>
+
+            <!-- Orders Details Table -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800">Orders with Activity Today</h3>
+                    <div class="flex space-x-2">
+                        <select id="activityFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                            <option value="all">All Activities</option>
+                            <option value="created">Created Today</option>
+                            <option value="assigned">Assigned Today</option>
+                            <option value="packed">Packed Today</option>
+                            <option value="picked">Picked Today</option>
+                            <option value="delivered">Delivered Today</option>
+                            <option value="verified">Verified Today</option>
+                        </select>
+                        <button onclick="exportToCSV()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors">
+                            <i class="fas fa-download mr-2"></i>Export CSV
+                        </button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Today's Activity</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activity Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+             // Professional Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+            authDomain: "sjpss-f504b.firebaseapp.com",
+            projectId: "sjpss-f504b",
+            storageBucket: "sjpss-f504b.firebasestorage.app",
+            messagingSenderId: "227402980311",
+            appId: "1:227402980311:web:56b580456ab6b9c6758992",
+            measurementId: "G-LZ4YP9YPN6"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let ordersData = [];
+        let currentReport = null;
+
+        // Set default date to today
+        document.getElementById('reportDate').value = new Date().toISOString().split('T')[0];
+
+        async function generateReport() {
+            const selectedDate = document.getElementById('reportDate').value;
+            if (!selectedDate) {
+                alert('Please select a date');
+                return;
+            }
+
+            showLoading(true);
+            
+            try {
+                const startDate = new Date(selectedDate);
+                startDate.setHours(0, 0, 0, 0);
+                const endDate = new Date(selectedDate);
+                endDate.setHours(23, 59, 59, 999);
+
+                // Get all orders from the collection
+                const ordersRef = db.collection('orders');
+                const snapshot = await ordersRef.get();
+
+                ordersData = [];
+                snapshot.forEach(doc => {
+                    const order = { id: doc.id, ...doc.data() };
+                    
+                    // Check if order has any activity today
+                    const activityToday = checkActivityToday(order, startDate, endDate);
+                    if (activityToday.hasActivity) {
+                        order.todaysActivity = activityToday.activities;
+                        order.latestActivityTime = activityToday.latestTime;
+                        ordersData.push(order);
+                    }
+                });
+
+                currentReport = processActivityData(ordersData, selectedDate);
+                renderReport(currentReport);
+                
+            } catch (error) {
+                console.error('Error generating report:', error);
+                alert('Error generating report. Please check your Firebase configuration.');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function checkActivityToday(order, startDate, endDate) {
+            const activities = [];
+            let hasActivity = false;
+            let latestTime = null;
+
+            // Check all timestamp fields for today's activity
+            const timestampFields = [
+                { field: 'createdAt', label: 'Created', type: 'string' },
+                { field: 'assignedAt', label: 'Assigned', type: 'timestamp' },
+                { field: 'packedAt', label: 'Packed', type: 'timestamp' },
+                { field: 'pickedAt', label: 'Picked', type: 'timestamp' },
+                { field: 'deliveredAt', label: 'Delivered', type: 'timestamp' },
+                { field: 'verifiedAt', label: 'Verified', type: 'timestamp' }
+            ];
+
+            timestampFields.forEach(({ field, label, type }) => {
+                if (order[field]) {
+                    let activityDate;
+                    
+                    if (type === 'timestamp' && order[field].toDate) {
+                        activityDate = order[field].toDate();
+                    } else if (type === 'string') {
+                        activityDate = new Date(order[field]);
+                    } else {
+                        activityDate = new Date(order[field]);
+                    }
+
+                    if (activityDate >= startDate && activityDate <= endDate) {
+                        activities.push({
+                            type: field,
+                            label: label,
+                            time: activityDate
+                        });
+                        hasActivity = true;
+                        
+                        if (!latestTime || activityDate > latestTime) {
+                            latestTime = activityDate;
+                        }
+                    }
+                }
+            });
+
+            // Sort activities by time
+            activities.sort((a, b) => b.time - a.time);
+
+            return { hasActivity, activities, latestTime };
+        }
+
+        function processActivityData(orders, date) {
+            const report = {
+                date: date,
+                totalOrders: orders.length,
+                totalRevenue: 0,
+                newOrders: 0,
+                packedOrders: 0,
+                deliveredOrders: 0,
+                statusDistribution: {},
+                activityTypes: {},
+                hourlyActivity: new Array(24).fill(0),
+                deliveryStaff: {},
+                orders: orders
+            };
+
+            orders.forEach(order => {
+                // Calculate total revenue
+                report.totalRevenue += order.totalAmount || 0;
+
+                // Count activity types
+                order.todaysActivity.forEach(activity => {
+                    report.activityTypes[activity.label] = (report.activityTypes[activity.label] || 0) + 1;
+                    
+                    // Count specific activities
+                    if (activity.type === 'createdAt') report.newOrders++;
+                    if (activity.type === 'packedAt') report.packedOrders++;
+                    if (activity.type === 'deliveredAt') report.deliveredOrders++;
+
+                    // Hourly activity distribution
+                    const hour = activity.time.getHours();
+                    report.hourlyActivity[hour]++;
+                });
+
+                // Status distribution
+                const status = order.status || 'unknown';
+                report.statusDistribution[status] = (report.statusDistribution[status] || 0) + 1;
+
+                // Delivery staff performance (for delivered orders today)
+                if (order.deliveryStaff && order.todaysActivity.some(a => a.type === 'deliveredAt')) {
+                    if (!report.deliveryStaff[order.deliveryStaff]) {
+                        report.deliveryStaff[order.deliveryStaff] = { orders: 0, revenue: 0 };
+                    }
+                    report.deliveryStaff[order.deliveryStaff].orders++;
+                    report.deliveryStaff[order.deliveryStaff].revenue += order.totalAmount || 0;
+                }
+            });
+
+            return report;
+        }
+
+        function renderReport(report) {
+            // Update summary cards
+            document.getElementById('totalOrders').textContent = report.totalOrders;
+            document.getElementById('totalRevenue').textContent = `₹${report.totalRevenue.toLocaleString()}`;
+            document.getElementById('newOrders').textContent = report.newOrders;
+            document.getElementById('packedOrders').textContent = report.packedOrders;
+            document.getElementById('deliveredOrders').textContent = report.deliveredOrders;
+
+            // Render charts
+   //         renderActivityChart(report.activityTypes);
+   //         renderStatusChart(report.statusDistribution);
+  //          renderTimelineChart(report.hourlyActivity);
+
+            // Render delivery staff
+            renderDeliveryStaff(report.deliveryStaff);
+
+            // Render orders table
+            renderOrdersTable(report.orders);
+
+            // Add filter functionality
+            setupActivityFilter();
+        }
+/*
+        function renderActivityChart(activityData) {
+            const ctx = document.getElementById('activityChart').getContext('2d');
+            const labels = Object.keys(activityData);
+            const data = Object.values(activityData);
+            const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20
+                            }
+                        }
+                    }
+                }
+            });
+        }
+*/
+
+   /*     function renderTimelineChart(hourlyData) {
+            const ctx = document.getElementById('timelineChart').getContext('2d');
+            const hours = Array.from({length: 24}, (_, i) => `${i}:00`);
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: hours,
+                    datasets: [{
+                        label: 'Activities',
+                        data: hourlyData,
+                        borderColor: '#10B981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#10B981',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+*/
+/*
+        function renderStatusChart(statusData) {
+            const ctx = document.getElementById('statusChart').getContext('2d');
+            const labels = Object.keys(statusData);
+            const data = Object.values(statusData);
+            const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels.map(l => l.charAt(0).toUpperCase() + l.slice(1)),
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20
+                            }
+                        }
+                    }
+                }
+            });
+        }
+*/
+        function renderTopProducts(productsData) {
+            const container = document.getElementById('topProducts');
+            const sortedProducts = Object.entries(productsData)
+                .sort(([,a], [,b]) => b.quantity - a.quantity)
+                .slice(0, 5);
+
+            container.innerHTML = sortedProducts.map(([productId, data]) => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                        <p class="font-medium text-gray-900">${productId}</p>
+                        <p class="text-sm text-gray-600">Qty: ${data.quantity}</p>
+                    </div>
+                    <p class="font-semibold text-green-600">₹${data.revenue.toLocaleString()}</p>
+                </div>
+            `).join('');
+        }
+
+        function renderDeliveryStaff(staffData) {
+            const container = document.getElementById('deliveryStaff');
+            const sortedStaff = Object.entries(staffData)
+                .sort(([,a], [,b]) => b.orders - a.orders)
+                .slice(0, 5);
+
+            container.innerHTML = sortedStaff.map(([staff, data]) => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                        <p class="font-medium text-gray-900">${staff}</p>
+                        <p class="text-sm text-gray-600">Orders: ${data.orders}</p>
+                    </div>
+                    <p class="font-semibold text-blue-600">₹${data.revenue.toLocaleString()}</p>
+                </div>
+            `).join('');
+        }
+
+        function renderOrdersTable(orders) {
+            const tbody = document.getElementById('ordersTableBody');
+            tbody.innerHTML = orders.map(order => {
+                // Get the latest activity label for "Today's Activity" column
+                const activityLabels = order.todaysActivity?.map(activity => activity.label).join(', ') || 'None';
+                // Format the latest activity time for "Activity Time" column
+                const activityTime = order.latestActivityTime ? 
+                    new Date(order.latestActivityTime).toLocaleString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }) : 'N/A';
+
+                return `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            #${order.orderId || order.id || 'N/A'}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            ${order.customerId || 'N/A'}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}">
+                                ${(order.status || 'unknown').toUpperCase()}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            ${activityLabels}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                            ₹${(order.totalAmount || 0).toLocaleString()}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            ${activityTime}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'pending': 'bg-yellow-100 text-yellow-800',
+                'confirmed': 'bg-blue-100 text-blue-800',
+                'packed': 'bg-purple-100 text-purple-800',
+                'shipped': 'bg-indigo-100 text-indigo-800',
+                'delivered': 'bg-green-100 text-green-800',
+                'cancelled': 'bg-red-100 text-red-800'
+            };
+            return colors[status] || 'bg-gray-100 text-gray-800';
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            return new Date(dateString).toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingState').classList.toggle('hidden', !show);
+            document.getElementById('reportContent').classList.toggle('hidden', show);
+        }
+
+        function setupActivityFilter() {
+            const filter = document.getElementById('activityFilter');
+            filter.addEventListener('change', () => {
+                const value = filter.value;
+                let filteredOrders = currentReport.orders;
+                if (value !== 'all') {
+                    filteredOrders = currentReport.orders.filter(order =>
+                        order.todaysActivity.some(activity => activity.type === value)
+                    );
+                }
+                renderOrdersTable(filteredOrders);
+            });
+        }
+
+        function exportToCSV() {
+            if (!currentReport || !currentReport.orders) {
+                alert('No data to export');
+                return;
+            }
+
+            const headers = ['Order ID', 'Customer ID', 'Status', 'Todays Activity', 'Total Amount', 'Activity Time'];
+            const csvContent = [
+                headers.join(','),
+                ...currentReport.orders.map(order => [
+                    order.orderId || order.id || '',
+                    order.customerId || '',
+                    order.status || '',
+                    order.todaysActivity?.map(activity => activity.label).join(';') || '',
+                    order.totalAmount || 0,
+                    order.latestActivityTime ? new Date(order.latestActivityTime).toISOString() : ''
+                ].join(','))
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `orders-report-${currentReport.date}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        // Load report on page load
+        window.addEventListener('load', () => {
+            generateReport();
+        });
+    </script>
+</body>
+</html>

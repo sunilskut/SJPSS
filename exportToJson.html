@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SJPSS Firestore JSON Exporter</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+      }
+      40% {
+        transform: translateY(-10px);
+      }
+      60% {
+        transform: translateY(-5px);
+      }
+    }
+    
+    .bounce-animation {
+      animation: bounce 2s infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    
+    .slide-in {
+      animation: slideIn 0.3s ease;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 min-h-screen" oncontextmenu="return false;" onkeydown="if(event.keyCode==123) return false;">
+  <div class="min-h-screen flex items-center justify-center p-5">
+    <div class="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-8 max-w-2xl w-full" id="exp">
+      
+      <!-- Header -->
+      <div class="text-center mb-8">
+        <div class="text-6xl mb-4 bounce-animation">📄</div>
+        <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+          SJPSS Data Exporter
+        </h1>
+        <p class="text-gray-600 text-lg">Export Firestore collections to JSON format</p>
+      </div>
+      
+      <!-- Collection Selector -->
+      <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-6 mb-6 border border-indigo-100">
+        <h3 class="text-lg font-semibold text-indigo-800 mb-4 flex items-center">
+          <span class="mr-2">🗂️</span>
+          Select Collection to Export
+        </h3>
+        
+        <div class="space-y-4">
+          <div class="relative">
+            <select id="collectionSelect" onchange="updateCollectionInfo()" 
+                    class="w-full p-4 bg-white border-2 border-indigo-200 rounded-xl text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none transition-all duration-200 appearance-none cursor-pointer">
+              <option value="">Choose a collection...</option>
+              <option value="all">🌟 Export All Collections</option>
+              <option value="categories">📂 Categories</option>
+              <option value="counters">🔢 Counters</option>
+              <option value="customers">👥 Customers</option>
+              <option value="daily_reconciliation">📊 Daily Reconciliation</option>
+              <option value="logs">📝 Logs</option>
+              <option value="meta">⚙️ Meta</option>
+              <option value="notifications">🔔 Notifications</option>
+              <option value="orders">📋 Orders</option>
+              <option value="products">📦 Products</option>
+              <option value="purchaseOrders">🛒 Purchase Orders</option>
+              <option value="staffs">👨‍💼 Staffs</option>
+              <option value="users">👤 Users</option>
+              <option value="vendors">🏢 Vendors</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </div>
+          
+          <div class="bg-white p-4 rounded-xl border border-indigo-100">
+            <p class="text-sm text-gray-600" id="collectionInfo">
+              📋 Select a collection to see description
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Export Buttons -->
+      <div class="space-y-4 mb-6">
+        <button id="exportBtn" onclick="exportCollection()" 
+                class="w-full flex items-center justify-center px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl">
+          <span class="mr-2">📄</span>
+          Export Selected Collection
+        </button>
+        
+        <button id="exportAllBtn" onclick="exportAllCollections()" 
+                class="w-full flex items-center justify-center px-6 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-xl hover:from-emerald-700 hover:to-teal-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl">
+          <span class="mr-2">🌟</span>
+          Export All Collections
+        </button>
+      </div>
+      
+      <!-- Info Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+          <div class="flex items-center mb-2">
+            <span class="text-blue-600 mr-2">ℹ️</span>
+            <h4 class="font-semibold text-blue-800">Single Export</h4>
+          </div>
+          <p class="text-sm text-blue-700">Export one collection at a time with detailed data structure</p>
+        </div>
+        
+        <div class="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+          <div class="flex items-center mb-2">
+            <span class="text-green-600 mr-2">🎯</span>
+            <h4 class="font-semibold text-green-800">Bulk Export</h4>
+          </div>
+          <p class="text-sm text-green-700">Export all collections in one comprehensive JSON file</p>
+        </div>
+      </div>
+      
+      <!-- Footer -->
+      <div class="text-center">
+        <div class="flex items-center justify-center space-x-2 text-gray-500 text-sm">
+          <span>🏫</span>
+          <span>SJPSS Data Management System</span>
+        </div>
+        <p class="text-xs text-gray-400 mt-1">Secure data export tool for authorized personnel</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    // Firebase configuration for SJPSS
+    const firebaseConfig = {
+      apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+      authDomain: "sjpss-f504b.firebaseapp.com",
+      projectId: "sjpss-f504b",
+      storageBucket: "sjpss-f504b.firebasestorage.app",
+      messagingSenderId: "227402980311",
+      appId: "1:227402980311:web:56b580456ab6b9c6758992",
+      measurementId: "G-LZ4YP9YPN6"
+    };
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    
+    let isAuthenticated = false;
+
+    function showCustomAlert(message, type = 'info') {
+      const alertColors = {
+        success: 'bg-gradient-to-r from-green-500 to-green-600',
+        error: 'bg-gradient-to-r from-red-500 to-red-600',
+        warning: 'bg-gradient-to-r from-amber-500 to-amber-600',
+        info: 'bg-gradient-to-r from-blue-500 to-blue-600'
+      };
+      
+      const alert = document.createElement('div');
+      alert.className = `fixed top-5 right-5 p-4 rounded-xl text-white font-medium z-50 slide-in max-w-sm shadow-2xl ${alertColors[type]}`;
+      alert.textContent = message;
+      document.body.appendChild(alert);
+      
+      setTimeout(() => {
+        alert.style.animation = 'slideIn 0.3s ease reverse';
+        setTimeout(() => alert.remove(), 300);
+      }, 3000);
+    }
+
+    function downloadJSON(data, filename) {
+      const jsonString = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function checkAuthentication() {
+      if (!isAuthenticated) {
+        const code = prompt('Enter admin access code to proceed:');
+        if (code === 'niranjana') {
+          isAuthenticated = true;
+          showCustomAlert('✅ Authentication successful! You can now export data.', 'success');
+        } else {
+          showCustomAlert('❌ Incorrect access code. Access denied.', 'error');
+          return false;
+        }
+      }
+      return true;
+    }
+
+    async function exportCollection() {
+      if (!checkAuthentication()) return;
+      
+      const select = document.getElementById('collectionSelect');
+      const selectedCollection = select.value;
+      
+      if (!selectedCollection || selectedCollection === 'all') {
+        showCustomAlert("⚠️ Please select a specific collection to export.", 'warning');
+        return;
+      }
+      
+      const btn = document.getElementById('exportBtn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = `
+        <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+        Exporting...
+      `;
+      btn.disabled = true;
+      btn.classList.add('opacity-75');
+      
+      try {
+        showCustomAlert(`🚀 Starting export of "${selectedCollection}" collection...`, 'info');
+        
+        const snapshot = await getDocs(collection(db, selectedCollection));
+        
+        if (snapshot.empty) {
+          showCustomAlert(`⚠️ No data found in "${selectedCollection}" collection.`, 'warning');
+          return;
+        }
+        
+        const data = snapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data() 
+        }));
+        
+        const filename = `${selectedCollection}_export_${new Date().toISOString().split('T')[0]}.json`;
+        downloadJSON(data, filename);
+        
+        showCustomAlert(`🎉 Export completed! ${data.length} records exported from "${selectedCollection}"`, 'success');
+        
+      } catch (error) {
+        showCustomAlert("❌ Export failed: " + error.message, 'error');
+        console.error("Export Error:", error);
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        btn.classList.remove('opacity-75');
+      }
+    }
+
+    async function exportAllCollections() {
+      if (!checkAuthentication()) return;
+      
+      const btn = document.getElementById('exportAllBtn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = `
+        <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+        Exporting All...
+      `;
+      btn.disabled = true;
+      btn.classList.add('opacity-75');
+      
+      try {
+        showCustomAlert("🚀 Starting export of all collections...", 'info');
+        
+        const collections = [
+          'categories',
+          'counters',
+          'customers',
+          'daily_reconciliation',
+          'logs',
+          'meta',
+          'notifications',
+          'orders',
+          'products',
+          'purchaseOrders',
+          'staffs',
+          'users',
+          'vendors'
+        ];
+        
+        const allData = {};
+        let totalRecords = 0;
+        
+        for (const collectionName of collections) {
+          try {
+            const snapshot = await getDocs(collection(db, collectionName));
+            if (!snapshot.empty) {
+              allData[collectionName] = snapshot.docs.map(doc => ({ 
+                id: doc.id, 
+                ...doc.data() 
+              }));
+              totalRecords += allData[collectionName].length;
+            }
+          } catch (error) {
+            console.warn(`Could not export ${collectionName}:`, error);
+          }
+        }
+        
+        if (totalRecords === 0) {
+          showCustomAlert("⚠️ No data found in any collections.", 'warning');
+          return;
+        }
+        
+        const filename = `sjpss_complete_export_${new Date().toISOString().split('T')[0]}.json`;
+        downloadJSON(allData, filename);
+        
+        showCustomAlert(`🎉 Complete export finished! ${totalRecords} total records from ${Object.keys(allData).length} collections`, 'success');
+        
+      } catch (error) {
+        showCustomAlert("❌ Export all failed: " + error.message, 'error');
+        console.error("Export All Error:", error);
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        btn.classList.remove('opacity-75');
+      }
+    }
+    
+    // Make functions available globally
+    window.exportCollection = exportCollection;
+    window.exportAllCollections = exportAllCollections;
+    
+    // Update collection info when selection changes
+    window.updateCollectionInfo = function() {
+      const select = document.getElementById('collectionSelect');
+      const info = document.getElementById('collectionInfo');
+      const collectionDescriptions = {
+        'categories': 'Product categories and classification data',
+        'counters': 'System counters and sequential number tracking',
+        'customers': 'Customer information and contact details',
+        'daily_reconciliation': 'Daily financial reconciliation records',
+        'logs': 'System activity logs and audit trails',
+        'meta': 'System metadata and configuration settings',
+        'notifications': 'System notifications and alerts',
+        'orders': 'Customer orders and transaction records',
+        'products': 'Product catalog and inventory data',
+        'purchaseOrders': 'Purchase orders and vendor transactions',
+        'staffs': 'Staff member information and roles',
+        'users': 'User accounts and authentication data',
+        'vendors': 'Vendor information and supplier details'
+      };
+      
+      if (select.value && select.value !== 'all') {
+        info.textContent = `📋 ${collectionDescriptions[select.value] || 'Collection data will be exported'}`;
+      } else if (select.value === 'all') {
+        info.textContent = '🌟 Export all collections in one comprehensive JSON file';
+      } else {
+        info.textContent = '📋 Select a collection to see description';
+      }
+    };
+  </script>
+</body>
+</html>

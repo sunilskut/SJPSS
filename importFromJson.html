@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SJPSS Firestore JSON Importer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+      }
+      40% {
+        transform: translateY(-10px);
+      }
+      60% {
+        transform: translateY(-5px);
+      }
+    }
+    
+    .bounce-animation {
+      animation: bounce 2s infinite;
+    }
+    
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    
+    .slide-in {
+      animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.5s ease;
+    }
+    
+    .file-drop-zone {
+      transition: all 0.3s ease;
+    }
+    
+    .file-drop-zone.drag-over {
+      border-color: #6366f1;
+      background-color: #eef2ff;
+      transform: scale(1.02);
+    }
+    
+    .progress-bar {
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 min-h-screen" oncontextmenu="return false;" onkeydown="if(event.keyCode==123) return false;">
+  <div class="min-h-screen p-5">
+    <div class="max-w-6xl mx-auto">
+      
+      <!-- Header -->
+      <div class="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-8 mb-8">
+        <div class="text-center">
+          <div class="text-6xl mb-4 bounce-animation">📥</div>
+          <h1 class="text-4xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            SJPSS Data Importer
+          </h1>
+          <p class="text-gray-600 text-lg">Import JSON data back to Firestore collections with full control</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <!-- File Upload Section -->
+        <div class="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-8">
+          <div class="flex items-center mb-6">
+            <span class="text-2xl mr-3">📁</span>
+            <h2 class="text-2xl font-bold text-gray-800">Select JSON File</h2>
+          </div>
+          
+          <!-- File Drop Zone -->
+          <div id="dropZone" 
+               class="file-drop-zone border-3 border-dashed border-gray-300 rounded-2xl p-8 text-center cursor-pointer hover:border-violet-400 hover:bg-violet-50/50 transition-all duration-300">
+            <div class="space-y-4">
+              <div class="text-4xl">📄</div>
+              <div>
+                <p class="text-lg font-medium text-gray-700">Drop your JSON file here</p>
+                <p class="text-gray-500">or click to browse</p>
+              </div>
+              <input type="file" id="fileInput" accept=".json" class="hidden" onchange="handleFileSelect(event)">
+              <button onclick="document.getElementById('fileInput').click()" 
+                      class="px-6 py-3 bg-violet-600 text-white font-medium rounded-xl hover:bg-violet-700 transition-colors duration-200">
+                Choose File
+              </button>
+            </div>
+          </div>
+          
+          <!-- File Info -->
+          <div id="fileInfo" class="hidden mt-6 p-4 bg-green-50 border border-green-200 rounded-xl">
+            <div class="flex items-center">
+              <span class="text-green-600 mr-2">✅</span>
+              <div>
+                <p class="font-medium text-green-800" id="fileName"></p>
+                <p class="text-sm text-green-600" id="fileDetails"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Import Configuration -->
+        <div class="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-8">
+          <div class="flex items-center mb-6">
+            <span class="text-2xl mr-3">⚙️</span>
+            <h2 class="text-2xl font-bold text-gray-800">Import Settings</h2>
+          </div>
+          
+          <!-- Collection Selection -->
+          <div class="space-y-4 mb-6">
+            <label class="block text-sm font-medium text-gray-700">Target Collection</label>
+            <select id="targetCollection" 
+                    class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-violet-500 focus:ring-2 focus:ring-violet-200 focus:outline-none transition-all duration-200">
+              <option value="">Select target collection...</option>
+              <option value="categories">📂 Categories</option>
+              <option value="counters">🔢 Counters</option>
+              <option value="customers">👥 Customers</option>
+              <option value="daily_reconciliation">📊 Daily Reconciliation</option>
+              <option value="logs">📝 Logs</option>
+              <option value="meta">⚙️ Meta</option>
+              <option value="notifications">🔔 Notifications</option>
+              <option value="orders">📋 Orders</option>
+              <option value="products">📦 Products</option>
+              <option value="purchaseOrders">🛒 Purchase Orders</option>
+              <option value="staffs">👨‍💼 Staffs</option>
+              <option value="users">👤 Users</option>
+              <option value="vendors">🏢 Vendors</option>
+            </select>
+          </div>
+          
+          <!-- Import Mode -->
+          <div class="space-y-4 mb-6">
+            <label class="block text-sm font-medium text-gray-700">Import Mode</label>
+            <div class="space-y-3">
+              <label class="flex items-center p-3 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer">
+                <input type="radio" name="importMode" value="merge" class="mr-3 text-violet-600" checked>
+                <div>
+                  <div class="font-medium text-gray-800">Merge (Recommended)</div>
+                  <div class="text-sm text-gray-500">Add new records, update existing ones</div>
+                </div>
+              </label>
+              
+              <label class="flex items-center p-3 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer">
+                <input type="radio" name="importMode" value="append" class="mr-3 text-violet-600">
+                <div>
+                  <div class="font-medium text-gray-800">Append Only</div>
+                  <div class="text-sm text-gray-500">Only add new records, skip existing</div>
+                </div>
+              </label>
+              
+              <label class="flex items-center p-3 border border-red-200 rounded-xl hover:bg-red-50 cursor-pointer">
+                <input type="radio" name="importMode" value="replace" class="mr-3 text-red-600">
+                <div>
+                  <div class="font-medium text-red-800">Replace Collection ⚠️</div>
+                  <div class="text-sm text-red-500">Delete all existing data first</div>
+                </div>
+              </label>
+            </div>
+          </div>
+          
+          <!-- Batch Size -->
+          <div class="space-y-2 mb-6">
+            <label class="block text-sm font-medium text-gray-700">Batch Size</label>
+            <select id="batchSize" class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-violet-500 focus:outline-none">
+              <option value="10">10 records per batch</option>
+              <option value="25" selected>25 records per batch</option>
+              <option value="50">50 records per batch</option>
+              <option value="100">100 records per batch</option>
+            </select>
+            <p class="text-xs text-gray-500">Smaller batches are safer but slower</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Preview Section -->
+      <div id="previewSection" class="hidden bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-8 mt-8 fade-in">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center">
+            <span class="text-2xl mr-3">👀</span>
+            <h2 class="text-2xl font-bold text-gray-800">Data Preview</h2>
+          </div>
+          <div class="text-sm text-gray-500">
+            <span id="recordCount">0</span> records found
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <!-- Collections Found -->
+          <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <h3 class="font-semibold text-blue-800 mb-2">📚 Collections Detected</h3>
+            <div id="collectionsFound" class="space-y-1 text-sm text-blue-700"></div>
+          </div>
+          
+          <!-- Sample Data -->
+          <div class="bg-green-50 border border-green-200 rounded-xl p-4">
+            <h3 class="font-semibold text-green-800 mb-2">📋 Sample Record</h3>
+            <pre id="sampleData" class="text-xs text-green-700 overflow-auto max-h-32"></pre>
+          </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap gap-4">
+          <button id="importBtn" onclick="startImport()" 
+                  class="flex-1 min-w-48 flex items-center justify-center px-6 py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold rounded-xl hover:from-violet-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-200 shadow-lg">
+            <span class="mr-2">🚀</span>
+            Start Import Process
+          </button>
+          
+          <button onclick="clearAll()" 
+                  class="px-6 py-4 bg-gray-500 text-white font-semibold rounded-xl hover:bg-gray-600 transition-colors duration-200">
+            <span class="mr-2">🗑️</span>
+            Clear All
+          </button>
+        </div>
+      </div>
+
+      <!-- Progress Section -->
+      <div id="progressSection" class="hidden bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-8 mt-8 fade-in">
+        <div class="flex items-center mb-6">
+          <span class="text-2xl mr-3">⏳</span>
+          <h2 class="text-2xl font-bold text-gray-800">Import Progress</h2>
+        </div>
+        
+        <div class="space-y-6">
+          <!-- Overall Progress -->
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-sm font-medium text-gray-700">Overall Progress</span>
+              <span class="text-sm font-medium text-gray-700" id="overallProgress">0%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3">
+              <div id="overallProgressBar" class="progress-bar bg-gradient-to-r from-violet-600 to-purple-600 h-3 rounded-full" style="width: 0%"></div>
+            </div>
+          </div>
+          
+          <!-- Current Batch -->
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-sm font-medium text-gray-700">Current Batch</span>
+              <span class="text-sm font-medium text-gray-700" id="batchProgress">Batch 0 of 0</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div id="batchProgressBar" class="progress-bar bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full" style="width: 0%"></div>
+            </div>
+          </div>
+          
+          <!-- Status Log -->
+          <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 max-h-48 overflow-y-auto" id="statusLog">
+            <div class="text-sm text-gray-600">Import status will appear here...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results Section -->
+      <div id="resultsSection" class="hidden bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-8 mt-8 fade-in">
+        <div class="flex items-center mb-6">
+          <span class="text-2xl mr-3">📊</span>
+          <h2 class="text-2xl font-bold text-gray-800">Import Results</h2>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+            <div class="text-3xl font-bold text-green-600" id="successCount">0</div>
+            <div class="text-green-800 font-medium">Successful</div>
+          </div>
+          
+          <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
+            <div class="text-3xl font-bold text-yellow-600" id="skippedCount">0</div>
+            <div class="text-yellow-800 font-medium">Skipped</div>
+          </div>
+          
+          <div class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+            <div class="text-3xl font-bold text-red-600" id="errorCount">0</div>
+            <div class="text-red-800 font-medium">Errors</div>
+          </div>
+        </div>
+        
+        <div id="errorDetails" class="hidden mt-6 bg-red-50 border border-red-200 rounded-xl p-4">
+          <h3 class="font-semibold text-red-800 mb-2">Error Details</h3>
+          <div id="errorList" class="text-sm text-red-700 space-y-1"></div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="text-center mt-8 p-6">
+        <div class="flex items-center justify-center space-x-2 text-gray-500 text-sm">
+          <span>🏫</span>
+          <span>SJPSS Data Management System</span>
+        </div>
+        <p class="text-xs text-gray-400 mt-1">Secure data import tool for authorized personnel</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+      authDomain: "sjpss-f504b.firebaseapp.com",
+      projectId: "sjpss-f504b",
+      storageBucket: "sjpss-f504b.firebasestorage.app",
+      messagingSenderId: "227402980311",
+      appId: "1:227402980311:web:56b580456ab6b9c6758992",
+      measurementId: "G-LZ4YP9YPN6"
+    };
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { 
+      getFirestore, 
+      collection, 
+      doc, 
+      setDoc, 
+      addDoc, 
+      getDocs, 
+      deleteDoc,
+      writeBatch 
+    } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    
+    let isAuthenticated = false;
+    let jsonData = null;
+    let importStats = {
+      total: 0,
+      successful: 0,
+      skipped: 0,
+      errors: 0,
+      errorDetails: []
+    };
+
+    function showResults() {
+      document.getElementById('resultsSection').classList.remove('hidden');
+      
+      document.getElementById('successCount').textContent = importStats.successful;
+      document.getElementById('skippedCount').textContent = importStats.skipped;
+      document.getElementById('errorCount').textContent = importStats.errors;
+      
+      if (importStats.errorDetails.length > 0) {
+        document.getElementById('errorDetails').classList.remove('hidden');
+        const errorList = document.getElementById('errorList');
+        errorList.innerHTML = importStats.errorDetails
+          .slice(0, 10) // Show only first 10 errors
+          .map(error => `<div>• ${error}</div>`)
+          .join('');
+        
+        if (importStats.errorDetails.length > 10) {
+          errorList.innerHTML += `<div class="mt-2 text-xs">... and ${importStats.errorDetails.length - 10} more errors</div>`;
+        }
+      }
+    }
+
+    window.clearAll = function() {
+      // Reset all form elements
+      document.getElementById('fileInput').value = '';
+      document.getElementById('targetCollection').value = '';
+      document.querySelector('input[name="importMode"][value="merge"]').checked = true;
+      document.getElementById('batchSize').value = '25';
+      
+      // Hide sections
+      document.getElementById('fileInfo').classList.add('hidden');
+      document.getElementById('previewSection').classList.add('hidden');
+      document.getElementById('progressSection').classList.add('hidden');
+      document.getElementById('resultsSection').classList.add('hidden');
+      
+      // Reset data
+      jsonData = null;
+      importStats = { total: 0, successful: 0, skipped: 0, errors: 0, errorDetails: [] };
+      
+      // Reset progress bars
+      document.getElementById('overallProgressBar').style.width = '0%';
+      document.getElementById('batchProgressBar').style.width = '0%';
+      document.getElementById('overallProgress').textContent = '0%';
+      document.getElementById('batchProgress').textContent = 'Batch 0 of 0';
+      
+      showAlert('🗑️ All data cleared successfully', 'info');
+    };
+
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        clearAll();
+      }
+      if (e.ctrlKey && e.key === 'o') {
+        e.preventDefault();
+        document.getElementById('fileInput').click();
+      }
+    });
+
+    // Enhanced error handling for Firebase operations
+    window.addEventListener('unhandledrejection', function(event) {
+      console.error('Unhandled promise rejection:', event.reason);
+      addStatusLog(`❌ Unexpected error: ${event.reason.message || 'Unknown error'}`, 'error');
+      showAlert('❌ An unexpected error occurred. Check the status log for details.', 'error');
+    });
+
+    // Add tooltips and help text
+    function addTooltips() {
+      const tooltips = [
+        {
+          element: 'input[name="importMode"][value="merge"]',
+          text: 'Recommended for most cases. Updates existing records and adds new ones.'
+        },
+        {
+          element: 'input[name="importMode"][value="append"]',
+          text: 'Safe option that only adds new records, never overwrites existing data.'
+        },
+        {
+          element: 'input[name="importMode"][value="replace"]',
+          text: 'DANGEROUS! This will delete all existing data before importing.'
+        }
+      ];
+
+      tooltips.forEach(tooltip => {
+        const element = document.querySelector(tooltip.element);
+        if (element) {
+          element.setAttribute('title', tooltip.text);
+        }
+      });
+    }
+
+    // Initialize tooltips when page loads
+    addTooltips();
+
+    // Add validation for file size
+    function validateFileSize(file) {
+      const maxSize = 50 * 1024 * 1024; // 50MB limit
+      if (file.size > maxSize) {
+        showAlert('⚠️ File is too large. Maximum size is 50MB.', 'warning');
+        return false;
+      }
+      return true;
+    }
+
+    // Enhanced file handling with validation
+    function handleFile(file) {
+      if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
+        showAlert('⚠️ Please select a valid JSON file.', 'warning');
+        return;
+      }
+
+      if (!validateFileSize(file)) {
+        return;
+      }
+
+      addStatusLog(`📁 Loading file: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`, 'info');
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          jsonData = JSON.parse(e.target.result);
+          displayFileInfo(file);
+          previewData();
+          addStatusLog('✅ File loaded successfully', 'success');
+        } catch (error) {
+          showAlert('❌ Invalid JSON file format.', 'error');
+          addStatusLog(`❌ JSON parse error: ${error.message}`, 'error');
+          console.error('JSON Parse Error:', error);
+        }
+      };
+
+      reader.onerror = function() {
+        showAlert('❌ Error reading file.', 'error');
+        addStatusLog('❌ File read error', 'error');
+      };
+
+      reader.readAsText(file);
+    }
+
+    // Add data validation before import
+    function validateImportData(data, collectionName) {
+      const validationErrors = [];
+
+      if (!Array.isArray(data)) {
+        validationErrors.push('Data must be an array of records');
+        return validationErrors;
+      }
+
+      if (data.length === 0) {
+        validationErrors.push('No records found to import');
+        return validationErrors;
+      }
+
+      // Check for required fields based on collection
+      const requiredFields = {
+        products: ['name', 'price'],
+        customers: ['name'],
+        orders: ['customerId'],
+        categories: ['name'],
+        // Add more validation rules as needed
+      };
+
+      if (requiredFields[collectionName]) {
+        const required = requiredFields[collectionName];
+        const sampleRecord = data[0];
+        
+        for (const field of required) {
+          if (!(field in sampleRecord)) {
+            validationErrors.push(`Missing required field: ${field}`);
+          }
+        }
+      }
+
+      // Check for duplicate IDs
+      const ids = data.map(record => record.id).filter(Boolean);
+      const duplicateIds = ids.filter((id, index) => ids.indexOf(id) !== index);
+      if (duplicateIds.length > 0) {
+        validationErrors.push(`Duplicate IDs found: ${duplicateIds.join(', ')}`);
+      }
+
+      return validationErrors;
+    }
+
+    // Enhanced import function with validation
+    window.startImport = async function() {
+      if (!checkAuthentication()) return;
+      
+      const targetCollection = document.getElementById('targetCollection').value;
+      const importMode = document.querySelector('input[name="importMode"]:checked').value;
+      const batchSize = parseInt(document.getElementById('batchSize').value);
+
+      if (!jsonData) {
+        showAlert('❌ Please select a JSON file first.', 'error');
+        return;
+      }
+
+      if (!targetCollection) {
+        showAlert('❌ Please select a target collection.', 'error');
+        return;
+      }
+
+      // Prepare data for validation
+      let recordsToImport = [];
+      if (Array.isArray(jsonData)) {
+        recordsToImport = jsonData;
+      } else if (jsonData[targetCollection]) {
+        recordsToImport = jsonData[targetCollection];
+      } else {
+        showAlert(`❌ No data found for collection "${targetCollection}"`, 'error');
+        return;
+      }
+
+      // Validate data
+      const validationErrors = validateImportData(recordsToImport, targetCollection);
+      if (validationErrors.length > 0) {
+        const errorMessage = `Data validation failed:\n${validationErrors.join('\n')}`;
+        showAlert('❌ Data validation failed. Check console for details.', 'error');
+        addStatusLog(`❌ Validation errors: ${validationErrors.join('; ')}`, 'error');
+        console.error('Validation errors:', validationErrors);
+        
+        const proceed = confirm(`⚠️ Data validation found issues:\n${validationErrors.join('\n')}\n\nDo you want to proceed anyway?`);
+        if (!proceed) {
+          return;
+        }
+      }
+
+      // Confirmation for dangerous operations
+      if (importMode === 'replace') {
+        const confirm = prompt(`⚠️ DANGER: This will DELETE ALL existing data in "${targetCollection}" collection.\nType "DELETE ALL" to confirm:`);
+        if (confirm !== 'DELETE ALL') {
+          showAlert('❌ Import cancelled for safety.', 'warning');
+          return;
+        }
+      }
+
+      // Final confirmation
+      const confirmMessage = `Ready to import ${recordsToImport.length} records to "${targetCollection}" using ${importMode} mode.\n\nProceed?`;
+      if (!confirm(confirmMessage)) {
+        showAlert('❌ Import cancelled by user.', 'info');
+        return;
+      }
+
+      // Reset stats and UI
+      importStats = { total: 0, successful: 0, skipped: 0, errors: 0, errorDetails: [] };
+      document.getElementById('progressSection').classList.remove('hidden');
+      document.getElementById('resultsSection').classList.add('hidden');
+      document.getElementById('statusLog').innerHTML = '';
+      
+      // Disable import button during process
+      const importBtn = document.getElementById('importBtn');
+      const originalText = importBtn.innerHTML;
+      importBtn.innerHTML = '<div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>Importing...';
+      importBtn.disabled = true;
+
+      try {
+        await performImport(targetCollection, importMode, batchSize);
+      } catch (error) {
+        console.error('Import failed:', error);
+        addStatusLog(`❌ Import failed: ${error.message}`, 'error');
+        showAlert('❌ Import process failed.', 'error');
+      } finally {
+        // Re-enable import button
+        importBtn.innerHTML = originalText;
+        importBtn.disabled = false;
+      }
+    };
+
+    // Add auto-detect collection feature
+    function autoDetectCollection() {
+      if (!jsonData) return;
+
+      let detectedCollection = '';
+      
+      if (Array.isArray(jsonData) && jsonData.length > 0) {
+        const sampleRecord = jsonData[0];
+        
+        // Simple heuristics to detect collection type
+        if (sampleRecord.productId || sampleRecord.sku) {
+          detectedCollection = 'products';
+        } else if (sampleRecord.customerId || sampleRecord.customerName) {
+          detectedCollection = 'customers';
+        } else if (sampleRecord.orderId || sampleRecord.orderNumber) {
+          detectedCollection = 'orders';
+        } else if (sampleRecord.categoryId || sampleRecord.categoryName) {
+          detectedCollection = 'categories';
+        }
+        
+        if (detectedCollection) {
+          document.getElementById('targetCollection').value = detectedCollection;
+          addStatusLog(`🔍 Auto-detected collection: ${detectedCollection}`, 'info');
+          showAlert(`🤖 Auto-detected target collection: ${detectedCollection}`, 'info');
+        }
+      }
+    }
+
+    // Update previewData function to include auto-detection
+    function previewData() {
+      if (!jsonData) return;
+
+      let collections = [];
+      let totalRecords = 0;
+      let sampleRecord = null;
+
+      // Handle different JSON structures
+      if (Array.isArray(jsonData)) {
+        collections.push('Array Data');
+        totalRecords = jsonData.length;
+        sampleRecord = jsonData[0];
+        
+        // Auto-detect collection for single arrays
+        autoDetectCollection();
+      } else if (typeof jsonData === 'object') {
+        for (const [key, value] of Object.entries(jsonData)) {
+          if (Array.isArray(value)) {
+            collections.push(`${key} (${value.length} records)`);
+            totalRecords += value.length;
+            if (!sampleRecord && value.length > 0) {
+              sampleRecord = { collection: key, data: value[0] };
+            }
+          }
+        }
+      }
+
+      // Update UI
+      document.getElementById('recordCount').textContent = totalRecords;
+      
+      const collectionsDiv = document.getElementById('collectionsFound');
+      collectionsDiv.innerHTML = collections.map(c => `<div>• ${c}</div>`).join('');
+      
+      const sampleDiv = document.getElementById('sampleData');
+      sampleDiv.textContent = JSON.stringify(sampleRecord, null, 2);
+      
+      document.getElementById('previewSection').classList.remove('hidden');
+      showAlert(`📊 Data loaded: ${totalRecords} records in ${collections.length} collection(s)`, 'success');
+    }
+
+  </script>
+</body>
+</html>Alert(message, type = 'info') {
+      const alertColors = {
+        success: 'bg-gradient-to-r from-green-500 to-green-600',
+        error: 'bg-gradient-to-r from-red-500 to-red-600',
+        warning: 'bg-gradient-to-r from-amber-500 to-amber-600',
+        info: 'bg-gradient-to-r from-blue-500 to-blue-600'
+      };
+      
+      const alert = document.createElement('div');
+      alert.className = `fixed top-5 right-5 p-4 rounded-xl text-white font-medium z-50 slide-in max-w-sm shadow-2xl ${alertColors[type]}`;
+      alert.textContent = message;
+      document.body.appendChild(alert);
+      
+      setTimeout(() => {
+        alert.style.animation = 'slideIn 0.3s ease reverse';
+        setTimeout(() => alert.remove(), 300);
+      }, 4000);
+    }
+
+    function checkAuthentication() {
+      if (!isAuthenticated) {
+        const code = prompt('🔐 Enter admin access code to proceed:');
+        if (code === 'niranjana') {
+          isAuthenticated = true;
+          showAlert('✅ Authentication successful!', 'success');
+        } else {
+          showAlert('❌ Incorrect access code. Access denied.', 'error');
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function addStatusLog(message, type = 'info') {
+      const log = document.getElementById('statusLog');
+      const timestamp = new Date().toLocaleTimeString();
+      const colors = {
+        info: 'text-blue-600',
+        success: 'text-green-600',
+        warning: 'text-yellow-600',
+        error: 'text-red-600'
+      };
+      
+      const entry = document.createElement('div');
+      entry.className = `text-sm ${colors[type]} mb-1`;
+      entry.innerHTML = `<span class="text-gray-500">[${timestamp}]</span> ${message}`;
+      log.appendChild(entry);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    // File handling
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('drag-over');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFile(files[0]);
+      }
+    });
+
+    window.handleFileSelect = function(event) {
+      const file = event.target.files[0];
+      if (file) {
+        handleFile(file);
+      }
+    };
+
+    function handleFile(file) {
+      if (file.type !== 'application/json') {
+        showAlert('⚠️ Please select a valid JSON file.', 'warning');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          jsonData = JSON.parse(e.target.result);
+          displayFileInfo(file);
+          previewData();
+        } catch (error) {
+          showAlert('❌ Invalid JSON file format.', 'error');
+          console.error('JSON Parse Error:', error);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function displayFileInfo(file) {
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileDetails').textContent = `Size: ${(file.size / 1024).toFixed(2)} KB | Modified: ${new Date(file.lastModified).toLocaleDateString()}`;
+      document.getElementById('fileInfo').classList.remove('hidden');
+    }
+
+    function previewData() {
+      if (!jsonData) return;
+
+      let collections = [];
+      let totalRecords = 0;
+      let sampleRecord = null;
+
+      // Handle different JSON structures
+      if (Array.isArray(jsonData)) {
+        // Single collection export
+        collections.push('Array Data');
+        totalRecords = jsonData.length;
+        sampleRecord = jsonData[0];
+      } else if (typeof jsonData === 'object') {
+        // Multi-collection export
+        for (const [key, value] of Object.entries(jsonData)) {
+          if (Array.isArray(value)) {
+            collections.push(`${key} (${value.length} records)`);
+            totalRecords += value.length;
+            if (!sampleRecord && value.length > 0) {
+              sampleRecord = { collection: key, data: value[0] };
+            }
+          }
+        }
+      }
+
+      // Update UI
+      document.getElementById('recordCount').textContent = totalRecords;
+      
+      const collectionsDiv = document.getElementById('collectionsFound');
+      collectionsDiv.innerHTML = collections.map(c => `<div>• ${c}</div>`).join('');
+      
+      const sampleDiv = document.getElementById('sampleData');
+      sampleDiv.textContent = JSON.stringify(sampleRecord, null, 2);
+      
+      document.getElementById('previewSection').classList.remove('hidden');
+      showAlert(`📊 Data loaded: ${totalRecords} records in ${collections.length} collection(s)`, 'success');
+    }
+
+    window.startImport = async function() {
+      if (!checkAuthentication()) return;
+      
+      const targetCollection = document.getElementById('targetCollection').value;
+      const importMode = document.querySelector('input[name="importMode"]:checked').value;
+      const batchSize = parseInt(document.getElementById('batchSize').value);
+
+      if (!jsonData) {
+        showAlert('❌ Please select a JSON file first.', 'error');
+        return;
+      }
+
+      if (!targetCollection) {
+        showAlert('❌ Please select a target collection.', 'error');
+        return;
+      }
+
+      // Confirmation for dangerous operations
+      if (importMode === 'replace') {
+        const confirm = prompt(`⚠️ DANGER: This will DELETE ALL existing data in "${targetCollection}" collection.\nType "DELETE ALL" to confirm:`);
+        if (confirm !== 'DELETE ALL') {
+          showAlert('❌ Import cancelled for safety.', 'warning');
+          return;
+        }
+      }
+
+      // Reset stats
+      importStats = { total: 0, successful: 0, skipped: 0, errors: 0, errorDetails: [] };
+      
+      // Show progress section
+      document.getElementById('progressSection').classList.remove('hidden');
+      document.getElementById('resultsSection').classList.add('hidden');
+      document.getElementById('statusLog').innerHTML = '<div class="text-sm text-gray-600">Starting import process...</div>';
+
+      try {
+        await performImport(targetCollection, importMode, batchSize);
+      } catch (error) {
+        console.error('Import failed:', error);
+        addStatusLog(`❌ Import failed: ${error.message}`, 'error');
+        showAlert('❌ Import process failed.', 'error');
+      }
+    };
+
+    async function performImport(targetCollection, importMode, batchSize) {
+      addStatusLog(`🚀 Starting import to "${targetCollection}" collection`, 'info');
+      addStatusLog(`📋 Mode: ${importMode}, Batch Size: ${batchSize}`, 'info');
+
+      // Prepare data
+      let recordsToImport = [];
+      
+      if (Array.isArray(jsonData)) {
+        recordsToImport = jsonData;
+      } else if (jsonData[targetCollection]) {
+        recordsToImport = jsonData[targetCollection];
+      } else {
+        throw new Error(`No data found for collection "${targetCollection}"`);
+      }
+
+      importStats.total = recordsToImport.length;
+      addStatusLog(`📊 Found ${importStats.total} records to import`, 'info');
+
+      // Clear collection if replace mode
+      if (importMode === 'replace') {
+        await clearCollection(targetCollection);
+      }
+
+      // Process in batches
+      const totalBatches = Math.ceil(recordsToImport.length / batchSize);
+      
+      for (let i = 0; i < totalBatches; i++) {
+        const batchStart = i * batchSize;
+        const batchEnd = Math.min(batchStart + batchSize, recordsToImport.length);
+        const batch = recordsToImport.slice(batchStart, batchEnd);
+        
+        addStatusLog(`📦 Processing batch ${i + 1}/${totalBatches} (${batch.length} records)`, 'info');
+        
+        await processBatch(targetCollection, batch, importMode, i + 1, totalBatches);
+        
+        // Update progress
+        const overallProgress = Math.round(((i + 1) / totalBatches) * 100);
+        document.getElementById('overallProgress').textContent = `${overallProgress}%`;
+        document.getElementById('overallProgressBar').style.width = `${overallProgress}%`;
+        document.getElementById('batchProgress').textContent = `Batch ${i + 1} of ${totalBatches}`;
+        
+        // Small delay between batches
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      // Show results
+      showResults();
+      addStatusLog(`✅ Import completed! ${importStats.successful} successful, ${importStats.errors} errors`, 'success');
+      showAlert(`🎉 Import completed! ${importStats.successful}/${importStats.total} records imported successfully.`, 'success');
+    }
+
+    async function clearCollection(collectionName) {
+      addStatusLog(`🗑️ Clearing existing data from "${collectionName}"...`, 'warning');
+      
+      try {
+        const snapshot = await getDocs(collection(db, collectionName));
+        const batch = writeBatch(db);
+        
+        snapshot.docs.forEach((doc) => {
+          batch.delete(doc.ref);
+        });
+        
+        await batch.commit();
+        addStatusLog(`✅ Cleared ${snapshot.docs.length} existing records`, 'success');
+      } catch (error) {
+        addStatusLog(`❌ Error clearing collection: ${error.message}`, 'error');
+        throw error;
+      }
+    }
+
+    async function processBatch(collectionName, records, mode, batchNum, totalBatches) {
+      const batch = writeBatch(db);
+      const batchErrors = [];
+      
+      for (let i = 0; i < records.length; i++) {
+        try {
+          const record = records[i];
+          const docId = record.id || `import_${Date.now()}_${i}`;
+          
+          // Remove the id field from data if it exists
+          const docData = { ...record };
+          delete docData.id;
+          
+          // Check if document exists for append mode
+          if (mode === 'append') {
+            const docRef = doc(db, collectionName, docId);
+            const existingDoc = await getDocs(collection(db, collectionName));
+            const exists = existingDoc.docs.some(d => d.id === docId);
+            
+            if (exists) {
+              importStats.skipped++;
+              continue;
+            }
+          }
+          
+          const docRef = doc(db, collectionName, docId);
+          batch.set(docRef, docData, { merge: mode === 'merge' });
+          
+        } catch (error) {
+          batchErrors.push(`Record ${i}: ${error.message}`);
+          importStats.errors++;
+        }
+      }
+      
+      try {
+        await batch.commit();
+        const successfulInBatch = records.length - batchErrors.length;
+        importStats.successful += successfulInBatch;
+        
+        addStatusLog(`✅ Batch ${batchNum} completed: ${successfulInBatch} successful`, 'success');
+        
+        if (batchErrors.length > 0) {
+          addStatusLog(`⚠️ Batch ${batchNum} had ${batchErrors.length} errors`, 'warning');
+          importStats.errorDetails.push(...batchErrors);
+        }
+        
+      } catch (error) {
+        addStatusLog(`❌ Batch ${batchNum} failed: ${error.message}`, 'error');
+        importStats.errors += records.length;
+        importStats.errorDetails.push(`Batch ${batchNum}: ${error.message}`);
+      }
+      
+      // Update batch progress
+      const batchProgress = Math.round((batchNum / totalBatches) * 100);
+      document.getElementById('batchProgressBar').style.width = `${batchProgress}%`;
+    }
+
+    function show
