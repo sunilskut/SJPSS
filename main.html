@@ -990,114 +990,132 @@ import {
                 }
             }
 
-            // Professional Product Card Creation
-            createProductCard(product) {
-                const discountPercent = product.discountPercent || 0;
-                const hasDiscount = discountPercent > 0;
-                const originalPrice = product.mrp || product.sellingPrice;
-                const sellingPrice = product.sellingPrice || 0;
+           // Enhanced Professional Product Card Creation
+createProductCard(product) {
+    const discountPercent = product.discountPercent || 0;
+    const hasDiscount = discountPercent > 0;
+    const originalPrice = product.mrp || product.sellingPrice;
+    const sellingPrice = product.sellingPrice || 0;
+    const rating = product.rating || 0;
+    const reviewCount = product.reviewCount || 0;
 
-                return `
-                    <div class="product-card group cursor-pointer" onclick="ecommerceApp.viewProduct('${product.id}')">
-                        <div class="relative overflow-hidden rounded-t-xl">
-                            <img 
-                                src="${this.getProductImage(product)}" 
-                                alt="${product.name || 'Product'}"
-                                class="w-full h-48 sm:h-56 object-cover group-hover:scale-105 transition-transform duration-300"
-                                loading="lazy"
-                                onerror="this.src='https://via.placeholder.com/300x300?text=No+Image'"
-                            >
-                            
-                            ${product.badge ? `
-                                <div class="absolute top-3 left-3">
-                                    <span class="badge ${this.getBadgeClass(product.badge)} shadow-sm">
-                                        ${product.badge}
-                                    </span>
-                                </div>
-                            ` : ''}
+    return `
+        <div class="product-card group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 overflow-hidden cursor-pointer" 
+             onclick="ecommerceApp.viewProduct('${product.id}')">
+            
+            <!-- Image Container -->
+            <div class="relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+                <img 
+                    src="${this.getProductImage(product)}" 
+                    alt="${product.name || 'Product'}"
+                    class="w-full h-44 object-contain object-center group-hover:scale-105 transition-transform duration-500 ease-out backdrop-blur-0"
+                    loading="lazy"
+                    style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges; filter: contrast(1.1) saturate(1.1);"
+                    onerror="this.src='https://via.placeholder.com/400x400/f8fafc/64748b?text=Product+Image'"
+                    onload="this.style.opacity='1'; this.style.filter='contrast(1.05) saturate(1.05) brightness(1.02)'"
+                    onloadstart="this.style.opacity='0.8'"
+                >
+                
+                <!-- Image enhancement overlay -->
+                <div class="absolute inset-0 bg-gradient-to-t from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                
+                <!-- Image loading shimmer effect -->
+                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 animate-pulse" id="shimmer-${product.id}"></div>
 
-                            ${hasDiscount ? `
-                                <div class="absolute top-3 right-3">
-                                    <span class="bg-red-500 text-white px-2 py-1 text-xs font-semibold rounded-full shadow-sm">
-                                        ${Math.round(discountPercent)}% OFF
-                                    </span>
-                                </div>
-                            ` : ''}
+                <!-- Top badges row -->
+                <div class="absolute top-3 left-3 right-3 flex justify-between items-start">
+                    ${product.badge ? `
+                        <span class="badge ${this.getBadgeClass(product.badge)} backdrop-blur-sm bg-white/90 text-gray-800 px-2 py-1 text-xs font-medium rounded-full shadow-lg">
+                            ${product.badge}
+                        </span>
+                    ` : '<div></div>'}
+                    
+                    ${hasDiscount ? `
+                        <span class="bg-gradient-to-r from-red-500 to-pink-500 text-white px-2.5 py-1 text-xs font-bold rounded-full shadow-lg animate-pulse">
+                            -${Math.round(discountPercent)}%
+                        </span>
+                    ` : ''}
+                </div>
 
-                            <div class="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button class="bg-white hover:bg-red-50 text-red-500 p-2 rounded-full shadow-lg focus-ring" 
-                                        onclick="event.stopPropagation(); ecommerceApp.toggleWishlist('${product.id}')">
-                                    <i class="far fa-heart text-sm"></i>
-                                </button>
-                            </div>
+                <!-- Floating action buttons -->
+                <div class="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                    <button class="bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 hover:text-red-500 p-2.5 rounded-full shadow-lg transition-all duration-200 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-red-500/50" 
+                            onclick="event.stopPropagation(); ecommerceApp.toggleWishlist('${product.id}')"
+                            title="Add to Wishlist">
+                        <i class="far fa-heart text-sm"></i>
+                    </button>
+                </div>
 
-                            ${product.codAvailable ? `
-                                <div class="absolute bottom-3 left-3">
-                                    <span class="bg-green-500 text-white px-2 py-1 text-xs font-medium rounded-full">
-                                        COD Available
-                                    </span>
-                                </div>
-                            ` : ''}
-                        </div>
-                        
-                        <div class="p-4">
-                            <div class="mb-2">
-                                <p class="text-xs text-gray-500 uppercase tracking-wide font-medium">
-                                    ${product.brand || 'Unknown Brand'}
-                                </p>
-                                <h3 class="text-sm font-semibold text-gray-800 line-clamp-2 group-hover:text-blue-600 transition-colors" 
-                                    title="${product.name || 'Unnamed Product'}">
-                                    ${this.truncateText(product.name || 'Unnamed Product', 50)}
-                                </h3>
-                            </div>
-                            
-                            <div class="flex items-center mb-3">
-                                <div class="flex items-center space-x-1 text-xs">
-                                    ${this.generateStars(product.rating || 0)}
-                                </div>
-                                <span class="ml-2 text-xs text-gray-600">(${product.reviewCount || 0})</span>
-                            </div>
-
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="flex items-center space-x-2">
-                                    <span class="text-lg font-bold text-gray-900">₹${sellingPrice}</span>
-                                    ${hasDiscount ? `
-                                        <span class="text-sm text-gray-500 line-through">₹${originalPrice}</span>
-                                    ` : ''}
-                                </div>
-                            </div>
-
-			<!--
-                            <div class="grid grid-cols-2 gap-2">
-                                <button class="btn-primary py-2 text-xs" 
-                                        onclick="event.stopPropagation(); ecommerceApp.addToCart('${product.id}')">
-                                    <i class="fas fa-shopping-cart mr-1"></i>
-                                    Add to Cart
-                                </button>
-                                <button class="btn-success py-2 text-xs" 
-                                        onclick="event.stopPropagation(); ecommerceApp.buyNow('${product.id}')">
-                                    <i class="fas fa-bolt mr-1"></i>
-                                    Buy Now
-                                </button>
-                            </div>
-			-->
-
-<div class="grid grid-cols-2 gap-2">
-    <button class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-3 rounded-lg text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 border border-gray-300" 
-            onclick="event.stopPropagation(); ecommerceApp.addToCart('${product.id}')">
-        <i class="fas fa-shopping-cart mr-1"></i>
-        Add to Cart
-    </button>
-    <button class="bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-lg text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2" 
-            onclick="event.stopPropagation(); ecommerceApp.buyNow('${product.id}')">
-        <i class="fas fa-bolt mr-1"></i>
-        Buy Now
-    </button>
-</div>
-                        </div>
+                <!-- COD badge -->
+                ${product.codAvailable ? `
+                    <div class="absolute bottom-3 left-3">
+                        <span class="bg-emerald-500 text-white px-2.5 py-1 text-xs font-medium rounded-full shadow-sm flex items-center gap-1">
+                            <i class="fas fa-truck text-xs"></i>
+                            COD
+                        </span>
                     </div>
-                `;
-            }
+                ` : ''}
+            </div>
+            
+            <!-- Content -->
+            <div class="p-4 space-y-3">
+                <!-- Brand and Title -->
+                <div class="space-y-1">
+                    <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold">
+                        ${product.brand || 'Unknown Brand'}
+                    </p>
+                    <h3 class="text-sm font-semibold text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors leading-tight" 
+                        title="${product.name || 'Unnamed Product'}">
+                        ${this.truncateText(product.name || 'Unnamed Product', 45)}
+                    </h3>
+                </div>
+                
+                <!-- Rating -->
+                ${rating > 0 ? `
+                    <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-1">
+                            ${this.generateStars(rating)}
+                            <span class="text-xs font-medium text-gray-700 ml-1">${rating.toFixed(1)}</span>
+                        </div>
+                        <span class="text-xs text-gray-500">(${reviewCount.toLocaleString()})</span>
+                    </div>
+                ` : ''}
+
+                <!-- Price Section -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-xl font-bold text-gray-900">₹${sellingPrice.toLocaleString()}</span>
+                        ${hasDiscount ? `
+                            <span class="text-sm text-gray-500 line-through">₹${originalPrice.toLocaleString()}</span>
+                        ` : ''}
+                    </div>
+                    ${hasDiscount ? `
+                        <span class="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                            Save ₹${(originalPrice - sellingPrice).toLocaleString()}
+                        </span>
+                    ` : ''}
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="grid grid-cols-2 gap-2 pt-2">
+                    <button class="group/btn bg-gray-50 hover:bg-gray-100 text-gray-800 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500/50 border border-gray-200 hover:border-gray-300 transform hover:scale-[1.02]" 
+                            onclick="event.stopPropagation(); ecommerceApp.addToCart('${product.id}')">
+                        <i class="fas fa-shopping-cart mr-1.5 group-hover/btn:scale-110 transition-transform"></i>
+                        Add to Cart
+                    </button>
+                    <button class="group/btn bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-2.5 px-3 rounded-xl text-xs font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transform hover:scale-[1.02] shadow-sm hover:shadow-md" 
+                            onclick="event.stopPropagation(); ecommerceApp.buyNow('${product.id}')">
+                        <i class="fas fa-bolt mr-1.5 group-hover/btn:scale-110 transition-transform"></i>
+                        Buy Now
+                    </button>
+                </div>
+            </div>
+
+            <!-- Hover overlay for quick actions -->
+            <div class="absolute inset-0 bg-gradient-to-t from-blue-600/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-2xl"></div>
+        </div>
+    `;
+}
 
             // Helper methods
             getProductImage(product) {
