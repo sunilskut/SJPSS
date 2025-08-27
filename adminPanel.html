@@ -1408,6 +1408,20 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       </a>
 
+ <!-- COD Payments by Cash -->
+<a href="#cod-cash" class="nav-item group" onclick="window.location='codPaymentVerificationForCash.html'">
+  <div
+    class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-green-300 hover:shadow-md transition-all duration-300">
+    <div class="text-center">
+      <i class="fas fa-money-bill-wave text-2xl text-green-500 group-hover:text-green-600 mb-3 transition-colors"></i>
+      <h3 class="text-sm font-semibold text-gray-800 mb-1">COD Payments by Cash</h3>
+      <p class="text-gray-500 text-xs">Verify COD payments by Cash</p>
+    </div>
+  </div>
+</a>
+
+
+
       <!--  Payment Reconciliation -->
       <a href="#payment-reconciliation" class="nav-item group" onclick="window.location='reconciliation.html'">	
         <div
@@ -2188,14 +2202,17 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       </div>
 
-      <!-- Reports -->
-      <div class="group cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-300" onclick="showSection('reports')">
-        <div class="text-center">
-          <i class="fas fa-file-alt text-2xl text-purple-500 group-hover:text-purple-600 mb-2 transition-colors"></i>
-          <h3 class="text-base font-semibold text-gray-800 mb-1">Reports</h3>
-          <p class="text-gray-500 text-xs">Generate detailed business reports</p>
-        </div>
-      </div>
+     <!-- Reports -->
+<div href="#reports"
+   class="group cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-300 focus:outline-none active:outline-none" 
+   onclick="showSection(this)">
+  <div class="text-center">
+    <i class="fas fa-file-alt text-2xl text-purple-500 group-hover:text-purple-600 mb-2 transition-colors"></i>
+    <h3 class="text-base font-semibold text-gray-800 mb-1">Reports</h3>
+    <p class="text-gray-500 text-xs">Generate detailed business reports</p>
+  </div>
+</div>
+
 
       <!-- Analytics -->
       <div class="group cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-orange-300 hover:shadow-md transition-all duration-300" onclick="showSection('analytics')">
@@ -2244,21 +2261,93 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-        <!-- Reports -->
-        <section id="reports" class="section-content hidden">
-          <div class="mb-8">
-            <h2 class="text-3xl font-bold text-gray-800 mb-2">Reports</h2>
-            <p class="text-gray-600">Generate and view business reports</p>
+       <!-- Reports -->
+<section id="reports" class="section-content hidden">
+  <div class="mb-8">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="text-xl font-bold text-gray-600">Reports</h2>
+      <a href="#misc" onclick="showSection(this)" class="group inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg transition-all duration-200 shadow-sm hover:bg-gray-100">
+        <svg class="w-4 h-4 mr-2 transition-transform duration-200 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        <span>Back to Misc</span>
+      </a>
+    </div>
+    <p class="text-xs text-gray-600">Generate, analyze and download detailed business reports.</p>
+  </div>
+
+  <div class="bg-white rounded-xl custom-shadow p-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+      <!-- Daily Report -->
+      <a   class="nav-item group" onclick="window.location='dailyReport.html'" >
+        <div class="cursor-pointer p-2 rounded-lg border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-chart-line text-2xl text-blue-500 group-hover:text-blue-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Daily Report</h3>
+            <p class="text-gray-500 text-xs">Daily sales insights</p>
           </div>
-          
-          <div class="bg-white rounded-xl custom-shadow p-6">
-            <div class="text-center py-12">
-              <i class="fas fa-file-alt text-6xl text-gray-300 mb-4"></i>
-              <h3 class="text-xl font-semibold text-gray-600 mb-2">Report Center</h3>
-              <p class="text-gray-500">Comprehensive reporting tools coming soon!</p>
-            </div>
+        </div>
+      </a>
+
+      <!-- Payment Report -->
+      <a href="Reports.html?type=payments" class="nav-item group">
+        <div class="cursor-pointer p-2 rounded-lg border border-gray-200 hover:border-green-400 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-credit-card text-2xl text-green-500 group-hover:text-green-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Payment Report</h3>
+            <p class="text-gray-500 text-xs">UPI, COD & settlement reports</p>
           </div>
-        </section>
+        </div>
+      </a>
+
+      <!-- Delivery Report -->
+      <a href="Reports.html?type=delivery" class="nav-item group">
+        <div class="cursor-pointer p-2 rounded-lg border border-gray-200 hover:border-yellow-400 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-truck text-2xl text-yellow-500 group-hover:text-yellow-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Delivery Report</h3>
+            <p class="text-gray-500 text-xs">Track staff performance & delivery time</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Returns Report -->
+      <a href="Reports.html?type=returns" class="nav-item group">
+        <div class="cursor-pointer p-2 rounded-lg border border-gray-200 hover:border-red-400 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-undo text-2xl text-red-500 group-hover:text-red-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Returns & Cancellations</h3>
+            <p class="text-gray-500 text-xs">Rejected, returned & replaced orders</p>
+          </div>
+        </div>
+      </a>
+
+    </div>
+
+    <!-- Quick Stats Section -->
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="bg-blue-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-blue-600"><span id="salesReportCount">0</span></div>
+        <div class="text-sm text-blue-700">Sales</div>
+      </div>
+      <div class="bg-green-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-green-600"><span id="paymentReportCount">0</span></div>
+        <div class="text-sm text-green-700">Payments</div>
+      </div>
+      <div class="bg-yellow-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-yellow-600"><span id="deliveryReportCount">0</span></div>
+        <div class="text-sm text-yellow-700">Deliveries</div>
+      </div>
+      <div class="bg-red-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-red-600"><span id="returnsReportCount">0</span></div>
+        <div class="text-sm text-red-700">Returns</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
 
        <!-- Inventory -->
 <!-- Inventory Management -->
@@ -2293,20 +2382,20 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       </a>
 
-      <!-- Low Stock Alerts -->
-      <a href="#low-stock" class="nav-item group" onclick="window.location='lowStock.html'">
+      <!-- Manual Stock Addition -->
+      <a href="#low-stock" class="nav-item group" onclick="window.location='addStock.html'">
         <div
           class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-yellow-300 hover:shadow-md transition-all duration-300">
           <div class="text-center">
             <i class="fas fa-exclamation-circle text-2xl text-yellow-500 group-hover:text-yellow-600 mb-3 transition-colors"></i>
-            <h3 class="text-sm font-semibold text-gray-800 mb-1">Low Stock Alerts</h3>
-            <p class="text-gray-500 text-xs">Monitor and refill low stock</p>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Manual Stock Addition</h3>
+            <p class="text-gray-500 text-xs">Manually add Stock</p>
           </div>
         </div>
       </a>
 
       <!-- Supplier Management -->
-      <a href="#suppliers" class="nav-item group" onclick="window.location='suppliers.html'">
+      <a href="#vendors" class="nav-item group" onclick="showSection(this)">
         <div
           class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300">
           <div class="text-center">
@@ -2358,19 +2447,19 @@ document.addEventListener("DOMContentLoaded", () => {
     <!-- Quick Stats Section -->
     <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
       <div class="bg-green-50 p-4 rounded-lg text-center">
-        <div class="text-2xl font-bold text-green-600">1,250</div>
+        <div class="text-2xl font-bold text-green-600">12</div>
         <div class="text-sm text-green-700">Items in Stock</div>
       </div>
       <div class="bg-yellow-50 p-4 rounded-lg text-center">
-        <div class="text-2xl font-bold text-yellow-600">35</div>
+        <div class="text-2xl font-bold text-yellow-600">5</div>
         <div class="text-sm text-yellow-700">Low Stock Items</div>
       </div>
       <div class="bg-blue-50 p-4 rounded-lg text-center">
-        <div class="text-2xl font-bold text-blue-600">12</div>
+        <div class="text-2xl font-bold text-blue-600">2</div>
         <div class="text-sm text-blue-700">Active Suppliers</div>
       </div>
       <div class="bg-red-50 p-4 rounded-lg text-center">
-        <div class="text-2xl font-bold text-red-600">8</div>
+        <div class="text-2xl font-bold text-red-600">2</div>
         <div class="text-sm text-red-700">Damaged Items</div>
       </div>
     </div>
@@ -2588,7 +2677,7 @@ document.addEventListener("DOMContentLoaded", () => {
 </div>
 
    <div class="bg-green-50 rounded-lg custom-shadow p-4 hover-lift text-center cursor-pointer"
-     onclick="window.location.href=''">
+     onclick="window.location.href='importFromJson.html'">
   <i class="fas fa-file-import text-green-600 text-xl mb-2"></i>
   <h4 class="text-sm font-semibold text-green-800">Import DB</h4>
 </div>
