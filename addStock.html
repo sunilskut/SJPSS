@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f8f0',
+                            100: '#dcf2dc',
+                            500: '#4a7c59',
+                            600: '#2d5a27',
+                            700: '#1f3d1b',
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'bounce-gentle': 'bounceGentle 0.5s ease-out',
+                        'pulse-success': 'pulseSuccess 0.6s ease-out',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes bounceGentle {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-5px); }
+            60% { transform: translateY(-3px); }
+        }
+        @keyframes pulseSuccess {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #4a7c59;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #2d5a27;
+        }
+        
+        /* Smooth transitions for stock updates */
+        .stock-update-success {
+            animation: pulseSuccess 0.6s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-primary-600 via-primary-500 to-green-400 min-h-screen" oncontextmenu="return false;" onkeydown="if(event.keyCode==123) return false;">
+    <div class="container mx-auto max-w-7xl p-6">
+        <div class="bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl p-8 animate-fade-in">
+            
+            <!-- Header -->
+            <div class="mb-8 text-center">
+                <h1 class="text-4xl font-bold text-primary-700 mb-2">📦 Stock Manager</h1>
+                <p class="text-gray-600">Search and manage product inventory seamlessly</p>
+            </div>
+
+            <!-- Search Section -->
+            <div class="bg-primary-50 border-2 border-primary-500 rounded-2xl p-6 mb-8 animate-slide-up">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="text-2xl">🔍</div>
+                    <h3 class="text-xl font-semibold text-primary-700">Search Product to Manage</h3>
+                </div>
+                <div class="relative">
+                    <input type="text" 
+                           id="productSearch" 
+                           class="w-full px-6 py-4 border-2 border-gray-200 rounded-xl text-lg transition-all duration-300 focus:border-primary-500 focus:ring-4 focus:ring-primary-100 focus:outline-none hover:border-primary-300 bg-white/80"
+                           placeholder="Start typing product name...">
+                    <div class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+                
+                <!-- Search Results -->
+                <div id="searchResults" class="hidden mt-4 max-h-64 overflow-y-auto custom-scrollbar border border-gray-200 rounded-xl bg-white shadow-lg">
+                </div>
+            </div>
+
+            <!-- Edit Info (only visible when editing) -->
+            <div id="editInfo" class="hidden bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded-r-lg animate-fade-in">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-green-700">
+                            <strong>Editing Product:</strong> <span id="editingProductName" class="font-medium"></span> 
+                            <span class="text-green-600">(ID: <span id="editingProductId"></span>)</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading and Error indicators -->
+            <div id="loadingIndicator" class="hidden text-center py-8">
+                <div class="inline-flex items-center px-6 py-3 bg-primary-50 text-primary-700 rounded-xl">
+                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Loading products...
+                </div>
+            </div>
+            
+            <div id="errorMessage" class="hidden bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl text-center"></div>
+
+            <!-- Products Container -->
+            <div id="productsContainer" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
+            </div>
+
+            <!-- Clear Button -->
+            <div class="mt-8 text-center">
+                <button onclick="clearAll()" 
+                        class="inline-flex items-center px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-xl transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    Clear All
+                </button>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toastContainer" class="fixed top-6 right-6 z-50 space-y-4"></div>
+    </div>
+
+    <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import {
+        getFirestore,
+        collection,
+        query,
+        orderBy,
+        limit,
+        getDocs,
+        doc,
+        setDoc,
+        getDoc,
+        updateDoc,
+        where,
+        Timestamp
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
+        authDomain: "sjpss-f504b.firebaseapp.com",
+        projectId: "sjpss-f504b",
+        storageBucket: "sjpss-f504b.firebasestorage.app",
+        messagingSenderId: "227402980311",
+        appId: "1:227402980311:web:56b580456ab6b9c6758992",
+        measurementId: "G-LZ4YP9YPN6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let tags = [];
+    let currentMode = 'edit';
+    let editingProductId = null;
+
+    // Product search functionality
+    let searchTimeout;
+    document.getElementById('productSearch').addEventListener('input', function(e) {
+        clearTimeout(searchTimeout);
+        const searchTerm = e.target.value.trim();
+        
+        if (searchTerm.length < 2) {
+            document.getElementById('searchResults').classList.add('hidden');
+            return;
+        }
+
+        searchTimeout = setTimeout(() => searchProducts(searchTerm), 300);
+    });
+
+    async function searchProducts(searchTerm) {
+        const searchResults = document.getElementById('searchResults');
+        searchResults.innerHTML = `
+            <div class="flex items-center justify-center py-4">
+                <svg class="animate-spin h-5 w-5 text-primary-500 mr-2" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="text-gray-600">Searching...</span>
+            </div>
+        `;
+        searchResults.classList.remove('hidden');
+
+        try {
+            const q = query(collection(db, "products"));
+            const snapshot = await getDocs(q);
+            
+            const results = [];
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                if (data.name && data.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+                    results.push({ id: doc.id, ...data });
+                }
+            });
+
+            if (results.length === 0) {
+                searchResults.innerHTML = `
+                    <div class="flex items-center justify-center py-6 text-gray-500">
+                        <svg class="w-12 h-12 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <span>No products found</span>
+                    </div>
+                `;
+                return;
+            }
+
+            searchResults.innerHTML = '';
+            results.slice(0, 10).forEach(product => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'flex items-center justify-between p-4 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors duration-200';
+                resultItem.innerHTML = `
+                    <div class="flex-1">
+                        <div class="font-semibold text-gray-800">${product.name}</div>
+                        <div class="text-sm text-gray-500 mt-1">
+                            <span class="inline-flex items-center">
+                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-xs mr-2">${product.brand || 'Generic'}</span>
+                                <span class="bg-green-100 text-green-800 px-2 py-1 rounded-md text-xs mr-2">₹${product.price || 0}</span>
+                                <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-md text-xs">ID: ${product.id}</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex items-center ml-4">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </div>
+                `;
+                resultItem.addEventListener('click', () => {
+                    displayProducts([product]);
+                    resultItem.classList.add('animate-bounce-gentle');
+                });
+                searchResults.appendChild(resultItem);
+            });
+        } catch (error) {
+            console.error('Search error:', error);
+            searchResults.innerHTML = `
+                <div class="flex items-center justify-center py-6 text-red-500">
+                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Search failed. Please try again.
+                </div>
+            `;
+        }
+    }
+
+    // Enhanced toast notification system
+    function showToast(message, type = 'info', duration = 4000) {
+        const toastContainer = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        
+        const colors = {
+            success: 'bg-green-500 text-white',
+            error: 'bg-red-500 text-white', 
+            info: 'bg-blue-500 text-white',
+            warning: 'bg-yellow-500 text-black'
+        };
+
+        const icons = {
+            success: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`,
+            error: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`,
+            info: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
+            warning: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`
+        };
+
+        toast.className = `flex items-center space-x-3 ${colors[type]} px-6 py-4 rounded-xl shadow-lg transform translate-x-full transition-transform duration-300 ease-out`;
+        toast.innerHTML = `
+            ${icons[type]}
+            <span class="font-medium">${message}</span>
+            <button onclick="this.parentElement.remove()" class="ml-2 hover:opacity-70">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        `;
+
+        toastContainer.appendChild(toast);
+
+        // Animate in
+        setTimeout(() => toast.classList.remove('translate-x-full'), 100);
+
+        // Auto remove
+        setTimeout(() => {
+            toast.classList.add('translate-x-full');
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+    }
+
+    // Display products function with enhanced stock management
+    function displayProducts(products) {
+        const container = document.getElementById('productsContainer');
+        const loading = document.getElementById('loadingIndicator');
+        const errorDiv = document.getElementById('errorMessage');
+
+        loading.classList.add('hidden');
+        errorDiv.classList.add('hidden');
+        container.classList.remove('hidden');
+
+        // Hide search results when displaying products
+        document.getElementById('searchResults').classList.add('hidden');
+
+        if (!Array.isArray(products)) {
+            products = [products];
+        }
+
+        if (products.length === 0) {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <div class="text-gray-400 mb-4">
+                        <svg class="w-24 h-24 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-2.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 009.586 13H7"></path>
+                        </svg>
+                    </div>
+                    <p class="text-gray-500 text-xl">No products found matching your search</p>
+                </div>
+            `;
+            showToast('No Products in Database', 'info', 5000);
+            return;
+        }
+
+        const limitedProducts = products.slice(0, 6);
+
+        container.innerHTML = limitedProducts.map(product => `
+            <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 overflow-hidden border border-gray-100 animate-fade-in">
+                <!-- Product Image -->
+                <div class="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+                    <img src="${product.imageUrl || product.images || 'https://via.placeholder.com/300x250?text=No+Image'}"
+                         alt="${product.name || 'Product'}"
+                         class="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                         onerror="this.src='https://via.placeholder.com/300x250?text=No+Image'">
+                    ${product.badge ? `<span class="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">${product.badge}</span>` : ''}
+                    
+                    <!-- Stock Status Badge -->
+                    <div class="absolute top-3 left-3">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${(product.stockQuantity || 0) > 10 ? 'bg-green-100 text-green-800' : (product.stockQuantity || 0) > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}">
+                            ${(product.stockQuantity || 0) > 10 ? 'In Stock' : (product.stockQuantity || 0) > 0 ? 'Low Stock' : 'Out of Stock'}
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Product Info -->
+                <div class="p-6">
+                    <div class="mb-3">
+                        <span class="text-sm text-gray-500 font-medium">${product.brand || 'Generic'}</span>
+                        <h3 class="font-bold text-lg text-gray-800 mt-1 line-clamp-2">${product.name || 'Unnamed Product'}</h3>
+                    </div>
+                    
+                    <!-- Price -->
+                    <div class="mb-4">
+                        <span class="text-2xl font-bold text-primary-600">₹${(product.price || product.sellingPrice || 0).toFixed(2)}</span>
+                        ${product.originalPrice ? `<span class="text-gray-400 line-through ml-2">₹${product.originalPrice.toFixed(2)}</span>` : ''}
+                    </div>
+
+                    <!-- Current Stock Display -->
+                    <div class="mb-6 p-4 bg-gray-50 rounded-xl">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-sm font-medium text-gray-600">Current Stock</span>
+                            <span id="stock-display-${product.productId || product.id}" 
+                                  class="text-2xl font-bold ${(product.stockQuantity || 0) > 10 ? 'text-green-600' : (product.stockQuantity || 0) > 0 ? 'text-yellow-600' : 'text-red-600'}">
+                                ${product.stockQuantity || 0}
+                            </span>
+                        </div>
+                        
+                        <!-- Stock Progress Bar -->
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="h-2 rounded-full transition-all duration-500 ${(product.stockQuantity || 0) > 10 ? 'bg-green-500' : (product.stockQuantity || 0) > 0 ? 'bg-yellow-500' : 'bg-red-500'}" 
+                                 style="width: ${Math.min(100, ((product.stockQuantity || 0) / 50) * 100)}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Stock Update Section -->
+                    <div class="space-y-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="flex-1">
+                                <input type="number" 
+                                       id="stock-input-${product.productId || product.id}" 
+                                       placeholder="Add stock qty"
+                                       min="1" 
+                                       max="1000"
+                                       class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300 text-center text-lg font-semibold" />
+                            </div>
+                            <button onclick="updateStock('${product.productId || product.id}')" 
+                                    class="px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-xl hover:from-primary-600 hover:to-primary-700 transform hover:-translate-y-1 hover:shadow-lg transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-primary-200 whitespace-nowrap">
+                                <span class="hidden sm:inline">Add Stock</span>
+                                <span class="sm:hidden">+</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Quick Add Buttons -->
+                        <div class="flex space-x-2">
+                            <button onclick="quickAddStock('${product.productId || product.id}', 10)" 
+                                    class="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors duration-200">
+                                +10
+                            </button>
+                            <button onclick="quickAddStock('${product.productId || product.id}', 25)" 
+                                    class="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors duration-200">
+                                +25
+                            </button>
+                            <button onclick="quickAddStock('${product.productId || product.id}', 50)" 
+                                    class="flex-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors duration-200">
+                                +50
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // Enhanced stock update function
+    window.updateStock = async function updateStock(productId) {
+        const inputEl = document.getElementById(`stock-input-${productId}`);
+        const stockDisplayEl = document.getElementById(`stock-display-${productId}`);
+        const addedStock = parseInt(inputEl.value);
+
+        if (isNaN(addedStock) || addedStock <= 0) {
+            showToast("Please enter a valid stock quantity", 'warning');
+            inputEl.classList.add('border-red-300', 'shake');
+            setTimeout(() => inputEl.classList.remove('border-red-300', 'shake'), 1000);
+            return;
+        }
+
+        // Show loading state
+        const originalButtonText = event.target.innerHTML;
+        event.target.innerHTML = `
+            <svg class="animate-spin h-4 w-4 mx-auto" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        `;
+        event.target.disabled = true;
+
+        try {
+            const productRef = doc(db, "products", productId);
+            const productSnap = await getDoc(productRef);
+
+            if (productSnap.exists()) {
+                const currentStock = productSnap.data().stockQuantity || 0;
+                const newStock = currentStock + addedStock;
+
+                await updateDoc(productRef, { stockQuantity: newStock });
+
+                // Animate stock update
+                stockDisplayEl.classList.add('stock-update-success');
+                stockDisplayEl.textContent = newStock;
+                
+                // Update color based on new stock level
+                stockDisplayEl.className = `text-2xl font-bold ${newStock > 10 ? 'text-green-600' : newStock > 0 ? 'text-yellow-600' : 'text-red-600'}`;
+                
+                setTimeout(() => stockDisplayEl.classList.remove('stock-update-success'), 600);
+
+                showToast(`✅ Stock updated successfully! New stock: ${newStock}`, 'success');
+                inputEl.value = ""; // Clear input
+                
+                // Update progress bar
+                const progressBar = stockDisplayEl.closest('.bg-gray-50').querySelector('.h-2.rounded-full:not(.bg-gray-200)');
+                if (progressBar) {
+                    progressBar.style.width = `${Math.min(100, (newStock / 50) * 100)}%`;
+                    progressBar.className = `h-2 rounded-full transition-all duration-500 ${newStock > 10 ? 'bg-green-500' : newStock > 0 ? 'bg-yellow-500' : 'bg-red-500'}`;
+                }
+                
+                // Update stock status badge
+                const statusBadge = stockDisplayEl.closest('.bg-white').querySelector('.absolute.top-3.left-3 span');
+                if (statusBadge) {
+                    statusBadge.className = `inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${newStock > 10 ? 'bg-green-100 text-green-800' : newStock > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`;
+                    statusBadge.textContent = newStock > 10 ? 'In Stock' : newStock > 0 ? 'Low Stock' : 'Out of Stock';
+                }
+            } else {
+                showToast("❌ Product not found in database!", 'error');
+            }
+        } catch (error) {
+            console.error("Error updating stock:", error);
+            showToast("⚠️ Error updating stock. Please try again.", 'error');
+        } finally {
+            // Restore button
+            event.target.innerHTML = originalButtonText;
+            event.target.disabled = false;
+        }
+    }
+
+    // Quick add stock function
+    window.quickAddStock = async function quickAddStock(productId, amount) {
+        const stockDisplayEl = document.getElementById(`stock-display-${productId}`);
+        
+        // Show loading state on clicked button
+        const originalButtonText = event.target.innerHTML;
+        event.target.innerHTML = `
+            <svg class="animate-spin h-3 w-3 mx-auto" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        `;
+        event.target.disabled = true;
+
+        try {
+            const productRef = doc(db, "products", productId);
+            const productSnap = await getDoc(productRef);
+
+            if (productSnap.exists()) {
+                const currentStock = productSnap.data().stockQuantity || 0;
+                const newStock = currentStock + amount;
+
+                await updateDoc(productRef, { stockQuantity: newStock });
+
+                // Animate stock update
+                stockDisplayEl.classList.add('stock-update-success');
+                stockDisplayEl.textContent = newStock;
+                
+                // Update color based on new stock level
+                stockDisplayEl.className = `text-2xl font-bold ${newStock > 10 ? 'text-green-600' : newStock > 0 ? 'text-yellow-600' : 'text-red-600'}`;
+                
+                setTimeout(() => stockDisplayEl.classList.remove('stock-update-success'), 600);
+
+                showToast(`✅ Added ${amount} units! New stock: ${newStock}`, 'success');
+                
+                // Update progress bar
+                const progressBar = stockDisplayEl.closest('.bg-gray-50').querySelector('.h-2.rounded-full:not(.bg-gray-200)');
+                if (progressBar) {
+                    progressBar.style.width = `${Math.min(100, (newStock / 50) * 100)}%`;
+                    progressBar.className = `h-2 rounded-full transition-all duration-500 ${newStock > 10 ? 'bg-green-500' : newStock > 0 ? 'bg-yellow-500' : 'bg-red-500'}`;
+                }
+                
+                // Update stock status badge
+                const statusBadge = stockDisplayEl.closest('.bg-white').querySelector('.absolute.top-3.left-3 span');
+                if (statusBadge) {
+                    statusBadge.className = `inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${newStock > 10 ? 'bg-green-100 text-green-800' : newStock > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`;
+                    statusBadge.textContent = newStock > 10 ? 'In Stock' : newStock > 0 ? 'Low Stock' : 'Out of Stock';
+                }
+            } else {
+                showToast("❌ Product not found in database!", 'error');
+            }
+        } catch (error) {
+            console.error("Error updating stock:", error);
+            showToast("⚠️ Error updating stock. Please try again.", 'error');
+        } finally {
+            // Restore button
+            event.target.innerHTML = originalButtonText;
+            event.target.disabled = false;
+        }
+    }
+
+    // Load product for edit function
+    function loadProductForEdit(productId) {
+        editingProductId = productId;
+        showToast(`Loading product ${productId} for editing`, 'info');
+    }
+
+    // Clear all function
+    function clearAll() {
+        document.getElementById('editInfo').classList.add('hidden');
+        document.getElementById('productSearch').value = '';
+        document.getElementById('searchResults').classList.add('hidden');
+        const container = document.getElementById('productsContainer');
+        container.classList.add('hidden');
+        container.innerHTML = '';
+        editingProductId = null;
+        showToast('Cleared all data', 'info');
+    }
+
+    // Make functions available globally
+    window.loadProductForEdit = loadProductForEdit;
+    window.clearAll = clearAll;
+    window.showToast = showToast;
+    window.displayProducts = displayProducts;
+
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            clearAll();
+        }
+        if (e.ctrlKey && e.key === 'f') {
+            e.preventDefault();
+            document.getElementById('productSearch').focus();
+        }
+    });
+
+    // Add some helpful animations
+    const style = document.createElement('style');
+    style.textContent = `
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    `;
+    document.head.appendChild(style);
+
+    </script>
+
+</body>
+</html>
