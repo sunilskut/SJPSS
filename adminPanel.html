@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Panel</title>
+    <script src="fbc.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -128,585 +129,8 @@
   </style>
 
 <script type="module" defer>
-       	import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-	import {
-  		getFirestore,
-  		collection,
-  		doc,
-  		getDocs,
-  		getDoc,          
-  		query,
-		addDoc,
-		orderBy,
-		runTransaction,
-  	where
-	} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+      const _0x2d5055=_0x284d;(function(_0xf53c8c,_0x49cff1){const _0x10e412=_0x284d,_0x27bc7d=_0xf53c8c();while(!![]){try{const _0x2340db=-parseInt(_0x10e412(0x166))/0x1+-parseInt(_0x10e412(0x15b))/0x2*(parseInt(_0x10e412(0x183))/0x3)+parseInt(_0x10e412(0x17a))/0x4*(-parseInt(_0x10e412(0x1b7))/0x5)+parseInt(_0x10e412(0x14f))/0x6+parseInt(_0x10e412(0x1d6))/0x7+parseInt(_0x10e412(0x191))/0x8+parseInt(_0x10e412(0x13d))/0x9*(parseInt(_0x10e412(0x17f))/0xa);if(_0x2340db===_0x49cff1)break;else _0x27bc7d['push'](_0x27bc7d['shift']());}catch(_0x2029c6){_0x27bc7d['push'](_0x27bc7d['shift']());}}}(_0x49d7,0x2267a));import{initializeApp}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';import{getFirestore,collection,doc,getDocs,getDoc,query,addDoc,orderBy,runTransaction,where}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';function _0x49d7(){const _0x35e5f1=['textContent','hash','codPaymentMethod','3rUlgAr','status','picked','paid','pendingcodorders','<button\x20class=\x22text-blue-600\x20font-medium\x22\x20onclick=\x22window.location.href=\x27PackingOrder.html?orderId=','#showUPIVerificationPendingPayments','\x27).classList.remove(\x27hidden\x27)\x22\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20onmouseout=\x22document.getElementById(\x27','shippingDetails','closest','upiSection','\x27).classList.add(\x27hidden\x27)\x22\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','verified','true','1308928SHaRXo','returnsCount','smooth','</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22p-4\x20font-semibold\x22>₹','deliveredupiorders','</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22p-4\x22>','returnedorders','colspan=\x226\x22','\x22\x20alt=\x22','<tr><td\x20colspan=\x225\x22\x20class=\x22p-8\x20text-center\x20text-gray-500\x22>No\x20remitted\x20payments</td></tr>','push','codSection','showPackedOrders','hidden','showUPIVerificationPendingPayments','dashboardTotalCustomers','\x22\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20class=\x22absolute\x20z-50\x20hidden\x20bg-white\x20border\x20border-gray-300\x20p-2\x20rounded\x20shadow-lg\x20w-60\x20top-full\x20left-full\x20mt-1\x20ml-2\x22\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22text-sm\x20text-gray-700\x20whitespace-pre-wrap\x22>','\x27).classList.add(\x27hidden\x27)\x22\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','dashboardTotalOrders','Error\x20getting\x20total\x20Categories\x20count:','toassignorders','error','</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22p-4\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22bg-green-500\x20hover:bg-green-600\x20text-white\x20px-4\x20py-2\x20rounded-lg\x20transition-colors\x22\x20onclick=\x22window.location.href=\x27viewHistory.html?customerId=','</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22p-4\x20overflow-visible\x20relative\x20space-x-1\x22>','tooltip-payment-','Error\x20fetching\x20product\x20','appendChild','paymentStatus','\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22relative\x20inline-block\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20class=\x22underline\x20text-blue-600\x20cursor-pointer\x22\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20onmouseover=\x22document.getElementById(\x27','showRemittedPayments','<tr><td\x20colspan=\x226\x22\x20class=\x22p-8\x20text-center\x20text-red-500\x22>Error\x20loading\x20payments.\x20Please\x20try\x20again.</td></tr>','getMonth','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22relative\x20inline-block\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20class=\x22underline\x20text-blue-600\x20cursor-pointer\x22\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20onmouseover=\x22document.getElementById(\x27','userRole','body','setItem','\x22\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20class=\x22absolute\x20z-50\x20hidden\x20bg-white\x20border\x20border-gray-300\x20p-2\x20rounded\x20shadow-lg\x20w-60\x20top-full\x20mt-1\x20left-1/2\x20-translate-x-1/2\x22\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22flex\x20items-center\x20gap-2\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<img\x20src=\x22','border-t\x20hover:bg-gray-50\x20transition-colors','6215UTlikG','remove','COD','<tr><td\x20colspan=\x226\x22\x20class=\x22p-8\x20text-center\x20text-gray-500\x22>No\x20COD\x20pending\x20payments</td></tr>','upi','deliveredCount','docs','shippedCount','productId','createdAt','pending','\x27\x22>Pack\x20Now</button>','\x22\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20class=\x22absolute\x20z-50\x20hidden\x20bg-white\x20border\x20border-gray-300\x20p-2\x20rounded\x20shadow-lg\x20w-48\x20top-full\x20mt-1\x20left-1/2\x20-translate-x-1/2\x22\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22text-sm\x20text-gray-500\x22>Product\x20not\x20found</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20','display','children','classList','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20id=\x22','scrollIntoView','DOMContentLoaded','\x0a\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22p-4\x22>','Error\x20getting\x20processing\x20orders\x20count:','guest','customers','border-b\x20border-gray-100','</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22p-4\x22>','name','</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20','toFixed','showCODPendingPayments','none','UPI','730723twXOyd','products','querySelector','Error\x20getting\x20total\x20Customers\x20count:','orders','returned','data','pickedorders','packedOrdersTableBody','#showRemittedPayments','admin','checked','rejectedorders','size','</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22p-4\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','254871cActrL','welcomeShown','</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22p-4\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22bg-blue-500\x20hover:bg-blue-600\x20text-white\x20px-4\x20py-2\x20rounded-lg\x20transition-colors\x22\x20onclick=\x22window.location.href=\x27paymentVerification.html?orderId=','upiVerificationPendingTableBody','remittedSection','addEventListener','\x0a\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20','add','join','\x27).classList.remove(\x27hidden\x27)\x22\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20onmouseout=\x22document.getElementById(\x27','\x27).classList.add(\x27hidden\x27)\x22\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','colspan=\x225\x22','style','codPendingTableBody','</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22p-4\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22inline-flex\x20items-center\x20px-3\x20py-1\x20rounded-full\x20text-sm\x20font-medium\x20bg-green-100\x20text-green-800\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<i\x20class=\x22fas\x20fa-check-circle\x20mr-1\x22></i>Remitted\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22p-4\x22>','getElementById','block','553644MMJsKc','\x27\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<i\x20class=\x22fas\x20fa-shield-alt\x20mr-1\x22></i>Verify\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20','items','N/A','\x27\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<i\x20class=\x22fas\x20fa-history\x20mr-1\x22></i>See\x20History\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20','padStart','className','toDate','cod','price','Error\x20getting\x20products\x20count:','\x27).classList.remove(\x27hidden\x27)\x22\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20onmouseout=\x22document.getElementById(\x27','249442tWzbqE','toLowerCase','#showCODPendingPayments','paymentMethod','address','Tvm','createElement','packed','allorders','processingorders','getDate','85288tGyHgk','totalAmount','length','exists','\x22\x20class=\x22w-12\x20h-12\x20object-cover\x20rounded\x22\x20/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22text-sm\x20text-gray-800\x22>','totalProducts','.bg-white','</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22p-4\x20overflow-visible\x20relative\x20space-x-1\x22>','\x0a\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:flex;align-items:center;justify-content:center;height:100vh;background:#f3f4f6;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22background:white;box-shadow:0\x202px\x208px\x20rgba(0,0,0,0.1);border-radius:12px;padding:24px;text-align:center;max-width:320px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22font-size:32px;color:#dc2626;margin-bottom:12px;\x22>&#9888;</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h1\x20style=\x22font-size:20px;font-weight:600;color:#1f2937;\x22>Access\x20Denied</h1>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20style=\x22color:#4b5563;margin-top:8px;\x22>You\x20do\x20not\x20have\x20permission\x20to\x20view\x20this\x20page.</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20style=\x22color:#6b7280;margin-top:12px;font-size:14px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Your\x20role:\x20<span\x20style=\x22font-weight:600;color:#374151;\x22>','</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22margin-top:16px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20onclick=\x22location.reload()\x22\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20style=\x22padding:8px\x2016px;background:#3b82f6;color:white;border:none;border-radius:6px;cursor:pointer;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Retry\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22relative\x20inline-block\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20class=\x22underline\x20text-blue-600\x20cursor-pointer\x22\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20onmouseover=\x22document.getElementById(\x27','delivered','tooltip-addr-','change','pendingCount','innerHTML','</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','Error\x20getting\x20total\x20Orders\x20count:','imageUrl','remittedPaymentsTableBody','668RFQKyI','<span\x20class=\x22text-gray-500\x22>Packed</span>','deliveredcodordersbycash','ordersTableBody','welcomeGifContainer','70QWycvI'];_0x49d7=function(){return _0x35e5f1;};return _0x49d7();}const app=initializeApp(firebaseConfig),db=getFirestore(app);function formatDate(_0x59af46){const _0x47eaa3=_0x284d,_0x4f4b2b=_0x59af46?.[_0x47eaa3(0x156)]?.()||new Date(),_0x61ba5d=String(_0x4f4b2b[_0x47eaa3(0x165)]())[_0x47eaa3(0x154)](0x2,'0'),_0x57f59a=String(_0x4f4b2b[_0x47eaa3(0x1b0)]()+0x1)[_0x47eaa3(0x154)](0x2,'0'),_0x47a022=_0x4f4b2b['getFullYear']();return _0x61ba5d+'-'+_0x57f59a+'-'+_0x47a022;}async function fetchOrders({showPending:showPending=![],showPacked:showPacked=![]}){const _0x59a05f=_0x284d,_0x4ea156=await getDocs(collection(db,'orders')),_0x371a9f=document[_0x59a05f(0x14d)](_0x59a05f(0x17d)),_0x39ef74=document['getElementById'](_0x59a05f(0x136));_0x371a9f[_0x59a05f(0x175)]='',_0x39ef74[_0x59a05f(0x175)]='';for(const _0x3cbfac of _0x4ea156[_0x59a05f(0x1bd)]){const _0x56fd6f=_0x3cbfac[_0x59a05f(0x134)](),_0x5a385a=_0x3cbfac['id'],_0x44f2ef=_0x56fd6f[_0x59a05f(0x1c0)],_0x338144=formatDate(_0x44f2ef),_0x1a0735=_0x56fd6f[_0x59a05f(0x184)]?.['toLowerCase'](),_0x20714f=_0x56fd6f[_0x59a05f(0x15e)]?.[_0x59a05f(0x15c)](),_0x3e3406=_0x56fd6f[_0x59a05f(0x18b)]?.[_0x59a05f(0x15f)]||_0x59a05f(0x160),_0x1dc6ff=_0x56fd6f[_0x59a05f(0x151)]||[],_0x5b3d1e=[];let _0x15fa33=0x0;for(let _0x49f9a8=0x0;_0x49f9a8<_0x1dc6ff[_0x59a05f(0x168)];_0x49f9a8++){const _0x136f40=_0x1dc6ff[_0x49f9a8],_0x45c9f4=_0x136f40[_0x59a05f(0x1bf)],_0x35bd07='tooltip-'+_0x5a385a+'-'+_0x45c9f4+'-'+_0x49f9a8;_0x15fa33+=Number(_0x136f40[_0x59a05f(0x158)]||0x0)*Number(_0x136f40['quantity']||0x1);let _0x340bc7=_0x59a05f(0x170)+_0x35bd07+_0x59a05f(0x18a)+_0x35bd07+_0x59a05f(0x1a2)+_0x45c9f4+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20id=\x22'+_0x35bd07+_0x59a05f(0x1c3);try{const _0x37c3af=doc(db,'products',_0x45c9f4),_0x221550=await getDoc(_0x37c3af);if(_0x221550[_0x59a05f(0x169)]()){const _0x81d6e0=_0x221550[_0x59a05f(0x134)](),_0x430973=_0x81d6e0[_0x59a05f(0x1d0)]||'',_0x114008=_0x81d6e0[_0x59a05f(0x178)]||'';_0x340bc7=_0x59a05f(0x1b1)+_0x35bd07+_0x59a05f(0x146)+_0x35bd07+_0x59a05f(0x18e)+_0x45c9f4+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20id=\x22'+_0x35bd07+_0x59a05f(0x1b5)+_0x114008+_0x59a05f(0x199)+_0x430973+_0x59a05f(0x16a)+_0x430973+_0x59a05f(0x176);}}catch(_0x272e04){console['error'](_0x59a05f(0x1aa)+_0x45c9f4+':',_0x272e04);}_0x5b3d1e[_0x59a05f(0x19b)](_0x340bc7);}const _0x3ff8df=document[_0x59a05f(0x161)]('tr');_0x3ff8df[_0x59a05f(0x155)]=_0x59a05f(0x1ce),_0x3ff8df['innerHTML']=_0x59a05f(0x1ca)+_0x5a385a+_0x59a05f(0x196)+_0x338144+_0x59a05f(0x16d)+_0x5b3d1e[_0x59a05f(0x145)](',\x20')+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22p-4\x20font-semibold\x20text-green-700\x22>₹'+_0x15fa33[_0x59a05f(0x1d2)](0x2)+_0x59a05f(0x13c)+(_0x1a0735===_0x59a05f(0x1c1)?_0x59a05f(0x188)+_0x5a385a+_0x59a05f(0x1c2):_0x59a05f(0x17b))+_0x59a05f(0x143);if(_0x1a0735===_0x59a05f(0x1c1)&&_0x20714f===_0x59a05f(0x157)&&showPending)_0x371a9f[_0x59a05f(0x1ab)](_0x3ff8df);else _0x1a0735===_0x59a05f(0x162)&&showPacked&&_0x39ef74[_0x59a05f(0x1ab)](_0x3ff8df);}}document[_0x2d5055(0x142)](_0x2d5055(0x1c9),()=>{const _0x2d0096=_0x2d5055,_0x1c7593=document[_0x2d0096(0x14d)]('showPackingPendingOrders'),_0x2ec607=document[_0x2d0096(0x14d)](_0x2d0096(0x19d));function _0x1363cd(){const _0xc5d411=_0x2d0096,_0x436b1d=_0x1c7593[_0xc5d411(0x139)],_0x825df6=_0x2ec607['checked'];fetchOrders({'showPending':_0x436b1d,'showPacked':_0x825df6});}_0x1c7593['addEventListener'](_0x2d0096(0x173),_0x1363cd),_0x2ec607[_0x2d0096(0x142)](_0x2d0096(0x173),_0x1363cd);});async function fetchPayments(_0x1bd5e8={}){const _0x2a8eb2=_0x2d5055,{showUPI:showUPI=![],showCOD:showCOD=![],showRemitted:showRemitted=![]}=_0x1bd5e8,_0x48a31c=document[_0x2a8eb2(0x14d)](_0x2a8eb2(0x140)),_0x440091=document[_0x2a8eb2(0x14d)](_0x2a8eb2(0x14a)),_0xa4ab9e=document[_0x2a8eb2(0x14d)](_0x2a8eb2(0x179)),_0x537464=document[_0x2a8eb2(0x1d8)](_0x2a8eb2(0x189))[_0x2a8eb2(0x18c)](_0x2a8eb2(0x16c)),_0x149fd8=document[_0x2a8eb2(0x1d8)](_0x2a8eb2(0x15d))[_0x2a8eb2(0x18c)](_0x2a8eb2(0x16c)),_0x1fb845=document[_0x2a8eb2(0x1d8)](_0x2a8eb2(0x137))['closest'](_0x2a8eb2(0x16c));if(_0x537464)_0x537464['style']['display']=showUPI?_0x2a8eb2(0x14e):'none';if(_0x149fd8)_0x149fd8['style'][_0x2a8eb2(0x1c4)]=showCOD?_0x2a8eb2(0x14e):_0x2a8eb2(0x1d4);if(_0x1fb845)_0x1fb845[_0x2a8eb2(0x149)][_0x2a8eb2(0x1c4)]=showRemitted?_0x2a8eb2(0x14e):'none';if(showUPI&&_0x48a31c)_0x48a31c[_0x2a8eb2(0x175)]='';if(showCOD&&_0x440091)_0x440091['innerHTML']='';if(showRemitted&&_0xa4ab9e)_0xa4ab9e[_0x2a8eb2(0x175)]='';if(!showUPI&&!showCOD&&!showRemitted)return;try{const _0x269011=await getDocs(collection(db,_0x2a8eb2(0x132)));for(const _0x2da7ea of _0x269011[_0x2a8eb2(0x1bd)]){const _0x3fe76c=_0x2da7ea[_0x2a8eb2(0x134)](),_0x14614c=_0x2da7ea['id'],_0x516cb6=_0x3fe76c[_0x2a8eb2(0x1c0)],_0x297623=formatDate(_0x516cb6),_0x497e01=_0x3fe76c['status']?.['toLowerCase'](),_0x5df479=_0x3fe76c[_0x2a8eb2(0x1ac)]?.[_0x2a8eb2(0x15c)](),_0x4ddc44=_0x3fe76c['paymentMethod']||_0x2a8eb2(0x152),_0x46e355=_0x3fe76c[_0x2a8eb2(0x167)]||'0',_0x2bb955=_0x3fe76c['shippingDetails']?.['address']||_0x2a8eb2(0x152),_0x38350d=_0x2a8eb2(0x172)+_0x14614c,_0x2901c=_0x2a8eb2(0x1ad)+_0x38350d+_0x2a8eb2(0x15a)+_0x38350d+_0x2a8eb2(0x147)+_0x14614c+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20id=\x22'+_0x38350d+_0x2a8eb2(0x1a1)+_0x2bb955+_0x2a8eb2(0x1d1),_0x13b0d4=_0x3fe76c[_0x2a8eb2(0x151)]||[],_0x5900bd=[];for(let _0x2c10c5=0x0;_0x2c10c5<_0x13b0d4[_0x2a8eb2(0x168)];_0x2c10c5++){const _0x2d1bc4=_0x13b0d4[_0x2c10c5],_0x35de79=_0x2d1bc4['productId'],_0x437af5=_0x2a8eb2(0x1a9)+_0x14614c+'-'+_0x35de79+'-'+_0x2c10c5;let _0x17a024='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22relative\x20inline-block\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20class=\x22underline\x20text-blue-600\x20cursor-pointer\x22\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20onmouseover=\x22document.getElementById(\x27'+_0x437af5+'\x27).classList.remove(\x27hidden\x27)\x22\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20onmouseout=\x22document.getElementById(\x27'+_0x437af5+_0x2a8eb2(0x1a2)+_0x35de79+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20id=\x22'+_0x437af5+_0x2a8eb2(0x1c3);try{const _0x337bf6=doc(db,_0x2a8eb2(0x1d7),_0x35de79),_0x365ae0=await getDoc(_0x337bf6);if(_0x365ae0[_0x2a8eb2(0x169)]()){const _0x5beffe=_0x365ae0[_0x2a8eb2(0x134)](),_0x21f171=_0x5beffe['name']||'',_0x49a713=_0x5beffe[_0x2a8eb2(0x178)]||'';_0x17a024=_0x2a8eb2(0x1b1)+_0x437af5+'\x27).classList.remove(\x27hidden\x27)\x22\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20onmouseout=\x22document.getElementById(\x27'+_0x437af5+_0x2a8eb2(0x18e)+_0x35de79+_0x2a8eb2(0x1c7)+_0x437af5+'\x22\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20class=\x22absolute\x20z-50\x20hidden\x20bg-white\x20border\x20border-gray-300\x20p-2\x20rounded\x20shadow-lg\x20w-60\x20top-full\x20mt-1\x20left-1/2\x20-translate-x-1/2\x22\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22flex\x20items-center\x20gap-2\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<img\x20src=\x22'+_0x49a713+_0x2a8eb2(0x199)+_0x21f171+_0x2a8eb2(0x16a)+_0x21f171+_0x2a8eb2(0x176);}}catch(_0x15f88f){console[_0x2a8eb2(0x1a6)](_0x2a8eb2(0x1aa)+_0x35de79+':',_0x15f88f);}_0x5900bd[_0x2a8eb2(0x19b)](_0x17a024);}if(showUPI&&_0x4ddc44[_0x2a8eb2(0x15c)]()==='upi'&&_0x5df479===_0x2a8eb2(0x186)&&_0x48a31c){const _0x263d21=document['createElement']('tr');_0x263d21['className']=_0x2a8eb2(0x1b6),_0x263d21[_0x2a8eb2(0x175)]=_0x2a8eb2(0x14c)+_0x2901c+_0x2a8eb2(0x1cf)+_0x297623+_0x2a8eb2(0x1a8)+_0x5900bd['join'](',\x20')+_0x2a8eb2(0x1cf)+_0x4ddc44+_0x2a8eb2(0x194)+_0x46e355+_0x2a8eb2(0x13f)+_0x14614c+_0x2a8eb2(0x150),_0x48a31c[_0x2a8eb2(0x1ab)](_0x263d21);}if(showCOD&&_0x4ddc44[_0x2a8eb2(0x15c)]()==='cod'&&_0x5df479===_0x2a8eb2(0x1c1)&&_0x440091){const _0x5e886c=document[_0x2a8eb2(0x161)]('tr');_0x5e886c[_0x2a8eb2(0x155)]=_0x2a8eb2(0x1b6),_0x5e886c[_0x2a8eb2(0x175)]=_0x2a8eb2(0x14c)+_0x2901c+_0x2a8eb2(0x1cf)+_0x297623+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22p-4\x20overflow-visible\x20relative\x20space-x-1\x22>'+_0x5900bd[_0x2a8eb2(0x145)](',\x20')+_0x2a8eb2(0x1cf)+_0x4ddc44+_0x2a8eb2(0x194)+_0x46e355+_0x2a8eb2(0x1a7)+_0x3fe76c['customerId']+_0x2a8eb2(0x153),_0x440091[_0x2a8eb2(0x1ab)](_0x5e886c);}if(showRemitted&&_0x5df479===_0x2a8eb2(0x186)&&_0x4ddc44[_0x2a8eb2(0x15c)]()!==_0x2a8eb2(0x1bb)&&_0xa4ab9e){const _0x26fd5d=document[_0x2a8eb2(0x161)]('tr');_0x26fd5d[_0x2a8eb2(0x155)]=_0x2a8eb2(0x1b6),_0x26fd5d[_0x2a8eb2(0x175)]=_0x2a8eb2(0x14c)+_0x2901c+_0x2a8eb2(0x1cf)+_0x297623+_0x2a8eb2(0x1a8)+_0x5900bd['join'](',\x20')+_0x2a8eb2(0x1cf)+_0x2bb955+_0x2a8eb2(0x14b),_0xa4ab9e['appendChild'](_0x26fd5d);}}showUPI&&_0x48a31c&&_0x48a31c[_0x2a8eb2(0x1c5)]['length']===0x0&&(_0x48a31c[_0x2a8eb2(0x175)]='<tr><td\x20colspan=\x226\x22\x20class=\x22p-8\x20text-center\x20text-gray-500\x22>No\x20UPI\x20verification\x20pending\x20payments</td></tr>'),showCOD&&_0x440091&&_0x440091[_0x2a8eb2(0x1c5)]['length']===0x0&&(_0x440091[_0x2a8eb2(0x175)]=_0x2a8eb2(0x1ba)),showRemitted&&_0xa4ab9e&&_0xa4ab9e[_0x2a8eb2(0x1c5)][_0x2a8eb2(0x168)]===0x0&&(_0xa4ab9e[_0x2a8eb2(0x175)]=_0x2a8eb2(0x19a));}catch(_0xf5577f){console[_0x2a8eb2(0x1a6)]('Error\x20fetching\x20payments:',_0xf5577f);const _0x1c5bc9=_0x2a8eb2(0x1af);if(_0x48a31c)_0x48a31c['innerHTML']=_0x1c5bc9;if(_0x440091)_0x440091[_0x2a8eb2(0x175)]=_0x1c5bc9;if(_0xa4ab9e)_0xa4ab9e[_0x2a8eb2(0x175)]=_0x1c5bc9['replace'](_0x2a8eb2(0x198),_0x2a8eb2(0x148));}}document[_0x2d5055(0x142)](_0x2d5055(0x1c9),()=>{const _0x2f9e19=_0x2d5055,_0x160a4b=document[_0x2f9e19(0x14d)](_0x2f9e19(0x19f)),_0x33a399=document[_0x2f9e19(0x14d)](_0x2f9e19(0x1d3)),_0x4f326b=document[_0x2f9e19(0x14d)](_0x2f9e19(0x1ae)),_0x444354=document['getElementById'](_0x2f9e19(0x18d)),_0xbbdef=document[_0x2f9e19(0x14d)](_0x2f9e19(0x19c)),_0xfecb2d=document[_0x2f9e19(0x14d)](_0x2f9e19(0x141));if(_0x444354)_0x444354[_0x2f9e19(0x149)]['display']=_0x2f9e19(0x1d4);if(_0xbbdef)_0xbbdef[_0x2f9e19(0x149)]['display']=_0x2f9e19(0x1d4);if(_0xfecb2d)_0xfecb2d[_0x2f9e19(0x149)]['display']=_0x2f9e19(0x1d4);if(_0x160a4b)_0x160a4b['checked']=![];if(_0x33a399)_0x33a399[_0x2f9e19(0x139)]=![];if(_0x4f326b)_0x4f326b['checked']=![];_0x160a4b?.[_0x2f9e19(0x142)](_0x2f9e19(0x173),()=>{const _0x13d006=_0x2f9e19;_0x160a4b['checked']?(_0x444354['style'][_0x13d006(0x1c4)]='',fetchPayments({'showUPI':!![],'showCOD':![],'showRemitted':![]})):_0x444354['style'][_0x13d006(0x1c4)]=_0x13d006(0x1d4);}),_0x33a399?.[_0x2f9e19(0x142)](_0x2f9e19(0x173),()=>{const _0x2c277f=_0x2f9e19;_0x33a399[_0x2c277f(0x139)]?(_0xbbdef[_0x2c277f(0x149)][_0x2c277f(0x1c4)]='',fetchPayments({'showUPI':![],'showCOD':!![],'showRemitted':![]})):_0xbbdef['style']['display']=_0x2c277f(0x1d4);}),_0x4f326b?.[_0x2f9e19(0x142)](_0x2f9e19(0x173),()=>{const _0x52d354=_0x2f9e19;_0x4f326b[_0x52d354(0x139)]?(_0xfecb2d[_0x52d354(0x149)]['display']='',fetchPayments({'showUPI':![],'showCOD':![],'showRemitted':!![]})):_0xfecb2d['style'][_0x52d354(0x1c4)]=_0x52d354(0x1d4);});});async function updateTotalProductsCount(){const _0x254825=_0x2d5055;try{const _0x24378a=await getDocs(collection(db,_0x254825(0x1d7))),_0x136dd7=_0x24378a[_0x254825(0x13b)];document[_0x254825(0x14d)](_0x254825(0x16b))[_0x254825(0x180)]=_0x136dd7;}catch(_0x41a350){console[_0x254825(0x1a6)](_0x254825(0x159),_0x41a350),document[_0x254825(0x14d)]('totalProducts')[_0x254825(0x180)]='0';}}async function updateTotalCategoriesCount(){const _0x5488dd=_0x2d5055;try{const _0x1fc37=await getDocs(collection(db,'categories')),_0x2a0403=_0x1fc37[_0x5488dd(0x13b)];document[_0x5488dd(0x14d)]('totalCategories')['textContent']=_0x2a0403;}catch(_0x4e20dd){console[_0x5488dd(0x1a6)](_0x5488dd(0x1a4),_0x4e20dd),document[_0x5488dd(0x14d)]('totalCategories')[_0x5488dd(0x180)]='0';}}async function updateTotalOrdersCount(){const _0x1c9c15=_0x2d5055;try{const _0x2ca1f0=await getDocs(collection(db,_0x1c9c15(0x132))),_0x53462e=_0x2ca1f0[_0x1c9c15(0x13b)];document[_0x1c9c15(0x14d)](_0x1c9c15(0x163))[_0x1c9c15(0x180)]=_0x53462e,document['getElementById'](_0x1c9c15(0x1a3))[_0x1c9c15(0x180)]=_0x53462e;}catch(_0x356503){console[_0x1c9c15(0x1a6)](_0x1c9c15(0x177),_0x356503),document[_0x1c9c15(0x14d)](_0x1c9c15(0x163))[_0x1c9c15(0x180)]='0';}}async function updateTotalCustomersCount(){const _0x156690=_0x2d5055;try{const _0x546f96=await getDocs(collection(db,_0x156690(0x1cd))),_0x2494e6=_0x546f96['size'];document[_0x156690(0x14d)](_0x156690(0x1a0))['textContent']=_0x2494e6;}catch(_0x16a14d){console[_0x156690(0x1a6)](_0x156690(0x1d9),_0x16a14d),document[_0x156690(0x14d)](_0x156690(0x1a0))[_0x156690(0x180)]='0';}}function _0x284d(_0x5217f7,_0x4ec7d8){const _0x49d798=_0x49d7();return _0x284d=function(_0x284d72,_0x6ce5ca){_0x284d72=_0x284d72-0x132;let _0x4a1836=_0x49d798[_0x284d72];return _0x4a1836;},_0x284d(_0x5217f7,_0x4ec7d8);}async function updateProcessingOrdersCount(){const _0x40ac3e=_0x2d5055;try{const _0x26ca1f=async _0x22c81e=>{const _0x38b5e7=_0x284d,_0x4048a6=query(collection(db,_0x38b5e7(0x132)),..._0x22c81e),_0x51de18=await getDocs(_0x4048a6);return _0x51de18[_0x38b5e7(0x13b)];},[_0x4e0ab6,_0x2bd11d,_0x5240d7,_0x1929d1,_0x172679,_0x4ea8c5,_0x24c6ac,_0x1d014e,_0x315cc4,_0x247e0f]=await Promise['all']([_0x26ca1f([where(_0x40ac3e(0x15e),'==',_0x40ac3e(0x1d5)),where(_0x40ac3e(0x1ac),'==',_0x40ac3e(0x186)),where(_0x40ac3e(0x184),'==',_0x40ac3e(0x1c1))]),_0x26ca1f([where(_0x40ac3e(0x1ac),'==',_0x40ac3e(0x18f)),where('status','==','pending')]),_0x26ca1f([where(_0x40ac3e(0x15e),'==',_0x40ac3e(0x1b9)),where(_0x40ac3e(0x184),'==','pending')]),_0x26ca1f([where('status','==',_0x40ac3e(0x162))]),_0x26ca1f([where('status','==',_0x40ac3e(0x185))]),_0x26ca1f([where('paymentMethod','==',_0x40ac3e(0x1d5)),where(_0x40ac3e(0x184),'==',_0x40ac3e(0x171))]),_0x26ca1f([where(_0x40ac3e(0x15e),'==',_0x40ac3e(0x1b9)),where(_0x40ac3e(0x182),'==','UPI'),where(_0x40ac3e(0x184),'==',_0x40ac3e(0x171))]),_0x26ca1f([where('paymentMethod','==',_0x40ac3e(0x1b9)),where(_0x40ac3e(0x182),'==','cash'),where(_0x40ac3e(0x184),'==',_0x40ac3e(0x171))]),_0x26ca1f([where(_0x40ac3e(0x184),'==',_0x40ac3e(0x133))]),_0x26ca1f([where('status','==','rejected')])]);document[_0x40ac3e(0x14d)](_0x40ac3e(0x164))[_0x40ac3e(0x180)]=_0x4e0ab6,document[_0x40ac3e(0x14d)]('pendingupiorders')[_0x40ac3e(0x180)]=_0x2bd11d,document[_0x40ac3e(0x14d)](_0x40ac3e(0x187))['textContent']=_0x5240d7,document[_0x40ac3e(0x14d)]('pendingCount')['textContent']=_0x2bd11d+_0x5240d7,document[_0x40ac3e(0x14d)](_0x40ac3e(0x1a5))[_0x40ac3e(0x180)]=_0x1929d1,document[_0x40ac3e(0x14d)](_0x40ac3e(0x1be))[_0x40ac3e(0x180)]=_0x172679,document[_0x40ac3e(0x14d)](_0x40ac3e(0x135))[_0x40ac3e(0x180)]=_0x172679,document[_0x40ac3e(0x14d)](_0x40ac3e(0x195))['textContent']=_0x4ea8c5,document['getElementById']('deliveredcodordersbyupi')['textContent']=_0x24c6ac,document[_0x40ac3e(0x14d)](_0x40ac3e(0x17c))['textContent']=_0x1d014e,document[_0x40ac3e(0x14d)](_0x40ac3e(0x1bc))['textContent']=_0x24c6ac+_0x1d014e+_0x4ea8c5,document[_0x40ac3e(0x14d)](_0x40ac3e(0x197))[_0x40ac3e(0x180)]=_0x315cc4,document['getElementById'](_0x40ac3e(0x13a))[_0x40ac3e(0x180)]=_0x247e0f,document[_0x40ac3e(0x14d)](_0x40ac3e(0x192))[_0x40ac3e(0x180)]=_0x315cc4+_0x247e0f;}catch(_0x2fb913){console[_0x40ac3e(0x1a6)](_0x40ac3e(0x1cb),_0x2fb913),[_0x40ac3e(0x164),'pendingupiorders',_0x40ac3e(0x187),_0x40ac3e(0x174),_0x40ac3e(0x1a5),_0x40ac3e(0x1be),'pickedorders','deliveredupiorders','deliveredcodordersbyupi',_0x40ac3e(0x17c),_0x40ac3e(0x1bc),'returnedorders',_0x40ac3e(0x13a),_0x40ac3e(0x192)]['forEach'](_0x18171d=>{const _0x9884e3=_0x40ac3e;document[_0x9884e3(0x14d)](_0x18171d)['textContent']='0';});}}window[_0x2d5055(0x142)]('DOMContentLoaded',updateTotalProductsCount),window['addEventListener']('DOMContentLoaded',updateTotalCategoriesCount),window[_0x2d5055(0x142)]('DOMContentLoaded',updateTotalOrdersCount),window[_0x2d5055(0x142)](_0x2d5055(0x1c9),updateProcessingOrdersCount),window[_0x2d5055(0x142)](_0x2d5055(0x1c9),updateTotalCustomersCount),document[_0x2d5055(0x142)]('DOMContentLoaded',()=>{const _0x511af2=_0x2d5055,_0x58aedf=window['location'][_0x511af2(0x181)];if(_0x58aedf){const _0x498298=document[_0x511af2(0x1d8)](_0x58aedf);_0x498298&&(_0x498298[_0x511af2(0x1c6)]['remove'](_0x511af2(0x19e)),_0x498298[_0x511af2(0x1c8)]({'behavior':_0x511af2(0x193)}));}}),document[_0x2d5055(0x142)]('DOMContentLoaded',()=>{const _0x4b5ebd=_0x2d5055,_0x1e0cf=sessionStorage['getItem'](_0x4b5ebd(0x1b2))||_0x4b5ebd(0x1cc);if(_0x1e0cf!==_0x4b5ebd(0x138)){document[_0x4b5ebd(0x1b3)][_0x4b5ebd(0x175)]=_0x4b5ebd(0x16e)+_0x1e0cf+_0x4b5ebd(0x16f);return;}const _0x3b176c=document[_0x4b5ebd(0x14d)](_0x4b5ebd(0x17e));!sessionStorage['getItem'](_0x4b5ebd(0x13e))&&_0x3b176c&&(_0x3b176c[_0x4b5ebd(0x1c6)][_0x4b5ebd(0x1b8)](_0x4b5ebd(0x19e)),setTimeout(()=>{const _0x239626=_0x4b5ebd;_0x3b176c[_0x239626(0x1c6)][_0x239626(0x144)](_0x239626(0x19e)),sessionStorage[_0x239626(0x1b4)]('welcomeShown',_0x239626(0x190));},0xbb8));});
 
-         const firebaseConfig = {
-  apiKey: "AIzaSyB3iBWleWNMCdQS9F0HR1wHBBtHkeMawhg",
-  authDomain: "sjpss-f504b.firebaseapp.com",
-  projectId: "sjpss-f504b",
-  storageBucket: "sjpss-f504b.firebasestorage.app",
-  messagingSenderId: "227402980311",
-  appId: "1:227402980311:web:56b580456ab6b9c6758992",
-  measurementId: "G-LZ4YP9YPN6"
-};
-
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-
-function formatDate(timestamp) {
-  const date = timestamp?.toDate?.() || new Date();
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
-  const year = date.getFullYear();
-  return `${day}-${month}-${year}`;
-}
-
-
-
-//order tables
-
- async function fetchOrders({ showPending = false, showPacked = false }) {
-    const ordersSnapshot = await getDocs(collection(db, 'orders'));
-    const pendingBody = document.getElementById('ordersTableBody');
-    const packedBody = document.getElementById('packedOrdersTableBody');
-
-    pendingBody.innerHTML = '';
-    packedBody.innerHTML = '';
-
-    for (const docSnap of ordersSnapshot.docs) {
-      const order = docSnap.data();
-      const orderId = docSnap.id;
-      const createdAt = order.createdAt;
-      const dateFormatted = formatDate(createdAt);
-      const status = order.status?.toLowerCase();
-      const paymentMethod = order.paymentMethod?.toLowerCase();
-      const shipping = order.shippingDetails?.address || 'Tvm';
-      const items = order.items || [];
-      const itemHtmlArray = [];
-
-      let totalAmount = 0;
-
-      for (let index = 0; index < items.length; index++) {
-        const item = items[index];
-        const productId = item.productId;
-        const tooltipId = `tooltip-${orderId}-${productId}-${index}`;
-        totalAmount += Number(item.price || 0) * Number(item.quantity || 1);
-
-        let tooltipHTML = `
-          <div class="relative inline-block">
-            <span 
-              class="underline text-blue-600 cursor-pointer" 
-              onmouseover="document.getElementById('${tooltipId}').classList.remove('hidden')" 
-              onmouseout="document.getElementById('${tooltipId}').classList.add('hidden')"
-            >
-              ${productId}
-            </span>
-            <div 
-              id="${tooltipId}" 
-              class="absolute z-50 hidden bg-white border border-gray-300 p-2 rounded shadow-lg w-48 top-full mt-1 left-1/2 -translate-x-1/2"
-            >
-              <div class="text-sm text-gray-500">Product not found</div>
-            </div>
-          </div>
-        `;
-
-        try {
-          const productRef = doc(db, 'products', productId);
-          const productSnap = await getDoc(productRef);
-
-          if (productSnap.exists()) {
-            const product = productSnap.data();
-            const productName = product.name || '';
-            const imageUrl = product.imageUrl || '';
-
-            tooltipHTML = `
-              <div class="relative inline-block">
-                <span 
-                  class="underline text-blue-600 cursor-pointer" 
-                  onmouseover="document.getElementById('${tooltipId}').classList.remove('hidden')" 
-                  onmouseout="document.getElementById('${tooltipId}').classList.add('hidden')"
-                >
-                  ${productId}
-                </span>
-                <div 
-                  id="${tooltipId}" 
-                  class="absolute z-50 hidden bg-white border border-gray-300 p-2 rounded shadow-lg w-60 top-full mt-1 left-1/2 -translate-x-1/2"
-                >
-                  <div class="flex items-center gap-2">
-                    <img src="${imageUrl}" alt="${productName}" class="w-12 h-12 object-cover rounded" />
-                    <div class="text-sm text-gray-800">${productName}</div>
-                  </div>
-                </div>
-              </div>
-            `;
-          }
-        } catch (error) {
-          console.error(`Error fetching product ${productId}:`, error);
-        }
-
-        itemHtmlArray.push(tooltipHTML);
-      }
-
-      const row = document.createElement('tr');
-      row.className = 'border-b border-gray-100';
-      row.innerHTML = `
-        <td class="p-4">${orderId}</td>
-        <td class="p-4">${dateFormatted}</td>
-        <td class="p-4 overflow-visible relative space-x-1">${itemHtmlArray.join(', ')}</td>
-        <td class="p-4 font-semibold text-green-700">₹${totalAmount.toFixed(2)}</td>
-        <td class="p-4">
-          ${status === 'pending' 
-            ? `<button class="text-blue-600 font-medium" onclick="window.location.href='PackingOrder.html?orderId=${orderId}'">Pack Now</button>` 
-            : `<span class="text-gray-500">Packed</span>`}
-        </td>
-      `;
-
-      if (status === 'pending' && paymentMethod === 'cod' && showPending) {
-        pendingBody.appendChild(row);
-      } else if (status === 'packed' && showPacked) {
-        packedBody.appendChild(row);
-      }
-    }
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    const togglePending = document.getElementById('showPackingPendingOrders');
-    const togglePacked = document.getElementById('showPackedOrders');
-
-    function updateView() {
-      const showPending = togglePending.checked;
-      const showPacked = togglePacked.checked;
-      fetchOrders({ showPending, showPacked });
-    }
-
-    togglePending.addEventListener('change', updateView);
-    togglePacked.addEventListener('change', updateView);
-  });
-
-
-
-
-
-
-
-
-
-
-
-
-
-//payment tables
-//payment tables
-async function fetchPayments(options = {}) {
-  const { showUPI = false, showCOD = false, showRemitted = false } = options;
-  
-  const upiPendingBody = document.getElementById('upiVerificationPendingTableBody');
-  const codPendingBody = document.getElementById('codPendingTableBody');
-  const remittedBody = document.getElementById('remittedPaymentsTableBody');
-
-  // Show/hide sections based on toggle states
-  const upiSection = document.querySelector('#showUPIVerificationPendingPayments').closest('.bg-white');
-  const codSection = document.querySelector('#showCODPendingPayments').closest('.bg-white');
-  const remittedSection = document.querySelector('#showRemittedPayments').closest('.bg-white');
-  
-  if (upiSection) upiSection.style.display = showUPI ? 'block' : 'none';
-  if (codSection) codSection.style.display = showCOD ? 'block' : 'none';
-  if (remittedSection) remittedSection.style.display = showRemitted ? 'block' : 'none';
-
-  // Clear previous content only for visible sections
-  if (showUPI && upiPendingBody) upiPendingBody.innerHTML = '';
-  if (showCOD && codPendingBody) codPendingBody.innerHTML = '';
-  if (showRemitted && remittedBody) remittedBody.innerHTML = '';
-
-  // If no sections are visible, return early
-  if (!showUPI && !showCOD && !showRemitted) {
-    return;
-  }
-
-  try {
-    const ordersSnapshot = await getDocs(collection(db, 'orders'));
-
-    for (const docSnap of ordersSnapshot.docs) {
-      const order = docSnap.data();
-      const orderId = docSnap.id;
-      const createdAt = order.createdAt;
-      const dateFormatted = formatDate(createdAt);
-      const status = order.status?.toLowerCase();
-      const paymentStatus = order.paymentStatus?.toLowerCase();
-      const paymentMethod = order.paymentMethod || 'N/A';
-      const amount = order.totalAmount || '0';
-      const shippingAddress = order.shippingDetails?.address || 'N/A';
-
-      // Tooltip for Order ID
-      const orderIdTooltipId = `tooltip-addr-${orderId}`;
-      const orderIdHTML = `
-        <div class="relative inline-block">
-          <span 
-            class="underline text-blue-600 cursor-pointer" 
-            onmouseover="document.getElementById('${orderIdTooltipId}').classList.remove('hidden')" 
-            onmouseout="document.getElementById('${orderIdTooltipId}').classList.add('hidden')"
-          >
-            ${orderId}
-          </span>
-          <div 
-            id="${orderIdTooltipId}" 
-            class="absolute z-50 hidden bg-white border border-gray-300 p-2 rounded shadow-lg w-60 top-full left-full mt-1 ml-2"
-          >
-            <div class="text-sm text-gray-700 whitespace-pre-wrap">${shippingAddress}</div>
-          </div>
-        </div>
-      `;
-
-      // Items
-      const items = order.items || [];
-      const itemHtmlArray = [];
-
-      for (let index = 0; index < items.length; index++) {
-        const item = items[index];
-        const productId = item.productId;
-        const tooltipId = `tooltip-payment-${orderId}-${productId}-${index}`;
-
-        let tooltipHTML = `
-          <div class="relative inline-block">
-            <span 
-              class="underline text-blue-600 cursor-pointer" 
-              onmouseover="document.getElementById('${tooltipId}').classList.remove('hidden')" 
-              onmouseout="document.getElementById('${tooltipId}').classList.add('hidden')"
-            >
-              ${productId}
-            </span>
-            <div 
-              id="${tooltipId}" 
-              class="absolute z-50 hidden bg-white border border-gray-300 p-2 rounded shadow-lg w-48 top-full mt-1 left-1/2 -translate-x-1/2"
-            >
-              <div class="text-sm text-gray-500">Product not found</div>
-            </div>
-          </div>
-        `;
-
-        try {
-          const productRef = doc(db, 'products', productId);
-          const productSnap = await getDoc(productRef);
-
-          if (productSnap.exists()) {
-            const product = productSnap.data();
-            const productName = product.name || '';
-            const imageUrl = product.imageUrl || '';
-
-            tooltipHTML = `
-              <div class="relative inline-block">
-                <span 
-                  class="underline text-blue-600 cursor-pointer" 
-                  onmouseover="document.getElementById('${tooltipId}').classList.remove('hidden')" 
-                  onmouseout="document.getElementById('${tooltipId}').classList.add('hidden')"
-                >
-                  ${productId}
-                </span>
-                <div 
-                  id="${tooltipId}" 
-                  class="absolute z-50 hidden bg-white border border-gray-300 p-2 rounded shadow-lg w-60 top-full mt-1 left-1/2 -translate-x-1/2"
-                >
-                  <div class="flex items-center gap-2">
-                    <img src="${imageUrl}" alt="${productName}" class="w-12 h-12 object-cover rounded" />
-                    <div class="text-sm text-gray-800">${productName}</div>
-                  </div>
-                </div>
-              </div>
-            `;
-          }
-        } catch (error) {
-          console.error(`Error fetching product ${productId}:`, error);
-        }
-
-        itemHtmlArray.push(tooltipHTML);
-      }
-
-      // UPI Verification Pending Payments
-      if (showUPI && paymentMethod.toLowerCase() === 'upi' && paymentStatus === 'paid' && upiPendingBody) {
-        const row = document.createElement('tr');
-        row.className = 'border-t hover:bg-gray-50 transition-colors';
-        row.innerHTML = `
-          <td class="p-4">${orderIdHTML}</td>
-          <td class="p-4">${dateFormatted}</td>
-          <td class="p-4 overflow-visible relative space-x-1">${itemHtmlArray.join(', ')}</td>
-          <td class="p-4">${paymentMethod}</td>
-          <td class="p-4 font-semibold">₹${amount}</td>
-          <td class="p-4">
-            <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors" onclick="window.location.href='paymentVerification.html?orderId=${orderId}'">
-              <i class="fas fa-shield-alt mr-1"></i>Verify
-            </button>
-          </td>
-        `;
-        upiPendingBody.appendChild(row);
-      }
-
-      // COD Pending Payments
-      if (showCOD && paymentMethod.toLowerCase() === 'cod' && paymentStatus === 'pending' && codPendingBody) {
-        const row = document.createElement('tr');
-        row.className = 'border-t hover:bg-gray-50 transition-colors';
-        row.innerHTML = `
-          <td class="p-4">${orderIdHTML}</td>
-          <td class="p-4">${dateFormatted}</td>
-          <td class="p-4 overflow-visible relative space-x-1">${itemHtmlArray.join(', ')}</td>
-          <td class="p-4">${paymentMethod}</td>
-          <td class="p-4 font-semibold">₹${amount}</td>
-          <td class="p-4">
-            <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors" onclick="window.location.href='viewHistory.html?customerId=${order.customerId}'">
-              <i class="fas fa-history mr-1"></i>See History
-            </button>
-          </td>
-        `;
-        codPendingBody.appendChild(row);
-      }
-
-      // Remitted Payments
-      if (showRemitted && paymentStatus === 'paid' && paymentMethod.toLowerCase() !== 'upi' && remittedBody) {
-        const row = document.createElement('tr');
-        row.className = 'border-t hover:bg-gray-50 transition-colors';
-        row.innerHTML = `
-          <td class="p-4">${orderIdHTML}</td>
-          <td class="p-4">${dateFormatted}</td>
-          <td class="p-4 overflow-visible relative space-x-1">${itemHtmlArray.join(', ')}</td>
-          <td class="p-4">${shippingAddress}</td>
-          <td class="p-4">
-            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-              <i class="fas fa-check-circle mr-1"></i>Remitted
-            </span>
-          </td>
-        `;
-        remittedBody.appendChild(row);
-      }
-    }
-
-    // Add empty state if no data
-    if (showUPI && upiPendingBody && upiPendingBody.children.length === 0) {
-      upiPendingBody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500">No UPI verification pending payments</td></tr>';
-    }
-    if (showCOD && codPendingBody && codPendingBody.children.length === 0) {
-      codPendingBody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500">No COD pending payments</td></tr>';
-    }
-    if (showRemitted && remittedBody && remittedBody.children.length === 0) {
-      remittedBody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-gray-500">No remitted payments</td></tr>';
-    }
-
-  } catch (error) {
-    console.error('Error fetching payments:', error);
-    // Show error message to user
-    const errorMessage = '<tr><td colspan="6" class="p-8 text-center text-red-500">Error loading payments. Please try again.</td></tr>';
-    if (upiPendingBody) upiPendingBody.innerHTML = errorMessage;
-    if (codPendingBody) codPendingBody.innerHTML = errorMessage;
-    if (remittedBody) remittedBody.innerHTML = errorMessage.replace('colspan="6"', 'colspan="5"');
-  }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  const toggleUPI = document.getElementById('showUPIVerificationPendingPayments');
-  const toggleCOD = document.getElementById('showCODPendingPayments');
-  const toggleRemitted = document.getElementById('showRemittedPayments');
-
-  // Sections to toggle
-  const upiSection = document.getElementById('upiSection');
-  const codSection = document.getElementById('codSection');
-  const remittedSection = document.getElementById('remittedSection');
-
-  // Hide all sections initially
-  if (upiSection) upiSection.style.display = 'none';
-  if (codSection) codSection.style.display = 'none';
-  if (remittedSection) remittedSection.style.display = 'none';
-
-  // Ensure toggles are unchecked
-  if (toggleUPI) toggleUPI.checked = false;
-  if (toggleCOD) toggleCOD.checked = false;
-  if (toggleRemitted) toggleRemitted.checked = false;
-
-  // Add toggle handlers
-  toggleUPI?.addEventListener('change', () => {
-    if (toggleUPI.checked) {
-      upiSection.style.display = '';
-      fetchPayments({ showUPI: true, showCOD: false, showRemitted: false });
-    } else {
-      upiSection.style.display = 'none';
-    }
-  });
-
-  toggleCOD?.addEventListener('change', () => {
-    if (toggleCOD.checked) {
-      codSection.style.display = '';
-      fetchPayments({ showUPI: false, showCOD: true, showRemitted: false });
-    } else {
-      codSection.style.display = 'none';
-    }
-  });
-
-  toggleRemitted?.addEventListener('change', () => {
-    if (toggleRemitted.checked) {
-      remittedSection.style.display = '';
-      fetchPayments({ showUPI: false, showCOD: false, showRemitted: true });
-    } else {
-      remittedSection.style.display = 'none';
-    }
-  });
-});
-
-
-
-//new 
-//to view All Products 
-async function updateTotalProductsCount() {
-    try {
-      const querySnapshot = await getDocs(collection(db, "products"));
-      const total = querySnapshot.size;
-      document.getElementById("totalProducts").textContent = total;
-    } catch (error) {
-      console.error("Error getting products count:", error);
-      document.getElementById("totalProducts").textContent = "0";
-    }
-  }
-//to view Total Categories
-async function updateTotalCategoriesCount() {
-    try {
-      const querySnapshot = await getDocs(collection(db, "categories"));
-      const total = querySnapshot.size;
-      document.getElementById("totalCategories").textContent = total;
-    } catch (error) {
-      console.error("Error getting total Categories count:", error);
-      document.getElementById("totalCategories").textContent = "0";
-    }
-  }
-//to view Total Orders
-async function updateTotalOrdersCount() {
-    try {
-      const querySnapshot = await getDocs(collection(db, "orders"));
-      const total = querySnapshot.size;
-      document.getElementById("allorders").textContent = total;
-      document.getElementById("dashboardTotalOrders").textContent = total; 
-    } catch (error) {
-      console.error("Error getting total Orders count:", error);
-      document.getElementById("allorders").textContent = "0";
-    }
-  }
-//to view Total Customers
-async function updateTotalCustomersCount() {
-    try {
-      const querySnapshot = await getDocs(collection(db, "customers"));
-      const total = querySnapshot.size;
-      document.getElementById("dashboardTotalCustomers").textContent = total; 
-    } catch (error) {
-      console.error("Error getting total Customers count:", error);
-      document.getElementById("dashboardTotalCustomers").textContent = "0";
-    }
-  }
-
-
-//to view Processing Orders
-async function updateProcessingOrdersCount() {
-    try {
-        // Helper function for count
-        const getCount = async (conditions) => {
-            const q = query(collection(db, "orders"), ...conditions);
-            const snap = await getDocs(q);
-            return snap.size;
-        };
-
-        // Run queries in parallel
-        const [
-            total1, // UPI paid & pending
-            total2, // Verified & pending
-            total3, // COD pending
-            total4, // Packed
-            total5, // Picked
-            total6, // UPI delivered
-            total7, // COD delivered by UPI
-            total8, // COD delivered by Cash
-            total9, // Returned
-            total10 // Rejected
-        ] = await Promise.all([
-            getCount([where("paymentMethod", "==", "UPI"), where("paymentStatus", "==", "paid"), where("status", "==", "pending")]),
-            getCount([where("paymentStatus", "==", "verified"), where("status", "==", "pending")]),
-            getCount([where("paymentMethod", "==", "COD"), where("status", "==", "pending")]),
-            getCount([where("status", "==", "packed")]),
-            getCount([where("status", "==", "picked")]),
-            getCount([where("paymentMethod", "==", "UPI"), where("status", "==", "delivered")]),
-            getCount([where("paymentMethod", "==", "COD"), where("codPaymentMethod", "==", "UPI"), where("status", "==", "delivered")]),
-            getCount([where("paymentMethod", "==", "COD"), where("codPaymentMethod", "==", "cash"), where("status", "==", "delivered")]),
-            getCount([where("status", "==", "returned")]),
-            getCount([where("status", "==", "rejected")])
-        ]);
-
-        // Update UI
-        document.getElementById("processingorders").textContent = total1;
-        document.getElementById("pendingupiorders").textContent = total2;
-        document.getElementById("pendingcodorders").textContent = total3;
-        document.getElementById("pendingCount").textContent = total2 + total3;
-        document.getElementById("toassignorders").textContent = total4;
-        document.getElementById("shippedCount").textContent = total5;
-        document.getElementById("pickedorders").textContent = total5;
-        document.getElementById("deliveredupiorders").textContent = total6;
-        document.getElementById("deliveredcodordersbyupi").textContent = total7;
-        document.getElementById("deliveredcodordersbycash").textContent = total8;
-        document.getElementById("deliveredCount").textContent = total7 + total8 + total6; // total delivered
-        document.getElementById("returnedorders").textContent = total9;
-        document.getElementById("rejectedorders").textContent = total10;
-        document.getElementById("returnsCount").textContent = total9 + total10;
-
-    } catch (error) {
-        console.error("Error getting processing orders count:", error);
-
-        // Reset all counts to 0
-        [
-            "processingorders", "pendingupiorders", "pendingcodorders", "pendingCount",
-            "toassignorders", "shippedCount", "pickedorders",
-            "deliveredupiorders", "deliveredcodordersbyupi", "deliveredcodordersbycash", "deliveredCount",
-            "returnedorders", "rejectedorders", "returnsCount"
-        ].forEach(id => {
-            document.getElementById(id).textContent = "0";
-        });
-    }
-}
-
-
-  // Run the function when the page loads
-  window.addEventListener("DOMContentLoaded", updateTotalProductsCount);
-  window.addEventListener("DOMContentLoaded", updateTotalCategoriesCount);
-  window.addEventListener("DOMContentLoaded", updateTotalOrdersCount);
-  window.addEventListener("DOMContentLoaded", updateProcessingOrdersCount);
-  window.addEventListener("DOMContentLoaded", updateTotalCustomersCount);
-
-
-
-// to direct to exact location in the page from external
-document.addEventListener("DOMContentLoaded", () => {
-    const hash = window.location.hash;
-    if (hash) {
-        const target = document.querySelector(hash);
-        if (target) {
-            target.classList.remove("hidden");
-            target.scrollIntoView({ behavior: "smooth" });
-        }
-    }
-});
-
-
-
-// to welcome
- document.addEventListener("DOMContentLoaded", () => {
-    const gifContainer = document.getElementById("welcomeGifContainer");
-
-    // Show GIF only if not shown before
-    if (!sessionStorage.getItem("welcomeShown")) {
-      gifContainer.classList.remove("hidden");
-
-      // Hide after 3 seconds
-      setTimeout(() => {
-        gifContainer.classList.add("hidden");
-        sessionStorage.setItem("welcomeShown", "true");
-      }, 3000); // Adjust time if needed
-    }
-  });
 
 
 </script>
@@ -2782,52 +2206,62 @@ document.addEventListener("DOMContentLoaded", () => {
 
       </main>
 
-      <!-- Mobile Bottom Navigation -->
-      <div class="fixed bottom-0 left-0 right-0 bg-white bottom-nav border-t md:hidden z-20">
-        <div class="grid grid-cols-5 gap-1 py-2 px-2">
-          <a href="#Dashboard" class="bottom-nav-item flex flex-col items-center py-2 px-1 text-blue-600 rounded-lg transition-all duration-200 mobile-nav-active" onclick="showSection(this, event)">
-            <i class="fas fa-home text-lg mb-1"></i>
-            <span class="text-xs font-medium">Dashboard</span>
-          </a>
-          <a href="#products" class="bottom-nav-item flex flex-col items-center py-2 px-1 text-gray-600 hover:text-blue-600 rounded-lg transition-all duration-200" onclick="showSection(this, event)">
-            <i class="fas fa-box text-lg mb-1"></i>
-            <span class="text-xs font-medium">Products</span>
-          </a>
-          <a href="#orders" class="bottom-nav-item flex flex-col items-center py-2 px-1 text-gray-600 hover:text-blue-600 rounded-lg transition-all duration-200" onclick="showSection(this, event)">
-            <i class="fas fa-shopping-cart text-lg mb-1"></i>
-            <span class="text-xs font-medium">Orders</span>
-          </a>
-          <a href="#customers" class="bottom-nav-item flex flex-col items-center py-2 px-1 text-gray-600 hover:text-blue-600 rounded-lg transition-all duration-200" onclick="showSection(this, event)">
-            <i class="fas fa-users text-lg mb-1"></i>
-            <span class="text-xs font-medium">Customers</span>
-          </a>
-          <a href="#staffs" class="bottom-nav-item flex flex-col items-center py-2 px-1 text-gray-600 hover:text-blue-600 rounded-lg transition-all duration-200" onclick="showSection(this, event)">
-            <i class="fas fa-cog text-lg mb-1"></i>
-            <span class="text-xs font-medium">Staffs</span>
-          </a>
-        </div>
-        
-        <!-- Secondary Navigation Row -->
-        <div class="grid grid-cols-4 gap-1 py-1 px-2 border-t border-gray-100">
-          <a href="#inventory" class="bottom-nav-item flex flex-col items-center py-1 px-1 text-gray-500 hover:text-blue-600 rounded-lg transition-all duration-200" onclick="showSection(this, event)">
-            <i class="fas fa-chart-bar text-sm mb-1"></i>
-            <span class="text-xs font-medium">Inventory</span>
-          </a>
-          <a href="#misc" class="bottom-nav-item flex flex-col items-center py-1 px-1 text-gray-500 hover:text-blue-600 rounded-lg transition-all duration-200" onclick="showSection(this, event)">
-            <i class="fas fa-file-alt text-sm mb-1"></i>
-            <span class="text-xs font-medium">Misc</span>
-          </a>
-          <a href="#settings" class="bottom-nav-item flex flex-col items-center py-1 px-1 text-gray-500 hover:text-blue-600 rounded-lg transition-all duration-200" onclick="showSection(this, event)">
-            <i class="fas fa-warehouse text-sm mb-1"></i>
-            <span class="text-xs font-medium">Settings</span>
-          </a>
-          <a href="#hide" class="bottom-nav-item flex flex-col items-center py-1 px-1 text-gray-500 hover:text-blue-600 rounded-lg transition-all duration-200" onclick="showSection(this, event)">
-            <i class="fas fa-bullhorn text-sm mb-1"></i>
-            <span class="text-xs font-medium">Hide</span>
-          </a>
-        </div>
+     <!-- Mobile Bottom Navigation -->
+<div id="mobileNav" class="fixed bottom-0 left-0 right-0 bg-white border-t md:hidden z-20 transition-all duration-300">
+  <div class="grid grid-cols-7 gap-1 py-2 px-2 justify-items-center">
+    
+    <a href="#Dashboard" class="bottom-nav-item flex flex-col items-center text-blue-600 transition-all duration-200 mobile-nav-active" onclick="showSection(this, event)">
+      <i class="fas fa-home text-lg"></i>
+    </a>
 
-      </div>
+    <a href="#orders" class="bottom-nav-item flex flex-col items-center text-gray-600 hover:text-blue-600 transition-all duration-200" onclick="showSection(this, event)">
+      <i class="fas fa-shopping-cart text-lg"></i>
+    </a>
+
+    <a href="#payments" class="bottom-nav-item flex flex-col items-center text-gray-600 hover:text-blue-600 transition-all duration-200" onclick="showSection(this, event)">
+      <i class="fas fa-credit-card text-lg"></i>
+    </a>
+
+    <a href="#stakeholders" class="bottom-nav-item flex flex-col items-center text-gray-600 hover:text-blue-600 transition-all duration-200" onclick="showSection(this, event)">
+      <i class="fas fa-users text-lg"></i>
+    </a>
+
+    <a href="#products" class="bottom-nav-item flex flex-col items-center text-gray-600 hover:text-blue-600 transition-all duration-200" onclick="showSection(this, event)">
+      <i class="fas fa-box text-lg"></i>
+    </a>
+
+    <a href="#inventory" class="bottom-nav-item flex flex-col items-center text-gray-600 hover:text-blue-600 transition-all duration-200" onclick="showSection(this, event)">
+      <i class="fas fa-chart-bar text-lg"></i>
+    </a>
+
+    <!-- Hide/Show Toggle -->
+    <a href="#hide" id="toggleNavBtn" class="bottom-nav-item flex flex-col items-center text-gray-600 hover:text-blue-600 transition-all duration-200">
+      <i class="fas fa-eye-slash text-lg"></i>
+    </a>
+    
+  </div>
+</div>
+
+<script>
+  const mobileNav = document.getElementById("mobileNav");
+  const toggleNavBtn = document.getElementById("toggleNavBtn");
+  let navHidden = false;
+
+  toggleNavBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+    navHidden = !navHidden;
+    if (navHidden) {
+      mobileNav.classList.add("bg-transparent", "opacity-30");
+      mobileNav.classList.remove("bg-white");
+      toggleNavBtn.innerHTML = '<i class="fas fa-eye text-lg"></i>'; // change icon
+    } else {
+      mobileNav.classList.remove("bg-transparent", "opacity-30");
+      mobileNav.classList.add("bg-white");
+      toggleNavBtn.innerHTML = '<i class="fas fa-eye-slash text-lg"></i>';
+    }
+  });
+</script>
+
     </div>
   </div>
 
