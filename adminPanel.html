@@ -1,0 +1,2982 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel</title>
+    <script src="fbc.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    /* Custom gradient backgrounds */
+    .gradient-bg {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .card-gradient {
+      background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+    }
+    
+    /* Custom shadows */
+    .custom-shadow {
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    .sidebar-shadow {
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Hover animations */
+    .hover-lift {
+      transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    
+    .hover-lift:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Modern button styles */
+    .btn-modern {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      transition: all 0.3s ease;
+    }
+    
+    .btn-modern:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    /* Table enhancements */
+    .table-modern tbody tr:hover {
+      background: linear-gradient(90deg, #f8fafc 0%, #e2e8f0 100%);
+      transform: scale(1.01);
+      transition: all 0.2s ease;
+    }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 10px;
+    }
+    
+    /* Mobile optimizations */
+    @media (max-width: 768px) {
+      .mobile-spacing {
+        padding: 1rem;
+      }
+      
+      .mobile-text {
+        font-size: 0.875rem;
+      }
+      
+      .mobile-hide {
+        display: none !important;
+      }
+    }
+    
+    /* Active nav item */
+    .nav-active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      transform: translateX(4px);
+    }
+    
+    .mobile-nav-active {
+      color: #667eea !important;
+      background: rgba(102, 126, 234, 0.1);
+    }
+    
+    /* Stats card animation */
+    .stats-card {
+      background: linear-gradient(145deg, #ffffff, #f1f5f9);
+      border-left: 4px solid;
+      transition: all 0.3s ease;
+    }
+    
+    .stats-card:nth-child(1) { border-color: #3b82f6; }
+    .stats-card:nth-child(2) { border-color: #10b981; }
+    .stats-card:nth-child(3) { border-color: #f59e0b; }
+    .stats-card:nth-child(4) { border-color: #ef4444; }
+    
+    .stats-card:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Bottom navigation styles */
+    .bottom-nav {
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .bottom-nav-item {
+      transition: all 0.2s ease;
+    }
+    
+    .bottom-nav-item:hover {
+      transform: translateY(-2px);
+    }
+  </style>
+
+<script type="module" defer>
+       	import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+	import {
+  		getFirestore,
+  		collection,
+  		doc,
+  		getDocs,
+  		getDoc,          
+  		query,
+		addDoc,
+		orderBy,
+		runTransaction,
+  	where
+	} from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+
+function formatDate(timestamp) {
+  const date = timestamp?.toDate?.() || new Date();
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+}
+
+
+
+//order tables
+
+ async function fetchOrders({ showPending = false, showPacked = false }) {
+    const ordersSnapshot = await getDocs(collection(db, 'orders'));
+    const pendingBody = document.getElementById('ordersTableBody');
+    const packedBody = document.getElementById('packedOrdersTableBody');
+
+    pendingBody.innerHTML = '';
+    packedBody.innerHTML = '';
+
+    for (const docSnap of ordersSnapshot.docs) {
+      const order = docSnap.data();
+      const orderId = docSnap.id;
+      const createdAt = order.createdAt;
+      const dateFormatted = formatDate(createdAt);
+      const status = order.status?.toLowerCase();
+      const paymentMethod = order.paymentMethod?.toLowerCase();
+      const shipping = order.shippingDetails?.address || 'Tvm';
+      const items = order.items || [];
+      const itemHtmlArray = [];
+
+      let totalAmount = 0;
+
+      for (let index = 0; index < items.length; index++) {
+        const item = items[index];
+        const productId = item.productId;
+        const tooltipId = `tooltip-${orderId}-${productId}-${index}`;
+        totalAmount += Number(item.price || 0) * Number(item.quantity || 1);
+
+        let tooltipHTML = `
+          <div class="relative inline-block">
+            <span 
+              class="underline text-blue-600 cursor-pointer" 
+              onmouseover="document.getElementById('${tooltipId}').classList.remove('hidden')" 
+              onmouseout="document.getElementById('${tooltipId}').classList.add('hidden')"
+            >
+              ${productId}
+            </span>
+            <div 
+              id="${tooltipId}" 
+              class="absolute z-50 hidden bg-white border border-gray-300 p-2 rounded shadow-lg w-48 top-full mt-1 left-1/2 -translate-x-1/2"
+            >
+              <div class="text-sm text-gray-500">Product not found</div>
+            </div>
+          </div>
+        `;
+
+        try {
+          const productRef = doc(db, 'products', productId);
+          const productSnap = await getDoc(productRef);
+
+          if (productSnap.exists()) {
+            const product = productSnap.data();
+            const productName = product.name || '';
+            const imageUrl = product.imageUrl || '';
+
+            tooltipHTML = `
+              <div class="relative inline-block">
+                <span 
+                  class="underline text-blue-600 cursor-pointer" 
+                  onmouseover="document.getElementById('${tooltipId}').classList.remove('hidden')" 
+                  onmouseout="document.getElementById('${tooltipId}').classList.add('hidden')"
+                >
+                  ${productId}
+                </span>
+                <div 
+                  id="${tooltipId}" 
+                  class="absolute z-50 hidden bg-white border border-gray-300 p-2 rounded shadow-lg w-60 top-full mt-1 left-1/2 -translate-x-1/2"
+                >
+                  <div class="flex items-center gap-2">
+                    <img src="${imageUrl}" alt="${productName}" class="w-12 h-12 object-cover rounded" />
+                    <div class="text-sm text-gray-800">${productName}</div>
+                  </div>
+                </div>
+              </div>
+            `;
+          }
+        } catch (error) {
+          console.error(`Error fetching product ${productId}:`, error);
+        }
+
+        itemHtmlArray.push(tooltipHTML);
+      }
+
+      const row = document.createElement('tr');
+      row.className = 'border-b border-gray-100';
+      row.innerHTML = `
+        <td class="p-4">${orderId}</td>
+        <td class="p-4">${dateFormatted}</td>
+        <td class="p-4 overflow-visible relative space-x-1">${itemHtmlArray.join(', ')}</td>
+        <td class="p-4 font-semibold text-green-700">₹${totalAmount.toFixed(2)}</td>
+        <td class="p-4">
+          ${status === 'pending' 
+            ? `<button class="text-blue-600 font-medium" onclick="window.location.href='PackingOrder.html?orderId=${orderId}'">Pack Now</button>` 
+            : `<span class="text-gray-500">Packed</span>`}
+        </td>
+      `;
+
+      if (status === 'pending' && paymentMethod === 'cod' && showPending) {
+        pendingBody.appendChild(row);
+      } else if (status === 'packed' && showPacked) {
+        packedBody.appendChild(row);
+      }
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const togglePending = document.getElementById('showPackingPendingOrders');
+    const togglePacked = document.getElementById('showPackedOrders');
+
+    function updateView() {
+      const showPending = togglePending.checked;
+      const showPacked = togglePacked.checked;
+      fetchOrders({ showPending, showPacked });
+    }
+
+    togglePending.addEventListener('change', updateView);
+    togglePacked.addEventListener('change', updateView);
+  });
+
+
+
+
+
+
+
+
+
+
+
+
+
+//payment tables
+//payment tables
+async function fetchPayments(options = {}) {
+  const { showUPI = false, showCOD = false, showRemitted = false } = options;
+  
+  const upiPendingBody = document.getElementById('upiVerificationPendingTableBody');
+  const codPendingBody = document.getElementById('codPendingTableBody');
+  const remittedBody = document.getElementById('remittedPaymentsTableBody');
+
+  // Show/hide sections based on toggle states
+  const upiSection = document.querySelector('#showUPIVerificationPendingPayments').closest('.bg-white');
+  const codSection = document.querySelector('#showCODPendingPayments').closest('.bg-white');
+  const remittedSection = document.querySelector('#showRemittedPayments').closest('.bg-white');
+  
+  if (upiSection) upiSection.style.display = showUPI ? 'block' : 'none';
+  if (codSection) codSection.style.display = showCOD ? 'block' : 'none';
+  if (remittedSection) remittedSection.style.display = showRemitted ? 'block' : 'none';
+
+  // Clear previous content only for visible sections
+  if (showUPI && upiPendingBody) upiPendingBody.innerHTML = '';
+  if (showCOD && codPendingBody) codPendingBody.innerHTML = '';
+  if (showRemitted && remittedBody) remittedBody.innerHTML = '';
+
+  // If no sections are visible, return early
+  if (!showUPI && !showCOD && !showRemitted) {
+    return;
+  }
+
+  try {
+    const ordersSnapshot = await getDocs(collection(db, 'orders'));
+
+    for (const docSnap of ordersSnapshot.docs) {
+      const order = docSnap.data();
+      const orderId = docSnap.id;
+      const createdAt = order.createdAt;
+      const dateFormatted = formatDate(createdAt);
+      const status = order.status?.toLowerCase();
+      const paymentStatus = order.paymentStatus?.toLowerCase();
+      const paymentMethod = order.paymentMethod || 'N/A';
+      const amount = order.totalAmount || '0';
+      const shippingAddress = order.shippingDetails?.address || 'N/A';
+
+      // Tooltip for Order ID
+      const orderIdTooltipId = `tooltip-addr-${orderId}`;
+      const orderIdHTML = `
+        <div class="relative inline-block">
+          <span 
+            class="underline text-blue-600 cursor-pointer" 
+            onmouseover="document.getElementById('${orderIdTooltipId}').classList.remove('hidden')" 
+            onmouseout="document.getElementById('${orderIdTooltipId}').classList.add('hidden')"
+          >
+            ${orderId}
+          </span>
+          <div 
+            id="${orderIdTooltipId}" 
+            class="absolute z-50 hidden bg-white border border-gray-300 p-2 rounded shadow-lg w-60 top-full left-full mt-1 ml-2"
+          >
+            <div class="text-sm text-gray-700 whitespace-pre-wrap">${shippingAddress}</div>
+          </div>
+        </div>
+      `;
+
+      // Items
+      const items = order.items || [];
+      const itemHtmlArray = [];
+
+      for (let index = 0; index < items.length; index++) {
+        const item = items[index];
+        const productId = item.productId;
+        const tooltipId = `tooltip-payment-${orderId}-${productId}-${index}`;
+
+        let tooltipHTML = `
+          <div class="relative inline-block">
+            <span 
+              class="underline text-blue-600 cursor-pointer" 
+              onmouseover="document.getElementById('${tooltipId}').classList.remove('hidden')" 
+              onmouseout="document.getElementById('${tooltipId}').classList.add('hidden')"
+            >
+              ${productId}
+            </span>
+            <div 
+              id="${tooltipId}" 
+              class="absolute z-50 hidden bg-white border border-gray-300 p-2 rounded shadow-lg w-48 top-full mt-1 left-1/2 -translate-x-1/2"
+            >
+              <div class="text-sm text-gray-500">Product not found</div>
+            </div>
+          </div>
+        `;
+
+        try {
+          const productRef = doc(db, 'products', productId);
+          const productSnap = await getDoc(productRef);
+
+          if (productSnap.exists()) {
+            const product = productSnap.data();
+            const productName = product.name || '';
+            const imageUrl = product.imageUrl || '';
+
+            tooltipHTML = `
+              <div class="relative inline-block">
+                <span 
+                  class="underline text-blue-600 cursor-pointer" 
+                  onmouseover="document.getElementById('${tooltipId}').classList.remove('hidden')" 
+                  onmouseout="document.getElementById('${tooltipId}').classList.add('hidden')"
+                >
+                  ${productId}
+                </span>
+                <div 
+                  id="${tooltipId}" 
+                  class="absolute z-50 hidden bg-white border border-gray-300 p-2 rounded shadow-lg w-60 top-full mt-1 left-1/2 -translate-x-1/2"
+                >
+                  <div class="flex items-center gap-2">
+                    <img src="${imageUrl}" alt="${productName}" class="w-12 h-12 object-cover rounded" />
+                    <div class="text-sm text-gray-800">${productName}</div>
+                  </div>
+                </div>
+              </div>
+            `;
+          }
+        } catch (error) {
+          console.error(`Error fetching product ${productId}:`, error);
+        }
+
+        itemHtmlArray.push(tooltipHTML);
+      }
+
+      // UPI Verification Pending Payments
+      if (showUPI && paymentMethod.toLowerCase() === 'upi' && paymentStatus === 'paid' && upiPendingBody) {
+        const row = document.createElement('tr');
+        row.className = 'border-t hover:bg-gray-50 transition-colors';
+        row.innerHTML = `
+          <td class="p-4">${orderIdHTML}</td>
+          <td class="p-4">${dateFormatted}</td>
+          <td class="p-4 overflow-visible relative space-x-1">${itemHtmlArray.join(', ')}</td>
+          <td class="p-4">${paymentMethod}</td>
+          <td class="p-4 font-semibold">₹${amount}</td>
+          <td class="p-4">
+            <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors" onclick="window.location.href='paymentVerification.html?orderId=${orderId}'">
+              <i class="fas fa-shield-alt mr-1"></i>Verify
+            </button>
+          </td>
+        `;
+        upiPendingBody.appendChild(row);
+      }
+
+      // COD Pending Payments
+      if (showCOD && paymentMethod.toLowerCase() === 'cod' && paymentStatus === 'pending' && codPendingBody) {
+        const row = document.createElement('tr');
+        row.className = 'border-t hover:bg-gray-50 transition-colors';
+        row.innerHTML = `
+          <td class="p-4">${orderIdHTML}</td>
+          <td class="p-4">${dateFormatted}</td>
+          <td class="p-4 overflow-visible relative space-x-1">${itemHtmlArray.join(', ')}</td>
+          <td class="p-4">${paymentMethod}</td>
+          <td class="p-4 font-semibold">₹${amount}</td>
+          <td class="p-4">
+            <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors" onclick="window.location.href='viewHistory.html?customerId=${order.customerId}'">
+              <i class="fas fa-history mr-1"></i>See History
+            </button>
+          </td>
+        `;
+        codPendingBody.appendChild(row);
+      }
+
+      // Remitted Payments
+      if (showRemitted && paymentStatus === 'paid' && paymentMethod.toLowerCase() !== 'upi' && remittedBody) {
+        const row = document.createElement('tr');
+        row.className = 'border-t hover:bg-gray-50 transition-colors';
+        row.innerHTML = `
+          <td class="p-4">${orderIdHTML}</td>
+          <td class="p-4">${dateFormatted}</td>
+          <td class="p-4 overflow-visible relative space-x-1">${itemHtmlArray.join(', ')}</td>
+          <td class="p-4">${shippingAddress}</td>
+          <td class="p-4">
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+              <i class="fas fa-check-circle mr-1"></i>Remitted
+            </span>
+          </td>
+        `;
+        remittedBody.appendChild(row);
+      }
+    }
+
+    // Add empty state if no data
+    if (showUPI && upiPendingBody && upiPendingBody.children.length === 0) {
+      upiPendingBody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500">No UPI verification pending payments</td></tr>';
+    }
+    if (showCOD && codPendingBody && codPendingBody.children.length === 0) {
+      codPendingBody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500">No COD pending payments</td></tr>';
+    }
+    if (showRemitted && remittedBody && remittedBody.children.length === 0) {
+      remittedBody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-gray-500">No remitted payments</td></tr>';
+    }
+
+  } catch (error) {
+    console.error('Error fetching payments:', error);
+    // Show error message to user
+    const errorMessage = '<tr><td colspan="6" class="p-8 text-center text-red-500">Error loading payments. Please try again.</td></tr>';
+    if (upiPendingBody) upiPendingBody.innerHTML = errorMessage;
+    if (codPendingBody) codPendingBody.innerHTML = errorMessage;
+    if (remittedBody) remittedBody.innerHTML = errorMessage.replace('colspan="6"', 'colspan="5"');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const toggleUPI = document.getElementById('showUPIVerificationPendingPayments');
+  const toggleCOD = document.getElementById('showCODPendingPayments');
+  const toggleRemitted = document.getElementById('showRemittedPayments');
+
+  // Sections to toggle
+  const upiSection = document.getElementById('upiSection');
+  const codSection = document.getElementById('codSection');
+  const remittedSection = document.getElementById('remittedSection');
+
+  // Hide all sections initially
+  if (upiSection) upiSection.style.display = 'none';
+  if (codSection) codSection.style.display = 'none';
+  if (remittedSection) remittedSection.style.display = 'none';
+
+  // Ensure toggles are unchecked
+  if (toggleUPI) toggleUPI.checked = false;
+  if (toggleCOD) toggleCOD.checked = false;
+  if (toggleRemitted) toggleRemitted.checked = false;
+
+  // Add toggle handlers
+  toggleUPI?.addEventListener('change', () => {
+    if (toggleUPI.checked) {
+      upiSection.style.display = '';
+      fetchPayments({ showUPI: true, showCOD: false, showRemitted: false });
+    } else {
+      upiSection.style.display = 'none';
+    }
+  });
+
+  toggleCOD?.addEventListener('change', () => {
+    if (toggleCOD.checked) {
+      codSection.style.display = '';
+      fetchPayments({ showUPI: false, showCOD: true, showRemitted: false });
+    } else {
+      codSection.style.display = 'none';
+    }
+  });
+
+  toggleRemitted?.addEventListener('change', () => {
+    if (toggleRemitted.checked) {
+      remittedSection.style.display = '';
+      fetchPayments({ showUPI: false, showCOD: false, showRemitted: true });
+    } else {
+      remittedSection.style.display = 'none';
+    }
+  });
+});
+
+
+
+//new 
+//to view All Products 
+async function updateTotalProductsCount() {
+    try {
+      const querySnapshot = await getDocs(collection(db, "products"));
+      const total = querySnapshot.size;
+      document.getElementById("totalProducts").textContent = total;
+    } catch (error) {
+      console.error("Error getting products count:", error);
+      document.getElementById("totalProducts").textContent = "0";
+    }
+  }
+//to view Total Categories
+async function updateTotalCategoriesCount() {
+    try {
+      const querySnapshot = await getDocs(collection(db, "categories"));
+      const total = querySnapshot.size;
+      document.getElementById("totalCategories").textContent = total;
+    } catch (error) {
+      console.error("Error getting total Categories count:", error);
+      document.getElementById("totalCategories").textContent = "0";
+    }
+  }
+//to view Total Orders
+async function updateTotalOrdersCount() {
+    try {
+      const querySnapshot = await getDocs(collection(db, "orders"));
+      const total = querySnapshot.size;
+      document.getElementById("allorders").textContent = total;
+      document.getElementById("dashboardTotalOrders").textContent = total; 
+    } catch (error) {
+      console.error("Error getting total Orders count:", error);
+      document.getElementById("allorders").textContent = "0";
+    }
+  }
+//to view Total Customers
+async function updateTotalCustomersCount() {
+    try {
+      const querySnapshot = await getDocs(collection(db, "customers"));
+      const total = querySnapshot.size;
+      document.getElementById("dashboardTotalCustomers").textContent = total; 
+    } catch (error) {
+      console.error("Error getting total Customers count:", error);
+      document.getElementById("dashboardTotalCustomers").textContent = "0";
+    }
+  }
+
+
+//to view Processing Orders
+async function updateProcessingOrdersCount() {
+    try {
+        // Helper function for count
+        const getCount = async (conditions) => {
+            const q = query(collection(db, "orders"), ...conditions);
+            const snap = await getDocs(q);
+            return snap.size;
+        };
+
+        // Run queries in parallel
+        const [
+            total1, // UPI paid & pending
+            total2, // Verified & pending
+            total3, // COD pending
+            total4, // Packed
+            total5, // Picked
+            total6, // UPI delivered
+            total7, // COD delivered by UPI
+            total8, // COD delivered by Cash
+            total9, // Returned
+            total10 // Rejected
+        ] = await Promise.all([
+            getCount([where("paymentMethod", "==", "UPI"), where("paymentStatus", "==", "paid"), where("status", "==", "pending")]),
+            getCount([where("paymentStatus", "==", "verified"), where("status", "==", "pending")]),
+            getCount([where("paymentMethod", "==", "COD"), where("status", "==", "pending")]),
+            getCount([where("status", "==", "packed")]),
+            getCount([where("status", "==", "picked")]),
+            getCount([where("paymentMethod", "==", "UPI"), where("status", "==", "delivered")]),
+            getCount([where("paymentMethod", "==", "COD"), where("codPaymentMethod", "==", "UPI"), where("status", "==", "delivered")]),
+            getCount([where("paymentMethod", "==", "COD"), where("codPaymentMethod", "==", "CASH"), where("status", "==", "delivered")]),
+            getCount([where("status", "==", "returned")]),
+            getCount([where("status", "==", "rejected")])
+        ]);
+
+        // Update UI
+        document.getElementById("processingorders").textContent = total1;
+        document.getElementById("pendingupiorders").textContent = total2;
+        document.getElementById("pendingcodorders").textContent = total3;
+        document.getElementById("pendingCount").textContent = total2 + total3;
+        document.getElementById("toassignorders").textContent = total4;
+        document.getElementById("shippedCount").textContent = total5;
+        document.getElementById("pickedorders").textContent = total5;
+        document.getElementById("deliveredupiorders").textContent = total6;
+        document.getElementById("deliveredcodordersbyupi").textContent = total7;
+        document.getElementById("deliveredcodordersbycash").textContent = total8;
+        document.getElementById("deliveredCount").textContent = total7 + total8 + total6; // total delivered
+        document.getElementById("returnedorders").textContent = total9;
+        document.getElementById("rejectedorders").textContent = total10;
+        document.getElementById("returnsCount").textContent = total9 + total10;
+
+    } catch (error) {
+        console.error("Error getting processing orders count:", error);
+
+        // Reset all counts to 0
+        [
+            "processingorders", "pendingupiorders", "pendingcodorders", "pendingCount",
+            "toassignorders", "shippedCount", "pickedorders",
+            "deliveredupiorders", "deliveredcodordersbyupi", "deliveredcodordersbycash", "deliveredCount",
+            "returnedorders", "rejectedorders", "returnsCount"
+        ].forEach(id => {
+            document.getElementById(id).textContent = "0";
+        });
+    }
+}
+
+
+  // Run the function when the page loads
+  window.addEventListener("DOMContentLoaded", updateTotalProductsCount);
+  window.addEventListener("DOMContentLoaded", updateTotalCategoriesCount);
+  window.addEventListener("DOMContentLoaded", updateTotalOrdersCount);
+  window.addEventListener("DOMContentLoaded", updateProcessingOrdersCount);
+  window.addEventListener("DOMContentLoaded", updateTotalCustomersCount);
+
+
+
+// to direct to exact location in the page from external
+document.addEventListener("DOMContentLoaded", () => {
+    const hash = window.location.hash;
+    if (hash) {
+        const target = document.querySelector(hash);
+        if (target) {
+            target.classList.remove("hidden");
+            target.scrollIntoView({ behavior: "smooth" });
+        }
+    }
+});
+
+
+
+// to welcome
+ document.addEventListener("DOMContentLoaded", () => {
+  const role = sessionStorage.getItem("userRole") || "guest";
+  
+  if (role !== "admin") {
+    document.body.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#f3f4f6;">
+        <div style="background:white;box-shadow:0 2px 8px rgba(0,0,0,0.1);border-radius:12px;padding:24px;text-align:center;max-width:320px;">
+          <div style="font-size:32px;color:#dc2626;margin-bottom:12px;">&#9888;</div>
+          <h1 style="font-size:20px;font-weight:600;color:#1f2937;">Access Denied</h1>
+          <p style="color:#4b5563;margin-top:8px;">You do not have permission to view this page.</p>
+          <p style="color:#6b7280;margin-top:12px;font-size:14px;">
+            Your role: <span style="font-weight:600;color:#374151;">${role}</span>
+          </p>
+          <div style="margin-top:16px;">
+            <button onclick="location.reload()" 
+                    style="padding:8px 16px;background:#3b82f6;color:white;border:none;border-radius:6px;cursor:pointer;">
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  const gifContainer = document.getElementById("welcomeGifContainer");
+  if (!sessionStorage.getItem("welcomeShown") && gifContainer) {
+    gifContainer.classList.remove("hidden");
+    setTimeout(() => {
+      gifContainer.classList.add("hidden");
+      sessionStorage.setItem("welcomeShown", "true");
+    }, 3000);
+  }
+});
+
+
+
+</script>
+</head>
+
+<body class="bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 font-sans min-h-screen" oncontextmenu="return false;" onkeydown="if(event.keyCode==123) return false;">
+  <div class="flex flex-col md:flex-row min-h-screen">
+   <!-- Desktop Sidebar -->
+<aside class="w-64 bg-white/90 backdrop-blur-md border-r border-gray-200 sidebar-shadow hidden md:block fixed md:relative z-30 h-full">
+  
+  <!-- Sidebar Header -->
+  <div class="bg-gradient-to-r from-indigo-600 to-blue-500 p-6 text-white shadow-md">
+    <div>
+      <h1 id='shopHeading' class="text-2xl font-bold tracking-wide">SJPSS</h1>
+      <p class="text-sm opacity-90">Admin Panel</p>
+    </div>
+  </div>
+  
+  <!-- Sidebar Navigation -->
+  <nav class="mt-4 px-4 space-y-3">
+    <!-- Dashboard -->
+    <a href="#Dashboard" class="nav-item group flex items-center px-4 py-2 rounded-lg text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-all duration-200 shadow-sm hover:shadow-md active-link" onclick="showSection(this, event)">
+      <i class="fas fa-tachometer-alt w-5 h-5 mr-3 text-indigo-500 group-hover:text-indigo-700"></i>
+      <span class="font-medium">Dashboard</span>
+    </a>
+
+    <!-- Orders -->
+    <a href="#orders" class="nav-item group flex items-center px-4 py-2 rounded-lg text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-all duration-200 shadow-sm hover:shadow-md" onclick="showSection(this, event)">
+      <i class="fas fa-shopping-cart w-5 h-5 mr-3 text-pink-500 group-hover:text-indigo-700"></i>
+      <span class="font-medium">Orders</span>
+    </a>
+
+    <!-- Payments -->
+    <a href="#payments" class="nav-item group flex items-center px-4 py-2 rounded-lg text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-all duration-200 shadow-sm hover:shadow-md" onclick="showSection(this, event)">
+      <i class="fas fa-wallet w-5 h-5 mr-3 text-green-500 group-hover:text-indigo-700"></i>
+      <span class="font-medium">Payments</span>
+    </a>
+
+    <!-- Stakeholders -->
+    <a href="#stakeholders" class="nav-item group flex items-center px-4 py-2 rounded-lg text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-all duration-200 shadow-sm hover:shadow-md" onclick="showSection(this, event)">
+      <i class="fas fa-users w-5 h-5 mr-3 text-blue-500 group-hover:text-indigo-700"></i>
+      <span class="font-medium">Stake Holders</span>
+    </a>
+
+    <!-- Products -->
+    <a href="#products" class="nav-item group flex items-center px-4 py-2 rounded-lg text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-all duration-200 shadow-sm hover:shadow-md" onclick="showSection(this, event)">
+      <i class="fas fa-box w-5 h-5 mr-3 text-yellow-500 group-hover:text-indigo-700"></i>
+      <span class="font-medium">Products</span>
+    </a>
+
+    <!-- Inventory -->
+    <a href="#inventory" class="nav-item group flex items-center px-4 py-2 rounded-lg text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-all duration-200 shadow-sm hover:shadow-md" onclick="showSection(this, event)">
+      <i class="fas fa-warehouse w-5 h-5 mr-3 text-teal-500 group-hover:text-indigo-700"></i>
+      <span class="font-medium">Inventory</span>
+    </a>
+
+    <!-- Misc -->
+    <a href="#misc" class="nav-item group flex items-center px-4 py-2 rounded-lg text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-all duration-200 shadow-sm hover:shadow-md" onclick="showSection(this, event)">
+      <i class="fas fa-sliders-h w-5 h-5 mr-3 text-purple-500 group-hover:text-indigo-700"></i>
+      <span class="font-medium">Misc</span>
+    </a>
+
+    <!-- Settings -->
+    <a href="#settings" class="nav-item group flex items-center px-4 py-2 rounded-lg text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-all duration-200 shadow-sm hover:shadow-md" onclick="showSection(this, event)">
+      <i class="fas fa-cog w-5 h-5 mr-3 text-gray-500 group-hover:text-indigo-700"></i>
+      <span class="font-medium">Settings</span>
+    </a>
+
+    <!-- Future -->
+    <a href="#future" class="nav-item group flex items-center px-4 py-2 rounded-lg text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-all duration-200 shadow-sm hover:shadow-md" onclick="showSection(this, event)">
+      <i class="fas fa-calendar-alt w-5 h-5 mr-3 text-orange-500 group-hover:text-indigo-700"></i>
+      <span class="font-medium">Future</span>
+    </a>
+
+    <!-- Logout -->
+    <div class="border-t border-gray-200 mt-6 pt-4">
+      <a href="loginPage.html" class="group flex items-center px-4 py-2 rounded-lg text-red-600 hover:bg-red-50 transition-all duration-200 shadow-sm hover:shadow-md">
+        <i class="fas fa-sign-out-alt w-5 h-5 mr-3 text-red-500 group-hover:text-red-700"></i>
+        <span class="font-medium">Logout</span>
+      </a>
+    </div>
+  </nav>
+</aside>
+
+<!-- Active link styling -->
+<style>
+  .active-link {
+    background: linear-gradient(to right, #e0e7ff, #eef2ff);
+    color: #4338ca !important;
+    font-weight: 600;
+  }
+  .active-link i {
+    color: #4338ca !important;
+  }
+</style>
+
+    <!-- Mobile Header -->
+    <div class="md:hidden gradient-bg p-4 text-white">
+      <div>
+        <h1 class="font-bold text-lg">Admin Panel</h1>
+        <p class="text-xs opacity-90">Management System</p>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col overflow-hidden pb-16 md:pb-0">
+      <main class="flex-1 overflow-y-auto p-4 md:p-8 space-y-8">
+
+
+
+
+       
+        <!-- Admin Dashboard -->
+        <section id="Dashboard" class="section-content hidden">
+          <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">Dashboard Overview</h2>
+            <p class="text-gray-600">Welcome back! Here's what's happening with your business today.</p>
+          </div>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="stats-card p-6 rounded-xl custom-shadow hover-lift">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-gray-600 mb-1">Total Orders</p>
+                  <p class="text-3xl font-bold text-gray-800"><span id="dashboardTotalOrders">0</span></p>
+                  <p class="text-sm text-green-600 mt-1">
+                    <i class="fas fa-arrow-up mr-1"></i>12% from last month
+                  </p>
+                </div>
+                <div class="bg-blue-100 p-3 rounded-full">
+                  <i class="fas fa-shopping-cart text-blue-600 text-xl"></i>
+                </div>
+              </div>
+            </div>
+            
+            <div class="stats-card p-6 rounded-xl custom-shadow hover-lift">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-gray-600 mb-1">Customers</p>
+                  <p class="text-3xl font-bold text-gray-800"><span id="dashboardTotalCustomers">0</span></p>
+                  <p class="text-sm text-green-600 mt-1">
+                    <i class="fas fa-arrow-up mr-1"></i>8% from last month
+                  </p>
+                </div>
+                <div class="bg-green-100 p-3 rounded-full">
+                  <i class="fas fa-users text-green-600 text-xl"></i>
+                </div>
+              </div>
+            </div>
+            
+            <div class="stats-card p-6 rounded-xl custom-shadow hover-lift">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-gray-600 mb-1">Revenue</p>
+                  <p class="text-3xl font-bold text-gray-800">₹25,000</p>
+                  <p class="text-sm text-green-600 mt-1">
+                    <i class="fas fa-arrow-up mr-1"></i>15% from last month
+                  </p>
+                </div>
+                <div class="bg-yellow-100 p-3 rounded-full">
+                  <i class="fas fa-dollar-sign text-yellow-600 text-xl"></i>
+                </div>
+              </div>
+            </div>
+            
+            <div class="stats-card p-6 rounded-xl custom-shadow hover-lift">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-gray-600 mb-1">Stock Items</p>
+                  <p class="text-3xl font-bold text-gray-800">1,200</p>
+                  <p class="text-sm text-red-600 mt-1">
+                    <i class="fas fa-arrow-down mr-1"></i>3% from last month
+                  </p>
+                </div>
+                <div class="bg-red-100 p-3 rounded-full">
+                  <i class="fas fa-box text-red-600 text-xl"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+<!-- Welcome GIF (inside dashboard, hidden by default) -->
+  <div id="welcomeGifContainer" class="hidden flex justify-center mt-6">
+    <img src="https://i.pinimg.com/originals/80/be/ba/80bebaa590b6e9dc40576698c51ed02a.gif" 
+         alt="Welcome Back" 
+         class="w-64 h-auto rounded-lg shadow-lg">
+  </div>
+        </section>
+
+
+<!-- Product Management -->
+        <section id="products" class="section-content hidden">
+  <div class="mb-8">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="text-3xl font-bold text-gray-800">Products Management</h2>
+      <button href="#Dashboard" onclick="showSection(this, event)" class="group inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-white border border-gray-300 rounded-lg transition-all duration-200 shadow-sm">
+        <svg class="w-4 h-4 mr-2 transition-transform duration-200 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        <span>Back to Dashboard</span>
+      </button>
+    </div>
+    <p class="text-gray-600">Manage product catalog, inventory, pricing, and categories</p>
+  </div>
+
+  <div class="bg-white rounded-xl custom-shadow p-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+      <!-- Product Catalog -->
+      <a href="#product-catalog" class="nav-item group" onclick="window.location='productCatalog.html'">
+        <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-boxes text-2xl text-purple-500 group-hover:text-purple-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Product Catalog</h3>
+            <p class="text-gray-500 text-xs">Browse all products</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Add Product -->
+      <a href="#add-product" class="nav-item group" onclick="window.location='addOrEditProducts.html?mode=Add'" title="use for adding a product">
+        <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-plus-circle text-2xl text-blue-500 group-hover:text-blue-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Add Product</h3>
+            <p class="text-gray-500 text-xs">Create new product listing</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Edit Product -->
+      <a href="#edit-product" class="nav-item group" onclick="window.location='addOrEditProducts.html?mode=Edit'" title="use for editing a product">
+        <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-yellow-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-edit text-2xl text-yellow-500 group-hover:text-yellow-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Edit Product</h3>
+            <p class="text-gray-500 text-xs">Edit an existing product</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Category Management -->
+      <a href="#categories" class="nav-item group" onclick="window.location='ProductCategoryEntry.html'" >   
+        <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-green-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-tags text-2xl text-green-500 group-hover:text-green-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Categories</h3>
+            <p class="text-gray-500 text-xs">Manage product categories</p>
+          </div>
+        </div>
+      </a>
+
+
+
+      <!-- Pricing Management -->
+      <a href="#pricing" class="nav-item group" onclick="showSection(this, event)">
+        <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-inr text-2xl text-indigo-500 group-hover:text-indigo-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Todays Deals</h3>
+            <p class="text-gray-500 text-xs">Set prices and discounts</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Product Reviews -->
+      <a href="#reviews" class="nav-item group" onclick="showSection(this, event)">
+        <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-teal-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-star text-2xl text-teal-500 group-hover:text-teal-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Reviews</h3>
+            <p class="text-gray-500 text-xs">Customer feedback</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Product Images -->
+      <a href="#product-media" class="nav-item group" onclick="showSection(this, event)">
+        <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-red-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-images text-2xl text-red-500 group-hover:text-red-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Media</h3>
+            <p class="text-gray-500 text-xs">Product images & videos</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Product Analytics -->
+      <a href="#product-analytics" class="nav-item group" onclick="showSection(this, event)">
+        <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-orange-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-chart-bar text-2xl text-orange-500 group-hover:text-orange-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Analytics</h3>
+            <p class="text-gray-500 text-xs">Performance insights</p>
+          </div>
+        </div>
+      </a>
+
+    </div>
+
+    <!-- Quick Stats Section -->
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="bg-purple-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-purple-600"><span id="totalProducts">0</span></div>
+        <div class="text-sm text-purple-700">Total Products</div>
+      </div>
+      <div class="bg-blue-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-blue-600"><span id="totalCategories">0</span></div>
+        <div class="text-sm text-blue-700">Categories</div>
+      </div>
+      <div class="bg-green-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-green-600">89%</div>
+        <div class="text-sm text-green-700">In Stock</div>
+      </div>
+      <div class="bg-orange-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-orange-600">4.7</div>
+        <div class="text-sm text-orange-700">Avg Rating</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+        <!-- Order Management -->
+        <section id="orders" class="section-content hidden">
+<div class="mb-8">
+ <div class="flex items-center justify-between mb-2">
+   <h2 class="text-3xl font-bold text-gray-800">Orders Management</h2>
+   <button href="#Dashboard" onclick="showSection(this, event)" class="group inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-white border border-gray-300 rounded-lg transition-all duration-200 shadow-sm">
+     <svg class="w-4 h-4 mr-2 transition-transform duration-200 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+     </svg>
+     <span>Back to Dashboard</span>
+   </button>
+ </div>
+ <p class="text-gray-600">Manage customer orders, tracking, and fulfillment</p>
+</div>
+
+ <div class="bg-white rounded-xl custom-shadow p-6">
+   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+     <!-- Order Processing -->
+     <a href="#order-processing" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-cogs text-2xl text-purple-500 group-hover:text-purple-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Order Processing</h3>
+           <p class="text-gray-500 text-xs">Process new orders</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Order Tracking -->
+     <a href="#order-tracking" class="nav-item group" onclick="window.location='orderTracking.html'">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-shipping-fast text-2xl text-blue-500 group-hover:text-blue-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Order Tracking</h3>
+           <p class="text-gray-500 text-xs">Track shipment status</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Returns & Rejections -->
+     <a href="#returns-rejections" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-green-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-undo text-2xl text-green-500 group-hover:text-green-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Returns & Rejections</h3>
+           <p class="text-gray-500 text-xs">Handle returns & rejections</p>
+         </div>
+       </div>
+     </a>
+
+<!-- Order Closing -->
+<a href="#order-closing" class="nav-item group" onclick="window.location='orderClosing.html'">
+  <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-red-300 hover:shadow-md transition-all duration-300">
+    <div class="text-center">
+      <i class="fas fa-archive text-2xl text-red-500 group-hover:text-red-600 mb-3 transition-colors"></i>
+      <h3 class="text-sm font-semibold text-gray-800 mb-1">Order Closing</h3>
+      <p class="text-gray-500 text-xs">Finalize delivered orders</p>
+    </div>
+  </div>
+</a>
+
+
+     <!-- Inventory Management -->
+     <a href="#inventory-management" class="nav-item group" onclick="window.location='productCatalog.html'">	
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-boxes text-2xl text-indigo-500 group-hover:text-indigo-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Inventory Check</h3>
+           <p class="text-gray-500 text-xs">Stock availability</p>
+         </div>
+       </div>
+     </a>
+
+    
+     <!-- Delivery Management -->
+     <a href="#delivery-management" class="nav-item group" onclick="window.location='deliveryAdminPanel.html'">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-red-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-truck text-2xl text-red-500 group-hover:text-red-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Delivery Management</h3>
+           <p class="text-gray-500 text-xs">Shipping coordination</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Order Analytics -->
+     <a href="#order-analytics" class="nav-item group" onclick="window.location='dailyReport.html'">	
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-orange-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-chart-bar text-2xl text-orange-500 group-hover:text-orange-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Order Analytics</h3>
+           <p class="text-gray-500 text-xs">Sales reports & insights</p>
+         </div>
+       </div>
+     </a>
+
+   </div>
+
+   <!-- Quick Stats Section -->
+   <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+     <div class="bg-purple-50 p-4 rounded-lg text-center">
+       <div class="text-2xl font-bold text-purple-600">156</div>
+       <div class="text-sm text-purple-700">Active Orders</div>
+     </div>
+     <div class="bg-blue-50 p-4 rounded-lg text-center">
+       <div class="text-2xl font-bold text-blue-600">23</div>
+       <div class="text-sm text-blue-700">Pending Shipments</div>
+     </div>
+     <div class="bg-green-50 p-4 rounded-lg text-center">
+       <div class="text-2xl font-bold text-green-600">₹1,45,000</div>
+       <div class="text-sm text-green-700">Daily Revenue</div>
+     </div>
+     <div class="bg-orange-50 p-4 rounded-lg text-center">
+       <div class="text-2xl font-bold text-orange-600">94%</div>
+       <div class="text-sm text-orange-700">Fulfillment Rate</div>
+     </div>
+   </div>
+
+ </div>
+</section>
+
+
+
+
+
+
+
+<!-- Order Processing -->
+<section id="order-processing" class="section-content hidden">
+  <div class="mb-8">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="text-xl font-bold text-gray-600">Order Processing</h2>
+      <button href="#orders" onclick="showSection(this, event)" class="group inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-white border border-gray-300 rounded-lg transition-all duration-200 shadow-sm">
+        <svg class="w-4 h-4 mr-2 transition-transform duration-200 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        <span>Back to Order Management</span>
+      </button>
+    </div>
+    <p class="text-xs text-gray-600">Manage all customer orders, track status, handle returns, and generate reports.</p>
+  </div>
+
+  <div class="bg-white rounded-xl custom-shadow p-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+
+
+      <!-- To verify UPI Payments Orders -->
+     <a href="javascript:void(0);" class="nav-item group" onclick="window.location='OrderTables.html?paymentMethod=UPI&paymentStatus=paid&status=pending'">
+        <div class="cursor-pointer p-2 rounded-lg border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-cogs text-2xl text-blue-500 group-hover:text-blue-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">1. For Verification <span id="processingorders" class="ml-2 bg-white text-gray-500 text-xs rounded-full px-2 py-0.5 border border-blue-600">0</span></h3>
+            <p class="text-gray-500 text-xs">To verify UPI Payments </p>
+          </div> 
+        </div>
+      </a>
+
+      <!-- Out For Packing UPI Orders -->
+      <a href="#outforpacking-upiorders" class="nav-item group" onclick="window.location='OrderTables.html?paymentStatus=verified&status=pending'">  
+        <div class="cursor-pointer p-2 rounded-lg border border-gray-200 hover:border-yellow-400 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-hourglass-start text-2xl text-orange-400 group-hover:text-yellow-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">2. Out for Packing UPI <span id="pendingupiorders" class="ml-2 bg-white text-orange-600 text-xs rounded-full px-2 py-0.5 border border-orange-400">0</span></h3>
+            <p class="text-gray-500 text-xs">Ready for packing UPI orders</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Out For Packing COD Orders -->
+      <a href="#outforpacking-codorders" class="nav-item group" onclick="window.location='OrderTables.html?paymentMethod=COD&status=pending'">  
+        <div class="cursor-pointer p-2 rounded-lg border border-gray-200 hover:border-yellow-400 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-hourglass-start text-2xl text-yellow-500 group-hover:text-yellow-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">3. Out for Packing COD <span id="pendingcodorders" class="ml-2 bg-white text-yellow-600 text-xs rounded-full px-2 py-0.5 border border-yellow-500">0</span></h3>
+            <p class="text-gray-500 text-xs">Ready for packing COD orders</p>
+          </div>
+        </div>
+      </a>
+
+
+      <!-- Ready to Assign -->
+      <a href="#ready-to-assign" class="nav-item group" onclick="window.location='OrderTables.html?status=packed'">
+        <div class="cursor-pointer p-2 rounded-lg border border-gray-200 hover:border-indigo-400 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-box text-2xl text-indigo-500 group-hover:text-indigo-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">4. Ready to Assign <span id="toassignorders" class="ml-2 bg-white text-indigo-600 text-xs rounded-full px-2 py-0.5 border border-indigo-600">0</span></h3>
+            <p class="text-gray-500 text-xs">Packed and ready for assigning to Staff</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Out for Delivery -->
+      <a href="#out-for-delivery" class="nav-item group" onclick="window.location='OrderTables.html?status=picked'">
+        <div class="cursor-pointer p-2 rounded-lg border border-gray-200 hover:border-green-400 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-shipping-fast text-2xl text-green-500 group-hover:text-green-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">5.Out for Delivery <span id="pickedorders" class="ml-2 bg-white text-green-600 text-xs rounded-full px-2 py-0.5 border border-green-500">0</span></h3>
+            <p class="text-gray-500 text-xs">Picked by delivery staff</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Delivered UPI Orders -->
+      <a href="#delivered-upi-orders" class="nav-item group" onclick="window.location='OrderTables.html?paymentMethod=UPI&status=delivered'">
+        <div class="cursor-pointer p-2 rounded-lg border border-gray-200 hover:border-teal-400 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-check-circle text-2xl text-teal-500 group-hover:text-teal-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">6. Delivered UPI<span id="deliveredupiorders" class="ml-2 bg-white text-teal-600 text-xs rounded-full px-2 py-0.5 border border-teal-500">0</span></h3>
+            <p class="text-gray-500 text-xs">Successfully delivered UPI orders</p>
+          </div>
+        </div>
+      </a>
+
+<!-- Delivered COD Orders by UPI-->
+<a href="#delivered-cod-orders-upi" class="nav-item group" onclick="window.location='OrderTables.html?paymentMethod=COD&status=delivered&codPaymentMethod=UPI'">
+  <div class="cursor-pointer p-2 rounded-lg border border-gray-300 hover:border-emerald-400 hover:shadow-lg transition-all duration-300 bg-white">
+    <div class="text-center">
+      <i class="fas fa-check-circle text-2xl text-emerald-500 group-hover:text-emerald-600 mb-3 transition-colors"></i>
+      <h3 class="text-sm font-semibold text-gray-800 mb-1">
+        7. Delivered COD by UPI
+        <span id="deliveredcodordersbyupi" class="ml-2 bg-emerald-50 text-emerald-700 text-xs rounded-full px-2 py-0.5 border border-emerald-400">
+          0
+        </span>
+      </h3>
+      <p class="text-gray-500 text-xs">Delivered COD orders paid by UPI</p>
+    </div>
+  </div>
+</a>
+
+<!-- Delivered COD Orders by Cash -->
+<a href="#delivered-cod-orders-cash" class="nav-item group" onclick="window.location='OrderTables.html?paymentMethod=COD&status=delivered&codPaymentMethod=CASH'">
+  <div class="cursor-pointer p-2 rounded-lg border border-slate-200 hover:border-teal-500 hover:bg-teal-50 hover:shadow-md transition-all duration-300 bg-white">
+    <div class="text-center">
+      <i class="fas fa-check-circle text-2xl text-cyan-400 group-hover:text-cyan-600 mb-3 transition-colors"></i>
+      <h3 class="text-sm font-semibold text-slate-800 mb-1">
+        8. Delivered COD by Cash
+        <span id="deliveredcodordersbycash" class="ml-2 bg-teal-100 text-cyan-600 text-xs rounded-full px-2 py-0.5 border border-cyan-400">0</span>
+      </h3>
+      <p class="text-slate-500 text-xs">Delivered COD orders paid by Cash</p>
+    </div>
+  </div>
+</a>
+
+
+
+      <!-- Returns & Replacements -->
+      <a href="#returns" class="nav-item group"  onclick="window.location='OrderTables.html?status=return_initiated'">
+        <div class="cursor-pointer p-2 rounded-lg border border-gray-200 hover:border-pink-400 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-undo text-2xl text-pink-500 group-hover:text-pink-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Returns
+        <span id="returnedorders" class="ml-2 bg-white text-pink-600 text-xs rounded-full px-2 py-0.5 border border-pink-400">0</span>
+	</h3>
+            <p class="text-gray-500 text-xs">Handle returns & replacements</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Rejected or cancelled Orders -->
+      <a href="#rejected-orders" class="nav-item group" onclick="window.location='OrderTables.html?status=rejected'">
+        <div class="cursor-pointer p-2 rounded-lg border border-gray-200 hover:border-red-400 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-times-circle text-2xl text-red-500 group-hover:text-red-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Rejections
+        <span id="rejectedorders" class="ml-2 bg-white text-red-600 text-xs rounded-full px-2 py-0.5 border border-red-400">0</span>
+	</h3>
+            <p class="text-gray-500 text-xs">Rejected or cancelled orders</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- All Orders -->
+      <a href="#all-orders" class="nav-item group" onclick="window.location='OrderTables.html'">
+        <div class="cursor-pointer p-2 rounded-lg border border-gray-200 hover:border-gray-400 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-list text-2xl text-gray-600 group-hover:text-gray-700 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">All Orders  <span id="allorders" class="ml-2 bg-white text-gray-500 text-xs rounded-full px-2 py-0.5 border border-gray-400">0</span></h3>
+            <p class="text-gray-500 text-xs">View  all active orders</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Dispose -->
+      <a href="#dispose" class="nav-item group" onclick="window.location='orderClosing.html'">
+        <div class="cursor-pointer p-2 rounded-lg border border-gray-200 hover:border-lime-400 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-file-invoice text-2xl text-lime-500 group-hover:text-lime-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Dispose</h3>
+            <p class="text-gray-500 text-xs">Dispose orders</p>
+          </div>
+        </div>
+      </a>
+
+
+    </div>
+
+    <!-- Quick Stats Section -->
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="bg-yellow-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-yellow-600"><span id="pendingCount">0</span></div>
+        <div class="text-sm text-yellow-700">Pending</div>
+      </div>
+      <div class="bg-green-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-green-600"><span id="shippedCount">0</span></div>
+        <div class="text-sm text-green-700">Shipped</div>
+      </div>
+      <div class="bg-teal-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-teal-600"><span id="deliveredCount">0</span></div>
+        <div class="text-sm text-teal-700">Delivered</div>
+      </div>
+      <div class="bg-pink-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-pink-600"><span id="returnsCount">0</span></div>
+        <div class="text-sm text-pink-700">Returns & Rejections</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+
+
+<!-- Payments Management -->
+<section id="payments" class="section-content hidden">
+  <div class="mb-8">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="text-3xl font-bold text-gray-800">Payments Management</h2>
+      <button href="#Dashboard" onclick="showSection(this, event)"
+        class="group inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-white border border-gray-300 rounded-lg transition-all duration-200 shadow-sm">
+        <svg class="w-4 h-4 mr-2 transition-transform duration-200 group-hover:-translate-x-1" fill="none"
+          stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        <span>Back to Dashboard</span>
+      </button>
+    </div>
+    <p class="text-gray-600">Manage payment verification, transactions, refunds, and reports</p>
+  </div>
+
+  <div class="bg-white rounded-xl custom-shadow p-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+      <!-- UPI Payment Verification -->
+      <a href="#upi-verification" class="nav-item group" onclick="window.location='paymentVerification.html'">
+        <div
+          class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-green-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-mobile-alt text-2xl text-green-500 group-hover:text-green-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">UPI Verification</h3>
+            <p class="text-gray-500 text-xs">Verify  pre-paid UPI payments</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- COD Payments by UPI-->
+      <a href="#cod-pending" class="nav-item group" onclick="window.location='codPaymentVerificationForUpi.html'">
+        <div
+          class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-yellow-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-mobile text-2xl text-yellow-500 group-hover:text-yellow-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">COD Payments by UPI</h3>
+            <p class="text-gray-500 text-xs">Verify COD payments by UPI</p>
+          </div>
+        </div>
+      </a>
+
+ <!-- COD Payments by Cash -->
+<a href="#cod-cash" class="nav-item group" onclick="window.location='codPaymentVerificationForCash.html'">
+  <div
+    class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-green-300 hover:shadow-md transition-all duration-300">
+    <div class="text-center">
+      <i class="fas fa-money-bill-wave text-2xl text-green-500 group-hover:text-green-600 mb-3 transition-colors"></i>
+      <h3 class="text-sm font-semibold text-gray-800 mb-1">COD Payments by Cash</h3>
+      <p class="text-gray-500 text-xs">Verify COD payments by Cash</p>
+    </div>
+  </div>
+</a>
+
+
+
+      <!--  Payment Reconciliation -->
+      <a href="#payment-reconciliation" class="nav-item group" onclick="window.location='reconciliation.html'">	
+        <div
+          class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-balance-scale text-2xl text-blue-500 group-hover:text-blue-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Payment Reconciliation</h3>
+            <p class="text-gray-500 text-xs">Daily Payments reconciling</p>
+          </div>
+        </div>
+      </a>
+
+<!-- Daily Revenue -->
+<a href="#daily-revenue" class="nav-item group" onclick="window.location='dailyRevenue.html'">
+  <div
+    class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300">
+    <div class="text-center">
+ <i class="fa-solid fa-indian-rupee-sign text-2xl text-blue-500 mb-3"></i>
+      <h3 class="text-sm font-semibold text-gray-800 mb-1">Daily Revenue</h3>
+      <p class="text-gray-500 text-xs">Track today’s total collections</p>
+    </div>
+  </div>
+</a>
+
+
+      <!-- Refund Management -->
+      <a href="#payment-refunds" class="nav-item group" onclick="showSection(this, event)">
+        <div
+          class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-red-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-undo-alt text-2xl text-red-500 group-hover:text-red-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Refunds</h3>
+            <p class="text-gray-500 text-xs">Manage refund requests</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Payment Disputes -->
+      <a href="#payment-disputes" class="nav-item group" onclick="showSection(this, event)">
+        <div
+          class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-exclamation-triangle text-2xl text-purple-500 group-hover:text-purple-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Disputes</h3>
+            <p class="text-gray-500 text-xs">Handle payment disputes</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Payment Analytics -->
+      <a href="#payment-analytics" class="nav-item group" onclick="showSection(this, event)">
+        <div
+          class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-chart-line text-2xl text-indigo-500 group-hover:text-indigo-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Payment Analytics</h3>
+            <p class="text-gray-500 text-xs">Insights & trends</p>
+          </div>
+        </div>
+      </a>
+
+      
+    </div>
+
+    <!-- Quick Stats Section -->
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="bg-green-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-green-600">₹2,45,000</div>
+        <div class="text-sm text-green-700">Today's Revenue</div>
+      </div>
+      <div class="bg-yellow-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-yellow-600">12</div>
+        <div class="text-sm text-yellow-700">COD Pending</div>
+      </div>
+      <div class="bg-blue-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-blue-600">98%</div>
+        <div class="text-sm text-blue-700">Payment Success Rate</div>
+      </div>
+      <div class="bg-purple-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-purple-600">5</div>
+        <div class="text-sm text-purple-700">Disputes This Month</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+
+
+<!-- Returns & Rejections Management -->
+<section id="returns-rejections" class="section-content hidden">
+  <div class="mb-8">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="text-3xl font-bold text-gray-800">Returns & Rejections</h2>
+      <button href="#Dashboard" onclick="showSection(this, event)"
+        class="group inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-white border border-gray-300 rounded-lg transition-all duration-200 shadow-sm">
+        <svg class="w-4 h-4 mr-2 transition-transform duration-200 group-hover:-translate-x-1" fill="none"
+          stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        <span>Back to Dashboard</span>
+      </button>
+    </div>
+    <p class="text-gray-600">Manage returns, rejections, quality checks, and reports</p>
+  </div>
+
+  <div class="bg-white rounded-xl custom-shadow p-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+      <!-- Return Requests -->
+      <a href="#return-requests" class="nav-item group" onclick="window.location='returnRequests.html'">
+        <div
+          class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-undo text-2xl text-blue-500 group-hover:text-blue-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Return Requests</h3>
+            <p class="text-gray-500 text-xs">Review & approve returns</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Product Rejections -->
+      <a href="#rejected-orders" class="nav-item group" onclick="window.location='rejectionManagement.html'">
+        <div
+          class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-red-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-times-circle text-2xl text-red-500 group-hover:text-red-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Rejected Orders</h3>
+            <p class="text-gray-500 text-xs">Track rejected deliveries</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Quality Inspection -->
+      <a href="#quality-checks" class="nav-item group" onclick="window.location='qualityChecks.html'">
+        <div
+          class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-yellow-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-search text-2xl text-yellow-500 group-hover:text-yellow-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Quality Checks</h3>
+            <p class="text-gray-500 text-xs">Inspect returned products</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Refund Link -->
+      <a href="#refunds" class="nav-item group" onclick="window.location='refundProcessing.html'">
+        <div
+          class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-green-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-hand-holding-usd text-2xl text-green-500 group-hover:text-green-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Refund Processing</h3>
+            <p class="text-gray-500 text-xs">Process refunds for returns</p>
+          </div>
+        </div>
+      </a>
+
+    </div>
+
+    <!-- Quick Stats Section -->
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="bg-blue-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-blue-600">32</div>
+        <div class="text-sm text-blue-700">Return Requests</div>
+      </div>
+      <div class="bg-red-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-red-600">8</div>
+        <div class="text-sm text-red-700">Rejected Orders</div>
+      </div>
+      <div class="bg-yellow-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-yellow-600">15</div>
+        <div class="text-sm text-yellow-700">Quality Pending</div>
+      </div>
+      <div class="bg-green-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-green-600">₹1,05,000</div>
+        <div class="text-sm text-green-700">Refunds Issued</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+
+
+
+
+
+
+	
+
+      
+
+        <!-- Customer Management -->
+        <section id="customers" class="section-content hidden">
+<div class="mb-8">
+ <div class="flex items-center justify-between mb-2">
+   <h2 class="text-3xl font-bold text-gray-800">Customer Management</h2>
+   <button href="#stakeholders" onclick="showSection(this, event)" class="group inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-white border border-gray-300 rounded-lg transition-all duration-200 shadow-sm">
+     <svg class="w-4 h-4 mr-2 transition-transform duration-200 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+     </svg>
+     <span>Back to Stakeholders</span>
+   </button>
+ </div>
+ <p class="text-gray-600">Manage customer profiles, orders, support, and engagement</p>
+</div>
+
+ <div class="bg-white rounded-xl custom-shadow p-6">
+   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+     <!-- Customer Registration -->
+     <a href="#customer-registration" class="nav-item group" onclick="window.location.href = 'customerRegistration.html?authorized=true'" title="Register new customers and manage profiles">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-user-plus text-2xl text-purple-500 group-hover:text-purple-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Customer Registration</h3>
+           <p class="text-gray-500 text-xs">Add new customers to system</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Customer Directory -->
+     <a href="#customer-directory" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-users text-2xl text-blue-500 group-hover:text-blue-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Customer Directory</h3>
+           <p class="text-gray-500 text-xs">View all registered customers</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Order Management -->
+     <a href="#customer-orders" class="nav-item group" onclick="window.location='orderTracking.html'">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-green-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-shopping-cart text-2xl text-green-500 group-hover:text-green-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Order Management</h3>
+           <p class="text-gray-500 text-xs">Track customer orders & history</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Customer Support -->
+     <a href="#customer-support" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-yellow-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-headset text-2xl text-yellow-500 group-hover:text-yellow-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Customer Support</h3>
+           <p class="text-gray-500 text-xs">Help desk & ticket system</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Loyalty Program -->
+     <a href="#customer-loyalty" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-medal text-2xl text-indigo-500 group-hover:text-indigo-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Loyalty Program</h3>
+           <p class="text-gray-500 text-xs">Rewards & membership tiers</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Customer Reviews -->
+     <a href="#customer-reviews" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-teal-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-star text-2xl text-teal-500 group-hover:text-teal-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Reviews & Ratings</h3>
+           <p class="text-gray-500 text-xs">Customer feedback system</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Returns & Refunds -->
+     <a href="#customer-returns" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-red-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-undo text-2xl text-red-500 group-hover:text-red-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Returns & Refunds</h3>
+           <p class="text-gray-500 text-xs">Process returns & refunds</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Customer Analytics -->
+     <a href="#customer-analytics" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-orange-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-chart-bar text-2xl text-orange-500 group-hover:text-orange-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Customer Analytics</h3>
+           <p class="text-gray-500 text-xs">Insights & behavior analysis</p>
+         </div>
+       </div>
+     </a>
+
+
+
+   </div>
+
+   <!-- Quick Stats Section -->
+   <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+     <div class="bg-purple-50 p-4 rounded-lg text-center">
+       <div class="text-2xl font-bold text-purple-600">15,847</div>
+       <div class="text-sm text-purple-700">Total Customers</div>
+     </div>
+     <div class="bg-blue-50 p-4 rounded-lg text-center">
+       <div class="text-2xl font-bold text-blue-600">2,156</div>
+       <div class="text-sm text-blue-700">Active Orders</div>
+     </div>
+     <div class="bg-green-50 p-4 rounded-lg text-center">
+       <div class="text-2xl font-bold text-green-600">₹12.8L</div>
+       <div class="text-sm text-green-700">Monthly Revenue</div>
+     </div>
+     <div class="bg-orange-50 p-4 rounded-lg text-center">
+       <div class="text-2xl font-bold text-orange-600">4.8★</div>
+       <div class="text-sm text-orange-700">Average Rating</div>
+     </div>
+   </div>
+
+   <!-- Recent Activity Section -->
+   <div class="mt-8">
+     <h3 class="text-xl font-semibold text-gray-800 mb-4">Recent Customer Activity</h3>
+     <div class="space-y-3">
+       <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+         <div class="flex items-center space-x-3">
+           <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+             <i class="fas fa-shopping-bag text-green-600 text-xs"></i>
+           </div>
+           <div>
+             <p class="text-sm font-medium text-gray-800">New order placed</p>
+             <p class="text-xs text-gray-500">Rahul Sharma - Order #ORD-2024-001</p>
+           </div>
+         </div>
+         <span class="text-xs text-gray-400">2 min ago</span>
+       </div>
+       
+       <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+         <div class="flex items-center space-x-3">
+           <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+             <i class="fas fa-user-plus text-blue-600 text-xs"></i>
+           </div>
+           <div>
+             <p class="text-sm font-medium text-gray-800">New customer registered</p>
+             <p class="text-xs text-gray-500">Priya Patel - priya@email.com</p>
+           </div>
+         </div>
+         <span class="text-xs text-gray-400">15 min ago</span>
+       </div>
+       
+       <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+         <div class="flex items-center space-x-3">
+           <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+             <i class="fas fa-star text-yellow-600 text-xs"></i>
+           </div>
+           <div>
+             <p class="text-sm font-medium text-gray-800">Product review submitted</p>
+             <p class="text-xs text-gray-500">5-star review for Wireless Headphones</p>
+           </div>
+         </div>
+         <span class="text-xs text-gray-400">1 hour ago</span>
+       </div>
+     </div>
+   </div>
+
+ </div>
+</section>
+
+
+ <!-- Customer Directory Section -->
+<section id="customer-directory" class="section-content hidden">
+          <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-600 mb-2">Customer Directory</h2>
+            <p class="text-gray-600">View customer information and relationships</p>
+          </div>
+           <div class="text-center">
+            <button class="btn-modern text-white px-8 py-3 rounded-lg font-medium hover-lift" onclick="location.href='customerAddOrEdit.html'">
+              <i class="fas fa-user-tie mr-2"></i>Add/Edit Customer
+            </button>
+          </div>         
+ 
+        </section>
+
+
+
+<!-- Staff Management -->
+        <section id="staffs" class="section-content hidden">
+          <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">Staff Management</h2>
+            <p class="text-gray-600">Manage team members and their roles</p>
+          </div>
+          
+
+
+          <div class="text-center">
+            <button class="btn-modern text-white px-8 py-3 rounded-lg font-medium hover-lift" onclick="location.href='staffAddOrEdit.html'">
+              <i class="fas fa-user-tie mr-2"></i>Add/Edit Staff
+            </button>
+          </div>
+        </section>
+
+
+
+
+<section id="stakeholders" class="section-content hidden">
+ <div class="mb-8">
+   <h2 class="text-3xl font-bold text-gray-800 mb-2">Stake Holders</h2>
+   <p class="text-gray-600">Access to stakeholders</p>
+ </div>
+
+ <div class="bg-white rounded-xl custom-shadow p-6">
+   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+     <!-- Customers -->
+     <a href="#customers" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-3 rounded-md border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-users text-2xl text-blue-500 group-hover:text-blue-600 mb-2 transition-colors"></i>
+           <h3 class="text-base font-semibold text-gray-800 mb-1">Customers</h3>
+           <p class="text-gray-500 text-xs">Manage customers</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Staffs -->
+     <a href="#staffs" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-3 rounded-md border border-gray-200 hover:border-green-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-user text-2xl text-green-500 group-hover:text-green-600 mb-2 transition-colors"></i>
+           <h3 class="text-base font-semibold text-gray-800 mb-1">Staffs</h3>
+           <p class="text-gray-500 text-xs">Campaigns and promotional tools</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Vendors -->
+     <a href="#vendors" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-3 rounded-md border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-store text-2xl text-purple-500 group-hover:text-purple-600 mb-2 transition-colors"></i>
+           <h3 class="text-base font-semibold text-gray-800 mb-1">Vendors</h3>
+           <p class="text-gray-500 text-xs">Generate detailed business reports</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- System Developers -->
+     <a href="#developers" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-3 rounded-md border border-gray-200 hover:border-orange-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-cogs text-2xl text-orange-500 group-hover:text-orange-600 mb-2 transition-colors"></i>
+           <h3 class="text-base font-semibold text-gray-800 mb-1">System Developers</h3>
+           <p class="text-gray-500 text-xs">Data insights and performance metrics</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Auditors -->
+     <a href="#auditors" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-3 rounded-md border border-gray-200 hover:border-red-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-credit-card text-2xl text-red-500 group-hover:text-red-600 mb-2 transition-colors"></i>
+           <h3 class="text-base font-semibold text-gray-800 mb-1">Auditors</h3>
+           <p class="text-gray-500 text-xs">Real-time location and status updates</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Tax Consultants -->
+     <a href="#consultants" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-3 rounded-md border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-handshake text-2xl text-indigo-500 group-hover:text-indigo-600 mb-2 transition-colors"></i>
+           <h3 class="text-base font-semibold text-gray-800 mb-1">Tax Consultants</h3>
+           <p class="text-gray-500 text-xs">Help center and customer service</p>
+         </div>
+       </div>
+     </a>
+
+   </div>
+ </div>
+</section>
+
+<section id="developers" class="section-content hidden">
+<div class="mb-8">
+ <div class="flex items-center justify-between mb-2">
+   <h2 class="text-3xl font-bold text-gray-800">Developers Management</h2>
+   <button href="#stakeholders" onclick="showSection(this, event)" class="group inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-white border border-gray-300 rounded-lg transition-all duration-200 shadow-sm">
+     <svg class="w-4 h-4 mr-2 transition-transform duration-200 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+     </svg>
+     <span>Back to Stakeholders</span>
+   </button>
+ </div>
+ <p class="text-gray-600">Manage development team, system architecture, and technical operations</p>
+</div>
+
+ <div class="bg-white rounded-xl custom-shadow p-6">
+   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+     <!-- System Architecture -->
+     <a href="#system-architecture" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-sitemap text-2xl text-purple-500 group-hover:text-purple-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">System Architecture</h3>
+           <p class="text-gray-500 text-xs">Manage system design & modules</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- API Management -->
+     <a href="#api-management" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-code text-2xl text-blue-500 group-hover:text-blue-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">API Management</h3>
+           <p class="text-gray-500 text-xs">Shopping & delivery APIs</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Database Administration -->
+     <a href="#database-admin" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-green-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-database text-2xl text-green-500 group-hover:text-green-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Database Admin</h3>
+           <p class="text-gray-500 text-xs">Manage product & order data</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Deployment Pipeline -->
+     <a href="#deployment" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-yellow-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-rocket text-2xl text-yellow-500 group-hover:text-yellow-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Deployment</h3>
+           <p class="text-gray-500 text-xs">CI/CD & release management</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- System Monitoring -->
+     <a href="#system-monitoring" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-chart-bar text-2xl text-indigo-500 group-hover:text-indigo-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">System Monitoring</h3>
+           <p class="text-gray-500 text-xs">Performance & health metrics</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Security Management -->
+     <a href="#security-management" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-teal-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-shield-alt text-2xl text-teal-500 group-hover:text-teal-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Security</h3>
+           <p class="text-gray-500 text-xs">User data & payment security</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Integration Hub -->
+     <a href="#integration-hub" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-red-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-plug text-2xl text-red-500 group-hover:text-red-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Integrations</h3>
+           <p class="text-gray-500 text-xs">Third-party service connections</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Development Tools -->
+     <a href="#dev-tools" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-orange-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-tools text-2xl text-orange-500 group-hover:text-orange-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Dev Tools</h3>
+           <p class="text-gray-500 text-xs">Testing & debugging utilities</p>
+         </div>
+       </div>
+     </a>
+
+   </div>
+
+   <!-- Quick Stats Section -->
+   <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+     <div class="bg-purple-50 p-4 rounded-lg text-center">
+       <div class="text-2xl font-bold text-purple-600">5</div>
+       <div class="text-sm text-purple-700">Active Developers</div>
+     </div>
+     <div class="bg-blue-50 p-4 rounded-lg text-center">
+       <div class="text-2xl font-bold text-blue-600">12</div>
+       <div class="text-sm text-blue-700">API Endpoints</div>
+     </div>
+     <div class="bg-green-50 p-4 rounded-lg text-center">
+       <div class="text-2xl font-bold text-green-600">99.8%</div>
+       <div class="text-sm text-green-700">System Uptime</div>
+     </div>
+     <div class="bg-orange-50 p-4 rounded-lg text-center">
+       <div class="text-2xl font-bold text-orange-600">15</div>
+       <div class="text-sm text-orange-700">Recent Deployments</div>
+     </div>
+   </div>
+
+ </div>
+</section>
+
+
+<section id="vendors" class="section-content hidden">
+<div class="mb-8">
+ <div class="flex items-center justify-between mb-2">
+   <h2 class="text-3xl font-bold text-gray-800">Vendors Management</h2>
+   <button href="#stakeholders" onclick="showSection(this, event)" class="group inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-white border border-gray-300 rounded-lg transition-all duration-200 shadow-sm">
+     <svg class="w-4 h-4 mr-2 transition-transform duration-200 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+     </svg>
+     <span>Back to Stakeholders</span>
+   </button>
+ </div>
+ <p class="text-gray-600">Manage vendor information, contracts, and performance</p>
+</div>
+
+ <div class="bg-white rounded-xl custom-shadow p-6">
+   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+     <!-- Vendor Registration -->
+     <a href="#vendor-registration" class="nav-item group" onclick="window.location='router.html?token=vr123'" title="Also to edit data of existing vendor">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-user-plus text-2xl text-purple-500 group-hover:text-purple-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Vendor Registration</h3>
+           <p class="text-gray-500 text-xs">Add new vendors to system</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Vendor Directory -->
+     <a href="#vendor-directory" class="nav-item group" onclick="window.location='vendorDirectory.html'">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-address-book text-2xl text-blue-500 group-hover:text-blue-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Vendor Directory</h3>
+           <p class="text-gray-500 text-xs">View all registered vendors</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Contract Management -->
+     <a href="#vendor-contracts" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-green-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-file-contract text-2xl text-green-500 group-hover:text-green-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Contract Management</h3>
+           <p class="text-gray-500 text-xs">Manage vendor agreements</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Payment Management -->
+     <a href="#vendor-payments" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-yellow-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-credit-card text-2xl text-yellow-500 group-hover:text-yellow-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Payment Management</h3>
+           <p class="text-gray-500 text-xs">Handle vendor payments</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Performance Tracking -->
+     <a href="#vendor-performance" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-chart-line text-2xl text-indigo-500 group-hover:text-indigo-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Performance Tracking</h3>
+           <p class="text-gray-500 text-xs">Monitor vendor metrics</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Vendor Communications -->
+     <a href="#vendor-communications" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-teal-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-comments text-2xl text-teal-500 group-hover:text-teal-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Communications</h3>
+           <p class="text-gray-500 text-xs">Vendor messaging system</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Vendors Home Page -->
+     <a href="#vendor-home-page" class="nav-item group" onclick="window.location='VendorsPages.html'">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-red-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-shield-alt text-2xl text-red-500 group-hover:text-red-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Vendors Home Page </h3>
+           <p class="text-gray-500 text-xs">View Each vendors home page</p>
+         </div>
+       </div>
+     </a>
+
+     <!-- Vendor Reports -->
+     <a href="#vendor-reports" class="nav-item group" onclick="showSection(this, event)">
+       <div class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-orange-300 hover:shadow-md transition-all duration-300">
+         <div class="text-center">
+           <i class="fas fa-file-alt text-2xl text-orange-500 group-hover:text-orange-600 mb-3 transition-colors"></i>
+           <h3 class="text-sm font-semibold text-gray-800 mb-1">Vendor Reports</h3>
+           <p class="text-gray-500 text-xs">Generate vendor analytics</p>
+         </div>
+       </div>
+     </a>
+
+   </div>
+
+   <!-- Quick Stats Section -->
+   <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+     <div class="bg-purple-50 p-4 rounded-lg text-center">
+       <div class="text-2xl font-bold text-purple-600">2</div>
+       <div class="text-sm text-purple-700">Active Vendors</div>
+     </div>
+     <div class="bg-blue-50 p-4 rounded-lg text-center">
+       <div class="text-2xl font-bold text-blue-600">2</div>
+       <div class="text-sm text-blue-700">Pending Contracts</div>
+     </div>
+     <div class="bg-green-50 p-4 rounded-lg text-center">
+       <div class="text-2xl font-bold text-green-600">₹25000</div>
+       <div class="text-sm text-green-700">Monthly Payments</div>
+     </div>
+     <div class="bg-orange-50 p-4 rounded-lg text-center">
+       <div class="text-2xl font-bold text-orange-600">98%</div>
+       <div class="text-sm text-orange-700">Compliance Rate</div>
+     </div>
+   </div>
+
+ </div>
+</section>
+
+
+
+<section id="misc" class="section-content hidden">
+  <div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-800 mb-1">Miscellaneous Services</h2>
+    <p class="text-gray-600 text-sm">Quick access to miscellaneous services</p>
+  </div>
+  
+  <div class="bg-white rounded-xl custom-shadow p-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      
+      <!-- Deliveries -->
+      <div class="group cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300" onclick="window.location='assignDeliveryHome.html'">
+        <div class="text-center">
+          <i class="fas fa-truck text-2xl text-blue-500 group-hover:text-blue-600 mb-2 transition-colors"></i>
+          <h3 class="text-base font-semibold text-gray-800 mb-1">Delivery Assignment</h3>
+          <p class="text-gray-500 text-xs">Bulk, Change delivery assignments </p>
+        </div>
+      </div>
+
+      <!-- Marketing -->
+      <div class="group cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-green-300 hover:shadow-md transition-all duration-300" onclick="showSection('marketing')">
+        <div class="text-center">
+          <i class="fas fa-bullhorn text-2xl text-green-500 group-hover:text-green-600 mb-2 transition-colors"></i>
+          <h3 class="text-base font-semibold text-gray-800 mb-1">Marketing</h3>
+          <p class="text-gray-500 text-xs">Campaigns and promotional tools</p>
+        </div>
+      </div>
+
+     <!-- Reports -->
+<div href="#reports"
+   class="group cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-300 focus:outline-none active:outline-none" 
+   onclick="showSection(this)">
+  <div class="text-center">
+    <i class="fas fa-file-alt text-2xl text-purple-500 group-hover:text-purple-600 mb-2 transition-colors"></i>
+    <h3 class="text-base font-semibold text-gray-800 mb-1">Reports</h3>
+    <p class="text-gray-500 text-xs">Generate detailed business reports</p>
+  </div>
+</div>
+
+
+      <!-- Analytics -->
+      <div class="group cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-orange-300 hover:shadow-md transition-all duration-300" onclick="showSection('analytics')">
+        <div class="text-center">
+          <i class="fas fa-chart-line text-2xl text-orange-500 group-hover:text-orange-600 mb-2 transition-colors"></i>
+          <h3 class="text-base font-semibold text-gray-800 mb-1">Analytics</h3>
+          <p class="text-gray-500 text-xs">Data insights and performance metrics</p>
+        </div>
+      </div>
+
+      <!-- Live Tracking -->
+      <div class="group cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-red-300 hover:shadow-md transition-all duration-300" onclick="showSection('livetracking')">
+        <div class="text-center">
+          <i class="fas fa-map-marker-alt text-2xl text-red-500 group-hover:text-red-600 mb-2 transition-colors"></i>
+          <h3 class="text-base font-semibold text-gray-800 mb-1">Live Tracking</h3>
+          <p class="text-gray-500 text-xs">Real-time location and status updates</p>
+        </div>
+      </div>
+
+      <!-- Support -->
+      <div class="group cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all duration-300" onclick="window.location='help1.html'">
+        <div class="text-center">
+          <i class="fas fa-headset text-2xl text-indigo-500 group-hover:text-indigo-600 mb-2 transition-colors"></i>
+          <h3 class="text-base font-semibold text-gray-800 mb-1">Support</h3>
+          <p class="text-gray-500 text-xs">Help center </p>
+        </div>
+      </div>
+
+      <!-- Logs -->
+      <div class="group cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all duration-300" onclick="window.location='viewLogs.html'">
+        <div class="text-center">
+          <i class="fas fa-file-alt text-2xl text-indigo-500 group-hover:text-indigo-600 mb-2 transition-colors"></i>
+          <h3 class="text-base font-semibold text-gray-800 mb-1">Logs</h3>
+          <p class="text-gray-500 text-xs">View logs of events</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+
+
+
+
+
+
+       <!-- Reports -->
+<section id="reports" class="section-content hidden">
+  <div class="mb-8">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="text-xl font-bold text-gray-600">Reports</h2>
+      <a href="#misc" onclick="showSection(this)" class="group inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg transition-all duration-200 shadow-sm hover:bg-gray-100">
+        <svg class="w-4 h-4 mr-2 transition-transform duration-200 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        <span>Back to Misc</span>
+      </a>
+    </div>
+    <p class="text-xs text-gray-600">Generate, analyze and download detailed business reports.</p>
+  </div>
+
+  <div class="bg-white rounded-xl custom-shadow p-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+      <!-- Daily Report -->
+      <a   class="nav-item group" onclick="window.location='dailyReport.html'" >
+        <div class="cursor-pointer p-2 rounded-lg border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-chart-line text-2xl text-blue-500 group-hover:text-blue-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Daily Report</h3>
+            <p class="text-gray-500 text-xs">Daily sales insights</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Payment Report -->
+      <a href="Reports.html?type=payments" class="nav-item group">
+        <div class="cursor-pointer p-2 rounded-lg border border-gray-200 hover:border-green-400 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-credit-card text-2xl text-green-500 group-hover:text-green-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Payment Report</h3>
+            <p class="text-gray-500 text-xs">UPI, COD & settlement reports</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Delivery Report -->
+      <a href="Reports.html?type=delivery" class="nav-item group">
+        <div class="cursor-pointer p-2 rounded-lg border border-gray-200 hover:border-yellow-400 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-truck text-2xl text-yellow-500 group-hover:text-yellow-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Delivery Report</h3>
+            <p class="text-gray-500 text-xs">Track staff performance & delivery time</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Returns Report -->
+      <a href="Reports.html?type=returns" class="nav-item group">
+        <div class="cursor-pointer p-2 rounded-lg border border-gray-200 hover:border-red-400 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-undo text-2xl text-red-500 group-hover:text-red-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Returns & Cancellations</h3>
+            <p class="text-gray-500 text-xs">Rejected, returned & replaced orders</p>
+          </div>
+        </div>
+      </a>
+
+    </div>
+
+    <!-- Quick Stats Section -->
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="bg-blue-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-blue-600"><span id="salesReportCount">0</span></div>
+        <div class="text-sm text-blue-700">Sales</div>
+      </div>
+      <div class="bg-green-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-green-600"><span id="paymentReportCount">0</span></div>
+        <div class="text-sm text-green-700">Payments</div>
+      </div>
+      <div class="bg-yellow-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-yellow-600"><span id="deliveryReportCount">0</span></div>
+        <div class="text-sm text-yellow-700">Deliveries</div>
+      </div>
+      <div class="bg-red-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-red-600"><span id="returnsReportCount">0</span></div>
+        <div class="text-sm text-red-700">Returns</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+       <!-- Inventory -->
+<!-- Inventory Management -->
+<section id="inventory" class="section-content hidden">
+  <div class="mb-8">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="text-3xl font-bold text-gray-800">Inventory Management</h2>
+      <button href="#Dashboard" onclick="showSection(this, event)"
+        class="group inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-white border border-gray-300 rounded-lg transition-all duration-200 shadow-sm">
+        <svg class="w-4 h-4 mr-2 transition-transform duration-200 group-hover:-translate-x-1" fill="none"
+          stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        <span>Back to Dashboard</span>
+      </button>
+    </div>
+    <p class="text-gray-600">Manage product stock, supplier details, restocks, and reports</p>
+  </div>
+
+  <div class="bg-white rounded-xl custom-shadow p-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+      <!-- Stock Overview -->
+      <a href="#purchases" class="nav-item group" onclick="showSection(this)" class="section-content hidden">
+        <div
+          class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-green-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-boxes text-2xl text-green-500 group-hover:text-green-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Purchases</h3>
+            <p class="text-gray-500 text-xs">Manage all Purchase activities</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Manual Stock Addition -->
+      <a href="#low-stock" class="nav-item group" onclick="window.location='addStock.html'">
+        <div
+          class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-yellow-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-exclamation-circle text-2xl text-yellow-500 group-hover:text-yellow-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Manual Stock Addition</h3>
+            <p class="text-gray-500 text-xs">Manually add Stock</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Supplier Management -->
+      <a href="#vendors" class="nav-item group" onclick="showSection(this)">
+        <div
+          class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-truck text-2xl text-blue-500 group-hover:text-blue-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Suppliers</h3>
+            <p class="text-gray-500 text-xs">Manage supplier details</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Restock Management -->
+      <a href="#restock" class="nav-item group" onclick="window.location='restock.html'">
+        <div
+          class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-plus-circle text-2xl text-indigo-500 group-hover:text-indigo-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Restock</h3>
+            <p class="text-gray-500 text-xs">Add new stock items</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Inventory Adjustments -->
+      <a href="#inventory-adjustments" class="nav-item group" onclick="window.location='adjustments.html'">
+        <div
+          class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-red-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-sliders-h text-2xl text-red-500 group-hover:text-red-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Adjustments</h3>
+            <p class="text-gray-500 text-xs">Handle damaged/lost items</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Inventory Analytics -->
+      <a href="#inventory-analytics" class="nav-item group" onclick="window.location='inventoryAnalytics.html'">
+        <div
+          class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-teal-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-chart-pie text-2xl text-teal-500 group-hover:text-teal-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Inventory Analytics</h3>
+            <p class="text-gray-500 text-xs">Trends & stock insights</p>
+          </div>
+        </div>
+      </a>
+
+    </div>
+
+    <!-- Quick Stats Section -->
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="bg-green-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-green-600">12</div>
+        <div class="text-sm text-green-700">Items in Stock</div>
+      </div>
+      <div class="bg-yellow-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-yellow-600">5</div>
+        <div class="text-sm text-yellow-700">Low Stock Items</div>
+      </div>
+      <div class="bg-blue-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-blue-600">2</div>
+        <div class="text-sm text-blue-700">Active Suppliers</div>
+      </div>
+      <div class="bg-red-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-red-600">2</div>
+        <div class="text-sm text-red-700">Damaged Items</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+
+<!-- Purchases Management -->
+<section id="purchases" class="section-content hidden">
+  <div class="mb-8">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="text-3xl font-bold text-gray-800">Purchases Management</h2>
+      <button href="#inventory" onclick="showSection(this, event)"
+        class="group inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-white border border-gray-300 rounded-lg transition-all duration-200 shadow-sm">
+        <svg class="w-4 h-4 mr-2 transition-transform duration-200 group-hover:-translate-x-1" fill="none"
+          stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        <span>Back to Inventory</span>
+      </button>
+    </div>
+    <p class="text-gray-600">Manage supplier purchases, stock replenishment, and purchase reports</p>
+  </div>
+
+  <div class="bg-white rounded-xl custom-shadow p-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+      <!-- Supplier Orders -->
+      <a href="#supplier-orders" class="nav-item group" onclick="window.location='purchaseOrderCreation.html'">
+        <div
+          class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-truck-loading text-2xl text-blue-500 group-hover:text-blue-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Supplier Orders</h3>
+            <p class="text-gray-500 text-xs">Create supplier POs</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Purchase Invoices -->
+      <a href="#purchase-invoices" class="nav-item group" onclick="window.location='purchaseOrderApproval.html'">
+        <div
+          class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-green-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-file-invoice-dollar text-2xl text-green-500 group-hover:text-green-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Purchase Order Approval</h3>
+            <p class="text-gray-500 text-xs">Verify & approve Purchase Orders</p>
+          </div>
+        </div>
+      </a>
+
+<!-- Suppliers PO View -->
+<a href="#suppliers-po-view" class="nav-item group" onclick="window.location='vendorsPo.html'">
+  <div
+    class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-300">
+    <div class="text-center">
+      <i class="fas fa-clipboard-list text-2xl text-purple-500 group-hover:text-purple-600 mb-3 transition-colors"></i>
+      <h3 class="text-sm font-semibold text-gray-800 mb-1">Suppliers PO View</h3>
+      <p class="text-gray-500 text-xs">View supplier purchase orders</p>
+    </div>
+  </div>
+</a>
+
+
+      <!-- Goods Received -->
+      <a href="#goods-received" class="nav-item group" onclick="window.location='purchaseOrderForWarhouse.html'">
+        <div
+          class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-yellow-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-box-open text-2xl text-yellow-500 group-hover:text-yellow-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Goods Received</h3>
+            <p class="text-gray-500 text-xs">Stock received from suppliers</p>
+          </div>
+        </div>
+      </a>
+
+      <!-- Purchase Analytics -->
+      <a href="#purchase-analytics" class="nav-item group" onclick="showSection(this, event)">
+        <div
+          class="cursor-pointer p-4 rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all duration-300">
+          <div class="text-center">
+            <i class="fas fa-chart-pie text-2xl text-indigo-500 group-hover:text-indigo-600 mb-3 transition-colors"></i>
+            <h3 class="text-sm font-semibold text-gray-800 mb-1">Purchase Analytics</h3>
+            <p class="text-gray-500 text-xs">Reports & spend insights</p>
+          </div>
+        </div>
+      </a>
+
+    </div>
+
+    <!-- Quick Stats Section -->
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="bg-blue-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-blue-600">₹1,20,000</div>
+        <div class="text-sm text-blue-700">This Month's Purchases</div>
+      </div>
+      <div class="bg-green-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-green-600">15</div>
+        <div class="text-sm text-green-700">POs Created</div>
+      </div>
+      <div class="bg-yellow-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-yellow-600">12</div>
+        <div class="text-sm text-yellow-700">Goods Received</div>
+      </div>
+      <div class="bg-indigo-50 p-4 rounded-lg text-center">
+        <div class="text-2xl font-bold text-indigo-600">3</div>
+        <div class="text-sm text-indigo-700">Pending Invoices</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+
+
+
+
+
+
+
+
+        <!-- Marketing -->
+        <section id="marketing" class="section-content hidden">
+          <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">Marketing</h2>
+            <p class="text-gray-600">Manage campaigns and promotions</p>
+          </div>
+          
+          <div class="bg-white rounded-xl custom-shadow p-6">
+            <div class="text-center py-12">
+              <i class="fas fa-bullhorn text-6xl text-gray-300 mb-4"></i>
+              <h3 class="text-xl font-semibold text-gray-600 mb-2">Marketing Hub</h3>
+              <p class="text-gray-500">Marketing tools and campaigns coming soon!</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Settings -->
+<section id="settings" class="section-content hidden">
+  <div class="mb-8">
+    <h2 class="text-3xl font-bold text-gray-800 mb-2">System Settings</h2>
+    <p class="text-gray-600">Configure your application preferences</p>
+  </div>
+  
+  <!-- First row (existing big cards) -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="bg-white rounded-xl custom-shadow p-6 hover-lift">
+      <div class="flex items-center mb-4">
+        <div class="bg-indigo-100 p-3 rounded-full mr-4">
+          <i class="fas fa-cogs text-indigo-600 text-xl"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-800">Admin Settings</h3>
+      </div>
+      <p class="text-gray-600 mb-4">Manage admin settings</p>
+      <button
+        class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-2 px-4 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-300">
+        Open Settings Page
+      </button>
+    </div>
+
+    <div class="bg-white rounded-xl custom-shadow p-6 hover-lift">
+      <div class="flex items-center mb-4">
+        <div class="bg-red-100 p-3 rounded-full mr-4">
+          <i class="fas fa-user-shield text-red-600 text-xl"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-800">Developer Settings</h3>
+      </div>
+      <p class="text-gray-600 mb-4">Meta data settings</p>
+      <button  onclick="var c=prompt('Code:'); if(c && c.trim()==='niranjana'){window.location='metaData.html';}"
+        class="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-2 px-4 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300">
+        Manage Access
+      </button>
+    </div>
+  </div>
+
+  <!-- Second row (small rectangle cards) -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mt-6">
+
+    <div class="bg-white rounded-lg custom-shadow p-4 hover-lift text-center cursor-pointer"
+     onclick="window.location.href='ProductSuspend.html'">
+  <i class="fas fa-pause-circle text-orange-500 text-xl mb-2"></i>
+  <h4 class="text-sm font-semibold text-gray-800">Suspend / Revoke Product</h4>
+</div>
+
+
+   <div class="bg-white rounded-lg custom-shadow p-4 hover-lift text-center cursor-pointer"
+     onclick="window.location.href='customerSuspend.html'">
+  <i class="fas fa-ban text-red-500 text-xl mb-2"></i>
+  <h4 class="text-sm font-semibold text-gray-800">Suspend / Revoke Customer</h4>
+</div>
+
+     <div class="bg-white rounded-lg custom-shadow p-4 hover-lift text-center cursor-pointer"
+     onclick="window.location.href='staffSuspend.html'">
+  <i class="fas fa-user-slash text-red-600 text-xl mb-2"></i>
+  <h4 class="text-sm font-semibold text-gray-800">Suspend / Revoke Staffs</h4>
+</div>
+
+
+    <div class="bg-white rounded-lg custom-shadow p-4 hover-lift text-center">
+      <i class="fas fa-lock text-green-500 text-xl mb-2"></i>
+      <h4 class="text-sm font-semibold text-gray-800">Security</h4>
+    </div>
+  </div>
+
+  <!--Third row (small rectangle cards) -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mt-6">
+
+    <div class="bg-blue-50 rounded-lg custom-shadow p-4 hover-lift text-center cursor-pointer"
+     onclick="window.location.href='exportToJson.html'">
+  <i class="fas fa-database text-blue-600 text-xl mb-2"></i>
+  <h4 class="text-sm font-semibold text-blue-800">Export DB</h4>
+</div>
+
+   <div class="bg-green-50 rounded-lg custom-shadow p-4 hover-lift text-center cursor-pointer"
+     onclick="window.location.href='importFromJson.html'">
+  <i class="fas fa-file-import text-green-600 text-xl mb-2"></i>
+  <h4 class="text-sm font-semibold text-green-800">Import DB</h4>
+</div>
+
+   
+
+
+<div class="bg-white rounded-lg custom-shadow p-4 hover-lift text-center" cursor-pointer"
+     onclick="window.location.href='DBclearing.html'">
+  <i class="fas fa-user-shield text-purple-600 text-xl mb-2"></i>
+  <h4 class="text-sm font-semibold text-gray-800">DB Initialise</h4>
+</div>
+
+
+
+<div class="bg-white rounded-lg custom-shadow p-4 hover-lift text-center">
+  <i class="fas fa-shield-alt text-blue-500 text-xl mb-2"></i>
+  <h4 class="text-sm font-semibold text-gray-800">Security Level 2</h4>
+</div>
+
+  </div>
+
+</section>
+
+<!-- Future Programs -->
+<section id="future" class="section-content hidden">
+  <div class="mb-8 text-center">
+    <h2 class="text-3xl font-extrabold text-gray-800 mb-2">🌟 Future Programs</h2>
+    <p class="text-gray-600 max-w-2xl mx-auto">
+      Discover the upcoming initiatives and member-focused schemes of our cooperative society.
+    </p>
+  </div>
+  
+  <!-- First row (highlighted big programs) -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="bg-white rounded-2xl custom-shadow p-6 hover-lift transform hover:scale-[1.02] transition-all duration-300">
+      <div class="flex items-center mb-4">
+        <div class="bg-gradient-to-tr from-yellow-400 to-yellow-500 p-3 rounded-full mr-4 shadow-md">
+          <i class="fas fa-coins text-white text-xl"></i>
+        </div>
+        <h3 class="text-xl font-bold text-gray-800">Chitty Scheme</h3>
+      </div>
+      <p class="text-gray-600 mb-4 leading-relaxed">
+        A traditional savings and credit scheme for members with monthly contributions and lucky draws.
+      </p>
+      <button onclick="alert('Coming Soon');"
+        class="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-white font-semibold py-2 px-4 rounded-lg hover:from-yellow-600 hover:to-yellow-700 shadow transition-all duration-300">
+        Learn More
+      </button>
+    </div>
+
+    <div class="bg-white rounded-2xl custom-shadow p-6 hover-lift transform hover:scale-[1.02] transition-all duration-300">
+  <div class="flex items-center mb-4">
+    <div class="bg-gradient-to-tr from-blue-400 to-indigo-500 p-3 rounded-full mr-4 shadow-md">
+      <i class="fas fa-briefcase text-white text-xl"></i>
+    </div>
+    <h3 class="text-xl font-bold text-gray-800">Job Connect</h3>
+  </div>
+  <p class="text-gray-600 mb-4 leading-relaxed">
+    A unified platform where job seekers and employers connect, explore opportunities, and grow together.
+  </p>
+  <button onclick="alert('Coming Soon');"
+    class="w-full bg-gradient-to-r from-indigo-500 to-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:from-indigo-600 hover:to-blue-700 shadow transition-all duration-300">
+    Get Started
+  </button>
+</div>
+
+
+  <!-- Second row (small program cards) -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mt-6">
+    <div class="bg-white rounded-xl custom-shadow p-4 hover-lift text-center transform hover:scale-105 transition-all duration-300">
+      <div class="bg-gradient-to-tr from-pink-400 to-pink-500 p-3 rounded-full inline-block mb-3 shadow-md">
+        <i class="fas fa-piggy-bank text-white text-xl"></i>
+      </div>
+      <h4 class="text-sm font-bold text-gray-800">Savings Plans</h4>
+    </div>
+
+    <div class="bg-white rounded-xl custom-shadow p-4 hover-lift text-center transform hover:scale-105 transition-all duration-300">
+      <div class="bg-gradient-to-tr from-orange-400 to-orange-500 p-3 rounded-full inline-block mb-3 shadow-md">
+        <i class="fas fa-tractor text-white text-xl"></i>
+      </div>
+      <h4 class="text-sm font-bold text-gray-800">Farmers Support</h4>
+    </div>
+
+    <div class="bg-white rounded-xl custom-shadow p-4 hover-lift text-center transform hover:scale-105 transition-all duration-300">
+      <div class="bg-gradient-to-tr from-blue-400 to-blue-500 p-3 rounded-full inline-block mb-3 shadow-md">
+        <i class="fas fa-users text-white text-xl"></i>
+      </div>
+      <h4 class="text-sm font-bold text-gray-800">Community Welfare</h4>
+    </div>
+
+    <div class="bg-white rounded-xl custom-shadow p-4 hover-lift text-center transform hover:scale-105 transition-all duration-300">
+      <div class="bg-gradient-to-tr from-purple-400 to-purple-500 p-3 rounded-full inline-block mb-3 shadow-md">
+        <i class="fas fa-graduation-cap text-white text-xl"></i>
+      </div>
+      <h4 class="text-sm font-bold text-gray-800">Education Assistance</h4>
+    </div>
+  </div>
+</section>
+
+
+
+
+      </main>
+
+     <!-- Mobile Bottom Navigation -->
+<div id="mobileNav" class="fixed bottom-0 left-0 right-0 bg-white border-t md:hidden z-20 transition-all duration-300">
+  <div class="grid grid-cols-7 gap-1 py-2 px-2 justify-items-center">
+    
+    <a href="#Dashboard" class="bottom-nav-item flex flex-col items-center text-blue-600 transition-all duration-200 mobile-nav-active" onclick="showSection(this, event)">
+      <i class="fas fa-home text-lg"></i>
+    </a>
+
+    <a href="#orders" class="bottom-nav-item flex flex-col items-center text-gray-600 hover:text-blue-600 transition-all duration-200" onclick="showSection(this, event)">
+      <i class="fas fa-shopping-cart text-lg"></i>
+    </a>
+
+    <a href="#payments" class="bottom-nav-item flex flex-col items-center text-gray-600 hover:text-blue-600 transition-all duration-200" onclick="showSection(this, event)">
+      <i class="fas fa-credit-card text-lg"></i>
+    </a>
+
+    <a href="#stakeholders" class="bottom-nav-item flex flex-col items-center text-gray-600 hover:text-blue-600 transition-all duration-200" onclick="showSection(this, event)">
+      <i class="fas fa-users text-lg"></i>
+    </a>
+
+    <a href="#products" class="bottom-nav-item flex flex-col items-center text-gray-600 hover:text-blue-600 transition-all duration-200" onclick="showSection(this, event)">
+      <i class="fas fa-box text-lg"></i>
+    </a>
+
+    <a href="#inventory" class="bottom-nav-item flex flex-col items-center text-gray-600 hover:text-blue-600 transition-all duration-200" onclick="showSection(this, event)">
+      <i class="fas fa-chart-bar text-lg"></i>
+    </a>
+
+    <!-- Hide/Show Toggle -->
+    <a href="#hide" id="toggleNavBtn" class="bottom-nav-item flex flex-col items-center text-gray-600 hover:text-blue-600 transition-all duration-200">
+      <i class="fas fa-eye-slash text-lg"></i>
+    </a>
+    
+  </div>
+</div>
+
+<script>
+  const mobileNav = document.getElementById("mobileNav");
+  const toggleNavBtn = document.getElementById("toggleNavBtn");
+  let navHidden = false;
+
+  toggleNavBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+    navHidden = !navHidden;
+    if (navHidden) {
+      mobileNav.classList.add("bg-transparent", "opacity-30");
+      mobileNav.classList.remove("bg-white");
+      toggleNavBtn.innerHTML = '<i class="fas fa-eye text-lg"></i>'; // change icon
+    } else {
+      mobileNav.classList.remove("bg-transparent", "opacity-30");
+      mobileNav.classList.add("bg-white");
+      toggleNavBtn.innerHTML = '<i class="fas fa-eye-slash text-lg"></i>';
+    }
+  });
+</script>
+
+    </div>
+  </div>
+
+  <script>
+
+
+    // Function to show sections and handle navigation
+    function showSection(element, event) {
+      if (event) {
+        event.preventDefault();
+      }
+      
+      // Get the target section from href
+      const targetSection = element.getAttribute('href').substring(1);
+      
+      // Hide all sections
+      const sections = document.querySelectorAll('.section-content');
+      sections.forEach(section => {
+        section.classList.add('hidden');
+      });
+      
+      // Show target section
+      const target = document.getElementById(targetSection);
+      if (target) {
+        target.classList.remove('hidden');
+      }
+      
+      // Remove active class from all nav items
+      const navItems = document.querySelectorAll('.nav-item, .bottom-nav-item');
+      navItems.forEach(item => {
+        item.classList.remove('nav-active', 'mobile-nav-active');
+      });
+      
+      // Add active class to clicked item
+      if (window.innerWidth >= 768) {
+        element.classList.add('nav-active');
+      } else {
+        element.classList.add('mobile-nav-active');
+      }
+      
+      // Update mobile nav active state for corresponding items
+      const href = element.getAttribute('href');
+      const correspondingItems = document.querySelectorAll(`[href="${href}"]`);
+      correspondingItems.forEach(item => {
+        if (window.innerWidth < 768) {
+          item.classList.add('mobile-nav-active');
+        } else {
+          item.classList.add('nav-active');
+        }
+      });
+    }
+    
+    // Initialize dashboard as active on load
+    document.addEventListener('DOMContentLoaded', function() {
+      const dashboardSection = document.getElementById('Dashboard');
+      if (dashboardSection) {
+        dashboardSection.classList.remove('hidden');
+      }
+     
+      // Set initial active states
+      const dashboardLinks = document.querySelectorAll('[href="#Dashboard"]');
+      dashboardLinks.forEach(link => {
+        if (window.innerWidth < 768) {
+          link.classList.add('mobile-nav-active');
+        } else {
+          link.classList.add('nav-active');
+        }
+      });
+    });
+    
+    // Handle window resize
+    window.addEventListener('resize', function() {
+      // Update active states based on screen size
+      const activeItems = document.querySelectorAll('.nav-active, .mobile-nav-active');
+      activeItems.forEach(item => {
+        item.classList.remove('nav-active', 'mobile-nav-active');
+        if (window.innerWidth >= 768) {
+          item.classList.add('nav-active');
+        } else {
+          item.classList.add('mobile-nav-active');
+        }
+      });
+    });
+    
+    // Placeholder functions for product management actions
+    function handleInventoryControl() {
+      alert('Inventory Control feature will be implemented');
+    }
+    
+    function handleFrequentlyBought() {
+      alert('Frequently Bought Together feature will be implemented');
+    }
+    
+    function handleYouMayAlsoLike() {
+      alert('You May Also Like feature will be implemented');
+    }
+    
+    function handleBulkPriceEdit() {
+      alert('Bulk Price Edit feature will be implemented');
+    }
+    
+    function handleBulkStockEdit() {
+      alert('Bulk Stock Edit feature will be implemented');
+    }
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+      const dropdowns = document.querySelectorAll('.group');
+      dropdowns.forEach(dropdown => {
+        if (!dropdown.contains(event.target)) {
+          const dropdownMenu = dropdown.querySelector('.absolute');
+          if (dropdownMenu) {
+            dropdownMenu.classList.add('hidden');
+          }
+        }
+      });
+    });
+
+
+
+document.addEventListener("DOMContentLoaded", function () {
+    const hash = window.location.hash;
+
+    if (hash === "#vendors") {
+        const vendorsSection = document.querySelector("#vendors");
+        const dashboardSection = document.querySelector("#Dashboard");
+
+        // Show the vendors section
+        if (vendorsSection) {
+            vendorsSection.classList.remove("hidden");
+            vendorsSection.scrollIntoView({ behavior: "smooth" });
+        }
+
+        // Hide the dashboard section
+        if (dashboardSection) {
+            dashboardSection.classList.add("hidden");
+        }
+    }
+});
+  </script>
+
+ </body>
+</html>
